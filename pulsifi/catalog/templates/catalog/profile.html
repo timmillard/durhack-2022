@@ -1,3 +1,5 @@
+<!-- JUSTIN: New Post Sticky Button-->
+
 <!DOCTYPE html>
 <html lang="en-GB">
 {% load static %}
@@ -60,7 +62,6 @@
         </div>
     </div>
 
-
         <div class="mx-auto">
             <div class="container py-5">
                 <h1 style="color:#ba03fc">Your Posts</h1>
@@ -100,6 +101,32 @@
                 </div>
             </div>
         </div>
+
+            <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
+            <div class="modal fade" id="post-create-modal" tabindex="-1">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exammodalLabel">New Post</h5>
+                            <button type="button" class="close" id = "close-create-new-post" aria-label="Close" onclick="closeModal('post-create-modal');"> 
+                                <span aria-hidden="true">x</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                            <div class="form-group">
+                                <label>What do you want to share today?</label>
+                                <input type = "textarea" class = "form-control" id = "new-post-content" placeholder="What are you thinking...?">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn text-white" id="new-post-submit" style = "background-color: #ba03fc;">Post to Pulsifi</button>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
         
 
     </body>
