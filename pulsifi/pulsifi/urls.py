@@ -20,5 +20,5 @@ from django.views.generic.base import RedirectView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('catalog.urls')),
-    path('', RedirectView.as_view(pattern_name='catalog:index'), name='default'),
+    path('', RedirectView.as_view(pattern_name='catalog:home'), name='default'),
 ]

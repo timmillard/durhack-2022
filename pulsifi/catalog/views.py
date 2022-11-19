@@ -12,3 +12,9 @@ class Index(TemplateView):
 
 class Feed(TemplateView):
     template_name = "catalog/feed.html"
+
+class Home(TemplateView):
+    template_name = "catalog/home.html"
+
+class Profile(TemplateView):
+    template_name = "catalog/profile.html"
