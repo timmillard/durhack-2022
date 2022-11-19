@@ -12,14 +12,14 @@
     <main>
         <body>
             <nav class="navbar navbar-light navbar-expand-lg pl-5 pr-5" style ="background-color: #ba03fc;">
-                <a class="navbar-brand align-middle" href="#"><img height = 30px src = "{% static 'catalog/brand/white_on_transparent.png' %}"></a>
+                <a class="navbar-brand align-middle" href="http://127.0.0.1:8000/home/"><img height = 30px src = "{% static 'catalog/brand/white_on_transparent.png' %}"></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                     <div class="navbar-nav">
                     <a class="nav-link px-3 text text-white" href="#">Feed</a>
-                    <a class="nav-link px-3 text-white" href="profile.html">Profile</a>
+                    <a class="nav-link px-3 text-white" href="http://127.0.0.1:8000/profile/">Profile</a>
                     </div>
                 </div>
             </nav>
@@ -34,14 +34,39 @@
             </div>
             <div class = "container-fluid p-5 text-center">
                 <div class = "card flex-x5-nowrap">
-                    <img src = ""><h4>Name, profile pic and details</h4>
-                    <h6 class = "text-muted">@username</h6>
-                    <div class = "card-body">
-                        <p>I said this...</p>
+        
+
+    <div class="tab-content admin-tab-content pt30">
+        <div role="tabpanel" class="tab-pane active show" id="t1">
+            <ul class="activity-list list-unstyled">
+                <li class="clearfix">
+                    <div class="float-left">
+                        <div class="flex-shrink-0">
+                        <img src="{% static 'catalog/brand/sample.jpg' %}"
+ alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">
+                        </div>
                     </div>
-                </div>
-            </div>  
-            </div>
+                    <div class="act-content">
+                        <div class="font400">
+    
+                            <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+                        </div>
+                        <span class="text-small">11 Min Ago</span>
+                        <p>
+                            Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
+                            tincidunt ut.
+                        </p>
+                        <span class="text-small">0 Likes</span>
+                        <a href="#" class="btn btn-sm btn-danger">Like</a>
+                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        </div>
+        </div>
+
+
         
         </body>
     </main>
