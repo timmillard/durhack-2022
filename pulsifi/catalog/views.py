@@ -9,3 +9,6 @@ from django.views.generic import TemplateView
 
 class Index(TemplateView):
     template_name = "catalog/index.html"
+
+class Feed(TemplateView):
+    template_name = "catalog/feed.html"
