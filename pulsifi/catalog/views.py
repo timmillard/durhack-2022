@@ -23,3 +23,6 @@ class Profile1(TemplateView):
         context = super().get_context_data(**kwargs)
         context["profile_in_html"] = Profile.objects.get(user__username='dave')
         return context
+
+class Profile2(TemplateView):
+    template_name = "catalog/profile2.html"
