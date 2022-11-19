@@ -1,17 +1,18 @@
 <!DOCTYPE html> 
 <html lang="en-GB">
+    {% load static %}
 
     <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Pulsifi</title>
-        <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+        <link href="{% static 'catalog/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css">
     </head>
 
     <main>
         <body>
             <nav class="navbar navbar-light navbar-expand-lg pl-5 pr-5" style ="background-color: #ba03fc;">
-                <a class="navbar-brand align-middle" href="#"><img height = 30px src = "brand/white_on_transparent.png"></a>
+                <a class="navbar-brand align-middle" href="#"><img height = 30px src = "{% static 'catalog/brand/white_on_transparent.png' %}"></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
