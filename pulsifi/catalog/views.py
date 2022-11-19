@@ -1,6 +1,14 @@
 from django.shortcuts import render
-from django.http import HttpResponse
 # Create your views here.
 
-def index(request):
-    return HttpResponse("Hello, world. You're at the index.")
+from django.http import HttpResponse
+
+from django.template import loader
+
+from django.views.generic import TemplateView
+
+class Index(TemplateView):
+    template_name = "catalog/index.html"
+
+class Feed(TemplateView):
+    template_name = "catalog/feed.html"
