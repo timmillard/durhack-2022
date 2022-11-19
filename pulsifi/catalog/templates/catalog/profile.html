@@ -62,16 +62,40 @@
 
         <div class="mx-auto" style="width: 900px;">
             <div class="container-fluid p-5">
-                <h1 style="color:#ba03fc">Your Feed</h1>
+                <h1 style="color:#ba03fc">Your Posts</h1>
             </div>
             <div class="container-fluid p-5 text-center">
                 <div class="card flex-x5-nowrap">
-                    <img src="">
-                    <h4>Name, profile pic and details</h4>
-                    <h6 class="text-muted">@username</h6>
-                    <div class="card-body">
-                        <p>I said this...</p>
+                    <div class="tab-content admin-tab-content pt30">
+                        <div role="tabpanel" class="tab-pane active show" id="t1">
+                            <ul class="activity-list list-unstyled">
+                                <li class="clearfix">
+                                    <div class="float-left">
+                                        <div class="flex-shrink-0">
+                                            <img src="{% static 'catalog/brand/sample.jpg' %}" alt="Generic placeholder image"
+                                                class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                        </div>
+                                    </div>
+                                    <div class="act-content">
+                                        <div class="font400">
+                    
+                                            <a href="#" class="font600">Lorem Ipsum</a> Posted
+                                        </div>
+                                        <span class="text-small">11 Min Ago</span>
+                                        <p>
+                                            Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
+                                            tincidunt ut.
+                                        </p>
+                                        <span class="text-small">0 Likes</span>
+                                        <a href="#" class="btn btn-sm btn-danger">Like</a>
+                                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
+                    </div>
+
                 </div>
             </div>
         </div>
