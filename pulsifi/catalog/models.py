@@ -8,7 +8,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(
         "bio",
-        max_length=500,
+        max_length=200,
         blank=True,
     )
     profile_pic = models.ImageField(upload_to="profile_pics")
@@ -25,12 +25,24 @@ class Profile(models.Model):
         super().save(*args,**kwargs)
 
 class Post(models.Model):
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
     date_time_created = models.DateTimeField(
         auto_now=True
+    )
+    message = models.TextField(
+        "message",
+        max_length=350,
+        blank=True,
     )
     likes = models.PositiveIntegerField(
         default=0
     )
-def like_post(self):
-    self.update(likes=F("likes")+1)
-    
+    dislikes = models.PositiveIntegerField(
+        default=0
+    )
+    def like_post(self):
+        self.update(likes=F("likes")+1)
+    def dislike_post(self):
+        self.update(likes=F("dislikes")+1)
+    def delete(self):
+        self.delete()
