@@ -4,7 +4,7 @@ from django.db.models import F
 # Create your models here.
 
 
-class UserProfile(models.Model):
+class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(
         "bio",
@@ -25,7 +25,7 @@ class UserProfile(models.Model):
         super().save(*args,**kwargs)
 
 class Post(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
     date_time_created = models.DateTimeField(
         auto_now=True
     )
