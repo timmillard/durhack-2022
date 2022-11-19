@@ -10,6 +10,7 @@ class User:
     username = str;
     bio = str;
     profile_pic = str;
+    time_created = str;
     password_salt = str;
     password_hash = str;
 
@@ -19,6 +20,7 @@ class User:
         result["username"] = self.username
         result["bio"] = self.bio
         result["profile_pic"] = self.profile_pic
+        result["time_created"] = self.time_created
         result["password_salt"] = self.password_salt
         result["password_hash"] = self.password_hash
 
@@ -55,7 +57,7 @@ class db:
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS Users
-            ([ID] STRING PRIMARY KEY, [username] TEXT, [bio] TEXT, [profile_pic] TEXT, [password_salt] TEXT, [password_hash] TEXT)
+            ([ID] STRING PRIMARY KEY, [username] TEXT, [bio] TEXT, [profile_pic] TEXT, [time_created] TEXT, [password_salt] TEXT, [password_hash] TEXT)
             """
         )
         cursor.execute(
@@ -74,25 +76,25 @@ class db:
             result = cursor.fetchall()
             cursor.close()
             
-            user = User(result[0], result[1], result[2], result[3], result[4], result[5])
+            user = User(result[0], result[1], result[2], result[3], result[4], result[5], result[6])
             return user
 
         def addUser(self, user):
-            userArray = [user.id, user.username, user.bio, user.profile_pic, user.password_salt, user.password_hash]
+            userArray = [user.id, user.username, user.bio, user.profile_pic, user.time_created, user.password_salt, user.password_hash]
 
             cursor = self.conn.cursor()
-            cursor.execute("INSERT INTO Users (ID, username, bio, profile_pic, password_salt, password_hash) VALUES (?, ?, ?, ?, ?, ?);",
+            cursor.execute("INSERT INTO Users (ID, username, bio, profile_pic, time_created, password_salt, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?);",
              userArray)
             
             self.conn.commit()
             cursor.close()
 
         def updateUser(self, user):
-            userArray = [user.username, user.bio, user.profile_pic, user.password_salt, user.password_hash, user.id]
+            userArray = [user.username, user.bio, user.profile_pic, user.time_created, user.password_salt, user.password_hash, user.id]
 
 
             cursor = self.conn.cursor()
-            cursor.execute("UPDATE Users SET username = ?, bio = ?, profile_pic = ?, password_salt = ?, password_hash = ? WHERE ID = ?",
+            cursor.execute("UPDATE Users SET username = ?, bio = ?, profile_pic = ?, time_created = ?, password_salt = ?, password_hash = ? WHERE ID = ?",
             userArray)
 
             self.conn.commit()
