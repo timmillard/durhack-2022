@@ -24,6 +24,21 @@ class User:
 
         return result
 
+@dataclass
+class Post:
+    id = str;
+    message = str;
+    likes = int;
+    dislikes = int;
+
+    def dictionary(self) -> Dict:
+        result = {}
+        result["ID"] = self.id
+        result["message"] = self.message
+        result["likes"] = self.likes
+        result["dislikes"] = self.dislikes
+
+        return result
 
 
 
@@ -66,24 +81,62 @@ class db:
             userArray = [user.id, user.username, user.bio, user.profile_pic, user.password_salt, user.password_hash]
 
             cursor = self.conn.cursor()
-            cursor.execute("INSERT INTO Posts (ID, username, bio, profile_pic, password_salt, password_hash) VALUES (?, ?, ?, ?, ?, ?);",
+            cursor.execute("INSERT INTO Users (ID, username, bio, profile_pic, password_salt, password_hash) VALUES (?, ?, ?, ?, ?, ?);",
              userArray)
             
             self.conn.commit()
             cursor.close()
 
         def updateUser(self, user):
-            userArray = [user.id, user.username, user.bio, user.profile_pic, user.password_salt, user.password_hash]
+            userArray = [user.username, user.bio, user.profile_pic, user.password_salt, user.password_hash, user.id]
+
 
             cursor = self.conn.cursor()
-            cursor.execute("UPDATE Users SET ID = ?,  username = ?, bio = ?, profile_pic = ?, password_salt = ?, password_hash = ?", userArray)
+            cursor.execute("UPDATE Users SET username = ?, bio = ?, profile_pic = ?, password_salt = ?, password_hash = ? WHERE ID = ?",
+            userArray)
 
             self.conn.commit()
             cursor.close()
 
-        def deleteUser(self, id):
+        def deleteUser(self, ID):
             cursor = self.conn.cursor()
-            cursor.execute("DELETE FROM Users WHERE ID = ?", id)
+            cursor.execute("DELETE FROM Users WHERE ID = ?", ID)
+
+            self.conn.commit()
+            cursor.close()
+
+        def getPost(self, ID):
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT * FROM Posts WHERE ID = ?", ID)
+
+            result = cursor.fetchall()
+            cursor.close()
+            
+            post = Post(result[0], result[1], result[2], result[3])
+            return post
+
+        def addPost(self, post):
+            likes = 0
+            dislikes = 0
+            postArray = [post.id, post.message, likes, dislikes]
+
+            cursor = self.conn.cursor()
+            cursor.execute("INSERT INTO Posts (ID, message, likes, dislikes) VALUES (?, ?, ?, ?);",
+             postArray)
+            
+            self.conn.commit()
+            cursor.close()
+
+        def updatePost(self, post):
+            cursor = self.conn.cursor()
+            cursor.execute("UPDATE Posts SET likes = ?, dislikes = ? WHERE ID = ?", post.likes, post.dislikes)
+
+            self.conn.commit()
+            cursor.close()
+        
+        def deletePost(self, ID):
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM Posts WHERE ID = ?", ID)
 
             self.conn.commit()
             cursor.close()
