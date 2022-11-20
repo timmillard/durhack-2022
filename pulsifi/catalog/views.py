@@ -5,8 +5,9 @@ from .models import Profile, Post
 from .forms import UserCreationForm
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth import login
-from django.shortcuts import redirect
+from django.shortcuts import redirect, reverse
 from django.views.generic import TemplateView, CreateView
+from django.contrib.auth.views import LoginView
 
 class Index_view(TemplateView):
     template_name = "catalog/index.html"
@@ -14,8 +15,10 @@ class Index_view(TemplateView):
 class Feed_view(TemplateView):
     template_name = "catalog/feed.html"
 
-class Home_view(TemplateView):
+class Home_view(LoginView):
     template_name = "catalog/home.html"
+    next_page = reverse("catalog:feed")
+    redirect_authenticated_user = True
 
 class SignUp_view(CreateView):
     template_name = "catalog/sign_up.html"
