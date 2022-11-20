@@ -5,7 +5,7 @@ from .models import Profile, Post
 from .forms import UserCreationForm
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth import login
-from django.shortcuts import redirect, reverse
+from django.shortcuts import redirect
 from django.views.generic import TemplateView, CreateView
 from django.contrib.auth.views import LoginView
 
@@ -17,7 +17,7 @@ class Feed_view(TemplateView):
 
 class Home_view(LoginView):
     template_name = "catalog/home.html"
-    next_page = reverse("catalog:feed")
+    next_page = "catalog:feed"
     redirect_authenticated_user = True
 
 class SignUp_view(CreateView):

@@ -54,15 +54,17 @@
                             </button>
                         </div>
                         <div class="modal-body">
-                            <form>
+                            <form method="post">
+                                {% csrf_token %}
                             <div class="form-group">
-                                <label>Email address</label>
-                                <input type = "email" class = "form-control" id = "sign-in-email" placeholder="Enter your email address">
+                                <label>Username</label>
+                                <input type = "text" autocapitalize = "none" name="username" maxlength="50" autocomplete = "username" required class = "form-control" id = "sign-in-username" placeholder="Enter your email address">
                             </div>
                             <div class="form-group">
                                 <label>Password</label>
-                                <input type = "password" class = "form-control" id = "sign-in-email" placeholder="Enter your password">
+                                <input type = "password" name="password" autocomplete = "current-password" required class = "form-control" id = "sign-in-password" placeholder="Enter your password">
                             </div>
+                            <input type = "hidden" name = "next" value = "{{ next }}">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn text-white" id="sign-in-submit" style = "background-color: #ba03fc;">Sign In</button>
