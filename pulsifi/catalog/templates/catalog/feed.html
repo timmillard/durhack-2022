@@ -60,15 +60,14 @@
                     <div class="act-content">
                         <div class="font400">
     
-                            <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+                            <a href="http://127.0.0.1:8000/profile/" class="font600">@padgriffin</a> Posted
                         </div>
-                        <span class="text-small">11 Min Ago</span>
+                        <span class="text-small">15 Min Ago</span>
                             <div>Post will be deleted in <p id="time">00:00</p></div>
                         <p>
-                            Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
-                            tincidunt ut.
+                            I slept terribly last night- turns out lecture theatre chairs aren't the best beds, eh.
                         </p>
-                        <span class="text-small">0 Likes</span>
+                        <span class="text-small">3 Likes</span>
                         <a href="#" class="btn btn-sm btn-success">Like</a>
                         <a href="#" class="btn btn-sm btn-danger">Dislike</a>
                         <a href="#" class="btn btn-sm btn-secondary">Reply</a>
@@ -79,6 +78,43 @@
         </div>
         </div>
 </div>
+
+        <div class="container-fluid p-5 text-center">
+            <div class="card flex-x5-nowrap">
+                <div class="tab-content admin-tab-content pt30">
+                    <div role="tabpanel" class="tab-pane active show" id="t1">
+                        <ul class="activity-list list-unstyled">
+                            <li class="clearfix">
+                                <div class="float-left">
+                                    <div class="flex-shrink-0">
+                                        <img src="{% static 'catalog/brand/sample.jpg' %}" alt="Generic placeholder image"
+                                            class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                    </div>
+                                </div>
+                                <div class="act-content">
+                                    <div class="font400">
+        
+                                        <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+                                    </div>
+                                    <span class="text-small">11 Min Ago</span>
+                                    <div>Post will be deleted in <p id="time2">00:00</p>
+                                    </div>
+                                    <p>
+                                        Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
+                                        tincidunt ut.
+                                    </p>
+                                    <span class="text-small">0 Likes</span>
+                                    <a href="#" class="btn btn-sm btn-success">Like</a>
+                                    <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                    <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            </div>
+
 
         <div class="container-fluid p-5 text-center">
             <div class="card flex-x5-nowrap">
@@ -114,9 +150,11 @@
                     </div>
                 </div>
             </div>
-            </div>
-            </div>
-            
+        </div>
+        </div>
+    </div>
+    
+
 <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
 <div class="modal fade" id="post-create-modal" tabindex="-1">
     <div class="modal-dialog" role="document">
@@ -182,9 +220,13 @@
         var tenMinutes = 60 * 10,
             display = document.querySelector('#time');
         startTimer(tenMinutes, display);
-        var twoMinutes = 20 * 10,
+        var twoMinutes = 50 * 10,
             display = document.querySelector('#time1');
         startTimer(twoMinutes, display);
+        var aaaMinutes = 90 * 10,
+        display= document.querySelector('#time2')
+                startTimer(aaaMinutes, display);
+
     };
 </script>
 
