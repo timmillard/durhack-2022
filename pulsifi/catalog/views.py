@@ -51,11 +51,6 @@ class Profile_view(TemplateView):
 
 class Profile1_view(TemplateView):
     template_name = "catalog/profile1.html"
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["profile_in_html"] = Profile.objects.get(user__username='dave')
-        context["post"] = Post.objects.get()
-        return context
 
 class Profile2_view(TemplateView):
     template_name = "catalog/profile2.html"
