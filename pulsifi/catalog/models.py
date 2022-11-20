@@ -5,7 +5,7 @@ from django.db.models import F
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    _base_user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(
         "bio",
         max_length=200,
@@ -13,12 +13,18 @@ class Profile(models.Model):
     )
     profile_pic = models.ImageField(upload_to="profile_pics")
     
+    name = models.CharField("Name", max_length=30)
+
+
+    @property
+    def base_user(self):
+        return self._base_user
 
     class Meta:
         verbose_name = "User"
 
     def __str__(self):
-        return self.user.username
+        return self._base_user.username
 
     def save(self, *args, **kwargs):
         self.full_clean()
