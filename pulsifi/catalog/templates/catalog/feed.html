@@ -7,6 +7,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Pulsifi</title>
         <link href="{% static 'catalog/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css">
+            <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
     </head>
 
     <main>
@@ -28,15 +30,22 @@
             
             </div>
 
-            <div class="mx-auto">
-            <div class="container-fluid p-5">
-             <h1 style="color:#ba03fc">Your Feed</h1>
-            </div>
-            <div class = "container-fluid p-5 text-center">
-                <div class = "card flex-x5-nowrap">
-        
+<div class="mx-auto">
+    <div class="container-fluid p-5">
+<div class="row">
+    <div class="col-sm">
+            <h1 style="color:#ba03fc">Your Feed</h1>
+    </div>
+    <div class="col-sm-2 pt-3">
+        <button type="button" class="btn w3-purple" style="float: right;" id="post-create">Post</button>
+    </div>
+</div>
+</div>
+</div>
 
-    <div class="tab-content admin-tab-content pt30">
+<div class = "container-fluid p-5 text-center">
+    <div class = "card flex-x5-nowrap">
+         <div class="tab-content admin-tab-content pt30">
         <div role="tabpanel" class="tab-pane active show" id="t1">
             <ul class="activity-list list-unstyled">
                 <li class="clearfix">
@@ -65,10 +74,39 @@
         </div>
         </div>
         </div>
+<!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
+<div class="modal fade" id="post-create-modal" tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Post</h5>
+                <button type="button" class="close" id="close-create-new-post" aria-label="Close"
+                    onclick="closeModal('post-create-modal');">
+                    <span aria-hidden="true">x</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label>What do you want to share today?</label>
+                        <input type="textarea" class="form-control" id="new-post-content"
+                            placeholder="What are you thinking...?">
+                    </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn text-white" id="new-post-submit"
+                    style="background-color: #ba03fc;">Post to Pulsifi</button>
+            </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
 
 
         
         </body>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+<script src="{% static 'catalog/js/feed.js' %}"></script>

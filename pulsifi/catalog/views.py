@@ -1,17 +1,12 @@
 from django.shortcuts import render
 # Create your views here.
 from django.template import loader
-<<<<<<< HEAD
-from django.views.generic import TemplateView, CreateView
-from .models import Profile
+from .models import Profile, Post
 from .forms import UserCreationForm
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth import login
 from django.shortcuts import redirect
-=======
-from django.views.generic import TemplateView
-from .models import Profile,Post
->>>>>>> 4cd5ca6da3f375b950db178ffead79ae796ae9c6
+from django.views.generic import TemplateView, CreateView
 
 class Index(TemplateView):
     template_name = "catalog/index.html"
