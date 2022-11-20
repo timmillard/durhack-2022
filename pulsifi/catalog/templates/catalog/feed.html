@@ -116,42 +116,78 @@
             </div>
 
 
-        <div class="container-fluid p-5 text-center">
-            <div class="card flex-x5-nowrap">
-                <div class="tab-content admin-tab-content pt30">
-                    <div role="tabpanel" class="tab-pane active show" id="t1">
-                        <ul class="activity-list list-unstyled">
-                            <li class="clearfix">
-                                <div class="float-left">
-                                    <div class="flex-shrink-0">
-                                        <img src="{% static 'catalog/brand/sample.jpg' %}" alt="Generic placeholder image"
-                                            class="img-fluid" style="width: 100px; border-radius: 100px;">
-                                    </div>
-                                </div>
-                                <div class="act-content">
-                                    <div class="font400">
         
-                                        <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+            <div class="container-fluid p-5 text-center">
+                <div class="card flex-x5-nowrap">
+                    <div class="tab-content admin-tab-content pt30">
+                        <div role="tabpanel" class="tab-pane active show" id="t1">
+                            <ul class="activity-list list-unstyled">
+                                <li class="clearfix">
+                                    <div class="float-left">
+                                        <div class="flex-shrink-0">
+                                            <img src="{% static 'catalog/brand/sample.jpg' %}" alt="Generic placeholder image"
+                                                class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                        </div>
                                     </div>
-                                    <span class="text-small">11 Min Ago</span>
-                                    <div>Post will be deleted in <p id="time1">00:00</p>
+                                    <div class="act-content">
+                                        <div class="font400">
+            
+                                            <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+                                        </div>
+                                        <span class="text-small">11 Min Ago</span>
+                                        <p class="text-danger">Post will be deleted in 00:00</p>
+                                        </div>
+                                        <p>
+                                            [Whoops! This post ran out of time and has been removed.]
+                                        </p>
+                                        <span class="text-small">0 Likes</span>
+                                        <a href="#" class="btn btn-sm btn-success">Like</a>
+                                        <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
                                     </div>
-                                    <p>
-                                        Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
-                                        tincidunt ut.
-                                    </p>
-                                    <span class="text-small">0 Likes</span>
-                                    <a href="#" class="btn btn-sm btn-success">Like</a>
-                                    <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                                    <a href="#" class="btn btn-sm btn-secondary">Reply</a>
-                                </div>
-                            </li>
-                        </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+            </div>
+            <div class="container-fluid p-5 text-center">
+                <div class="card flex-x5-nowrap">
+                    <div class="tab-content admin-tab-content pt30">
+                        <div role="tabpanel" class="tab-pane active show" id="t1">
+                            <ul class="activity-list list-unstyled">
+                                <li class="clearfix">
+                                    <div class="float-left">
+                                        <div class="flex-shrink-0">
+                                            <img src="{% static 'catalog/brand/sample.jpg' %}" alt="Generic placeholder image"
+                                                class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                        </div>
+                                    </div>
+                                    <div class="act-content">
+                                        <div class="font400">
+            
+                                            <a href="http://127.0.0.1:8000/profile/" class="font600">Lorem Ipsum</a> Posted
+                                        </div>
+                                        <span class="text-small">11 Min Ago</span>
+                                        <div>Post will be deleted in <p id="time1">00:00</p>
+                                        </div>
+                                        <p>
+                                            Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod
+                                            tincidunt ut.
+                                        </p>
+                                        <span class="text-small">0 Likes</span>
+                                        <a href="#" class="btn btn-sm btn-success">Like</a>
+                                        <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
+            </div>
         </div>
-        </div>
+
     </div>
     
 
@@ -220,10 +256,10 @@
         var tenMinutes = 60 * 10,
             display = document.querySelector('#time');
         startTimer(tenMinutes, display);
-        var twoMinutes = 50 * 10,
+        var twoMinutes = 33 * 8,
             display = document.querySelector('#time1');
         startTimer(twoMinutes, display);
-        var aaaMinutes = 90 * 10,
+        var aaaMinutes = 22 * 10,
         display= document.querySelector('#time2')
                 startTimer(aaaMinutes, display);
 
