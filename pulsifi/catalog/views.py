@@ -8,17 +8,17 @@ from django.contrib.auth import login
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, CreateView
 
-class Index(TemplateView):
+class Index_view(TemplateView):
     template_name = "catalog/index.html"
 
-class Feed(TemplateView):
+class Feed_view(TemplateView):
     template_name = "catalog/feed.html"
 
-class Home(TemplateView):
+class Home_view(TemplateView):
     template_name = "catalog/home.html"
 
-class SignUp(CreateView):
-    template_name = "catalog/signup.html"
+class SignUp_view(CreateView):
+    template_name = "catalog/sign_up.html"
     form_class = UserCreationForm
 
     def form_valid(self, form):
@@ -40,13 +40,13 @@ class SignUp(CreateView):
             self.get_context_data(form=form)
         )
 
-class Profile(TemplateView):
+class Profile_view(TemplateView):
     login_url = "/home/"
     template_name = "catalog/profile.html" 
 
 
 
-class Profile1(TemplateView):
+class Profile1_view(TemplateView):
     template_name = "catalog/profile1.html"
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,5 +54,5 @@ class Profile1(TemplateView):
         context["post"] = Post.objects.get()
         return context
 
-class Profile2(TemplateView):
+class Profile2_view(TemplateView):
     template_name = "catalog/profile2.html"

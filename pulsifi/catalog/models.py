@@ -10,8 +10,9 @@ class Profile(models.Model):
         "bio",
         max_length=200,
         blank=True,
+        null=True
     )
-    profile_pic = models.ImageField(upload_to="profile_pics")
+    profile_pic = models.ImageField(upload_to="profile_pics", blank=True, null=True)
     
     name = models.CharField("Name", max_length=30)
 

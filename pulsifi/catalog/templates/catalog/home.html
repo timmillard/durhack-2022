@@ -43,48 +43,6 @@
             </div>        
 
             <!--Adapted from https://dev.to/ara225/how-to-use-bootstrap-modals-without-jquery-3475-->
-            <!--SIGN UP MODAL; WILL DISPLAY SIGN UP FORM-->
-            <div class="modal fade" id="sign-up-modal" tabindex="-1" role="dialog">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Sign Up</h5>
-                            <button type="button" class="close" id = "close-sign-up" aria-label="Close" onclick="closeModal('sign-up-modal');"> 
-                                <span aria-hidden="true">x</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <form>
-                             <div class="form-group">
-                                <label>Name</label>
-                                <input type = "text" class = "form-control" id = "sign-up-name" placeholder="Enter your full name">
-                            </div>
-                            <div class="form-group">
-                                <label>Email Address</label>
-                                <input type = "email" class = "form-control" id = "sign-up-email" placeholder="Enter your email address">
-                            </div>
-                            <div class="form-group">
-                                <label>Username</label>
-                                <input type = "text" class = "form-control" id = "sign-up-username" placeholder="Choose a username">
-                            </div>
-                            <div class="form-group">
-                                <label>Password</label>
-                                <input type = "password" class = "form-control" id = "sign-up-password" placeholder="Choose a password">
-                            </div>
-                            <div class="form-group">
-                                <label>Confirm Password</label>
-                                <input type = "password" class = "form-control" id = "sign-up-password-conf" placeholder="Re-enter your password to check you can spell">
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn text-white" id="sign-up-submit" style = "background-color: #ba03fc;">Sign Up</button>
-                        </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
-        
             <!--SIGN IN MODAL; WILL DISPLAY SIGN IN FORM-->
             <div class="modal fade" id="sign-in-modal" tabindex="-1">
                 <div class="modal-dialog" role="document">

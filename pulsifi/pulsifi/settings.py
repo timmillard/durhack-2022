@@ -118,7 +118,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-MEDIA_ROOT = r'C:\Users\Charlie\Documents\GitHub\durhack-2022\pulsifi\catalog\media'
+MEDIA_ROOT = BASE_DIR / r'catalog\media'
 MEDIA_URL = 'media/'
 
 # Default primary key field type
