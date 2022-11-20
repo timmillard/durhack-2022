@@ -13,5 +13,5 @@ function closeModal(modal_id) {
 
 // Get the modal
 let newpost_modal = document.getElementById("post-create");
-signup_modal.addEventListener("click", () => {openModal("post-create-modal")});
+newpost_modal.addEventListener("click", () => {openModal("post-create-modal")});
 
