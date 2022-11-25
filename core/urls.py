@@ -8,6 +8,6 @@ from django.views.generic.base import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('pulsifi.urls')),
-    path('', RedirectView.as_view(pattern_name='pulsifi:home'), name='default'),
+    path('', include("pulsifi.urls")),
+    path('', RedirectView.as_view(pattern_name="pulsifi:home"), name="default"),
 ]

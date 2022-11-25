@@ -18,5 +18,5 @@ class UserCreationForm(BaseUserCreationForm):
             "email",
             "username",
             "password1",
-            "password2",
+            "password2"
         )

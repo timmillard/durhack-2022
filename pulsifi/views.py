@@ -32,17 +32,17 @@ class SignUp_view(CreateView):
 
     def form_valid(self, form):
         base_user = BaseUser.objects.create_user(
-            username=form.cleaned_data['username'],
-            password=form.cleaned_data['password1'],
+            username=form.cleaned_data["username"],
+            password=form.cleaned_data["password1"],
             email=form.cleaned_data["email"],
         )
         Profile.objects.create(
             _base_user=base_user,
-            name=form.cleaned_data['name'],
+            name=form.cleaned_data["name"],
         )
         login(self.request, base_user)
 
-        return redirect('pulsifi:profile')
+        return redirect("pulsifi:profile")
 
     def form_invalid(self, form):
         return self.render_to_response(
