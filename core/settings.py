@@ -18,12 +18,13 @@ MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"
+# noqa
+SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"  # noqa
 
 # Application definition
 
 INSTALLED_APPS = [
-    "pulsifi.apps.CatalogConfig",
+    "pulsifi.apps.PulsifiConfig",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
