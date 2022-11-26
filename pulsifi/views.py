@@ -26,8 +26,8 @@ class Home_view(LoginView):
     redirect_authenticated_user = True
 
 
-class SignUp_view(CreateView):
-    template_name = "pulsifi/sign_up.html"
+class Signup_view(CreateView):
+    template_name = "pulsifi/signup.html"
     form_class = UserCreationForm
 
     def form_valid(self, form):
