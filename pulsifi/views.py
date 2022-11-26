@@ -6,13 +6,41 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth.views import LoginView
+from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
-from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, TemplateView
+from django.views.generic import CreateView, DetailView, ListView, TemplateView
 
-from .forms import UserCreationForm
-from .models import Profile
+from .forms import ReplyForm, UserCreationForm
+from .models import Post, Profile
 
+
+class LikeAndDislikeMixin:
+    @staticmethod
+    def check_like_or_dislike_in_post_request(request):
+        try:
+            if request.POST["action"] == "like":
+                request.POST["likeable_object"].like()
+                return f"{request.POST['likeable_object'].__class__.__name__} was liked"
+            elif request.POST["action"] == "dislike":
+                request.POST["dislikeable_object"].dislike()
+                return f"{request.POST['likeable_object'].__class__.__name__} was disliked"
+        except KeyError:
+            return False
+
+
+class ReplyMixin:
+    def check_reply_in_post_request(self, request):
+        try:
+            if request.POST["action"] == "reply":
+                form = ReplyForm(request.POST)
+                if form.is_valid():
+                    reply = form.save()
+                    return redirect("catalog:display_post", post_id=reply.parent_object.id)
+                else:
+                    return self.render_to_response(self.get_context_data(form=form))
+
+        except KeyError:
+            return False
 
 class Home_View(LoginView):
     template_name = "pulsifi/home.html"
@@ -20,21 +48,33 @@ class Home_View(LoginView):
     redirect_authenticated_user = True
 
 
-class Feed_View(LoginRequiredMixin, TemplateView):
-    login_url = reverse_lazy("pulsifi:home")
+class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):
     template_name = "pulsifi/feed.html"
+
+    def get_queryset(self):
+        return Post.objects.filter(
+            creator__id__in=Profile.objects.get(
+                _base_user__id=self.request.user.id
+            ).following.all().values_list("id", flat=True)
+        ).order_by("_date_time_created")
+
+    def post(self, request, *args, **kwargs):
+        if self.check_like_or_dislike_in_post_request(request) is False or self.check_reply_in_post_request(request) is False:
+            return HttpResponseBadRequest()
+        else:
+            return redirect(self.request.path_info)
 
 
 class Self_Profile_View(LoginRequiredMixin, TemplateView):
-    login_url = reverse_lazy("pulsifi:home")
     template_name = "pulsifi/profile.html"
 
 
 class ID_Profile_View(LoginRequiredMixin, DetailView):
-    login_url = reverse_lazy("pulsifi:home")
+    pass
+
 
 class Create_Post_View(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy("pulsifi:home")
+    pass
 
 
 class Signup_View(CreateView):
@@ -53,9 +93,7 @@ class Signup_View(CreateView):
         )
         login(self.request, base_user)
 
-        return redirect("pulsifi:profile")
+        return redirect("pulsifi:self_profile")
 
     def form_invalid(self, form):
-        return self.render_to_response(
-            self.get_context_data(form=form)
-        )
+        return self.render_to_response(self.get_context_data(form=form))

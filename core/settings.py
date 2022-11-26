@@ -6,6 +6,8 @@
 
 from pathlib import Path
 
+from django.urls import reverse_lazy
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,6 +18,10 @@ STATIC_URL = "static/"
 
 MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
+
+LOGIN_URL = reverse_lazy("pulsifi:home")
+LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
+LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"  # noqa

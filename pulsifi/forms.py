@@ -20,3 +20,7 @@ class UserCreationForm(BaseUserCreationForm):
             "password1",
             "password2"
         )
+
+
+class ReplyForm(forms.ModelForm):
+    pass

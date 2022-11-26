@@ -13,7 +13,7 @@
 
     <body>
         <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">
-            <a class="navbar-brand align-middle" href="#"><img height=30px
+            <a class="navbar-brand align-middle" href="{% url 'default' %}"><img height=30px
                     src="{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
                 aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -21,7 +21,7 @@
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
-                    <a href="http://127.0.0.1:8000/sign_up/" class="nav-link"><button type="button" class="btn btn-light" id="sign-up">Sign Up</button></a>
+                    <a href="{% url 'pulsifi:signup' %}" class="nav-link"><button type="button" class="btn btn-light" id="sign-up">Sign Up</button></a>
                     <a class="nav-link"><button type="button" class="btn btn-light" id="sign-in">Sign In</button></a>
                 </div>
             </div>
@@ -33,7 +33,7 @@
                 <br>
                 <h3>The most <strong>
                         <italic>intense</italic>
-                    </strong> social media platform in existence</h3>
+                    </strong> social media platform in existence {{ request.user }}</h3>
                 <br>
                 <img class="p-3" src="{% static 'pulsifi/brand/Logo-Purple_Transparent.png' %}" width=50%>
                 <br>
@@ -74,12 +74,12 @@
                                         class="form-control" id="sign-in-password" placeholder="Enter your password">
                                 </div>
                                 <input type="hidden" name="next" value="{{ next }}">
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn text-white" id="sign-in-submit"
+                                        style="background-color: #ba03fc;">Sign In</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn text-white" id="sign-in-submit"
-                                style="background-color: #ba03fc;">Sign In</button>
-                        </div>
-                        </form>
                     </div>
                 </div>
             </div>

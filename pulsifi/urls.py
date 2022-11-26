@@ -28,7 +28,11 @@ urlpatterns = [
     ),
     path("feed/", views.Feed_View.as_view(), name="feed"),
     path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
-    path("profile/<int:profile_id>", views.ID_Profile_View.as_view(), name="id_profile"),
+    path(
+        "profile/<int:profile_id>",
+        views.ID_Profile_View.as_view(),
+        name="id_profile"
+    ),
     path("post/create", views.Create_Post_View.as_view(), name="create_post"),
     path("signup/", views.Signup_View.as_view(), name="signup")
 ]
