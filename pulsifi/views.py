@@ -44,7 +44,6 @@ class ReplyMixin:
 
 class Home_View(LoginView):
     template_name = "pulsifi/home.html"
-    next_page = "pulsifi:feed"
     redirect_authenticated_user = True
 
 
