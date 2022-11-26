@@ -3,21 +3,43 @@
 """
 
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import F
 
 
-class Profile(models.Model):
+class Model_With_Update(models.Model):
+    class Meta:
+        abstract = True
+
+    def update(self, commit=True, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        if commit:
+            self.save()
+
+
+class Profile(Model_With_Update):
     _base_user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField("Name", max_length=30)
     bio = models.TextField(
-        "bio",
+        "Bio",
         max_length=200,
         blank=True,
         null=True
     )
-    profile_pic = models.ImageField(upload_to="profile_pics", blank=True, null=True)
-
-    name = models.CharField("Name", max_length=30)
+    profile_pic = models.ImageField(
+        "Profile Picture",
+        upload_to="profile_pic",
+        blank=True,
+        null=True
+    )
+    following = models.ManyToManyField(
+        "self",
+        symmetrical=False,
+        related_name="followers",
+        blank=True
+    )
 
     @property
     def base_user(self):
@@ -27,47 +49,76 @@ class Profile(models.Model):
         verbose_name = "User"
 
     def __str__(self):
-        return self._base_user.username
+        return f"@{self.base_user.username}"
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
 
-class Post(models.Model):
-    user = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    _date_time_created = models.DateTimeField(
-        "Post Creation Time",
-        auto_now=True
+class Post(Model_With_Update):
+    creator = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        verbose_name="Creator"
     )
-    message = models.TextField("Post Message")
-    likes = models.PositiveIntegerField(
+    message = models.TextField("Message")
+    visible = models.BooleanField("Visibility", default=True)
+    _likes = models.PositiveIntegerField(
         "Number of Likes",
         default=0
     )
-    dislikes = models.PositiveIntegerField(
+    _dislikes = models.PositiveIntegerField(
         "Number of Dislikes",
         default=0
+    )
+    _date_time_created = models.DateTimeField(
+       "Creation Date & Time",
+       auto_now=True
+    )
+    replies = GenericRelation(
+        "Reply",
+        content_type_field='_content_type',
+        object_id_field='_object_id',
+        related_query_name="reverse_parent_object",
+        verbose_name="Replies"
     )
 
     @property
     def date_time_created(self):
         return self._date_time_created
 
+    @property
+    def likes(self):
+        return self._likes
+
+    @property
+    def dislikes(self):
+        return self._dislikes
+
     class Meta:
         verbose_name = "Post"
 
     def __str__(self):
-        return self.message
+        return f"{self.creator}, {self.message[:15]}"
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def like_post(self):
-        self.likes = F("likes") + 1
-        self.save()
+    def like(self):
+        self.update(_likes=self.likes + 1)
 
-    def dislike_post(self):
-        self.dislikes = F("dislikes") + 1
-        self.save()
+    def dislike(self):
+        self.update(_dislikes=self.dislikes + 1)
+
+class Reply(Post):
+    _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    _object_id = models.PositiveIntegerField()
+    parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+
+    class Meta:
+        verbose_name = "Reply"
+
+    def __str__(self):
+        return f"{self.creator}, {self.message[:15]} (For object - {self.parent_object})"
