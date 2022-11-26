@@ -11,7 +11,9 @@ from pulsifi.models import Post, Profile, Reply
 
 class UserCreationForm(BaseUserCreationForm):
     email = forms.EmailField(required=True)
-    name = forms.CharField(max_length=30)
+    name = forms.CharField(
+        max_length=Profile.meta.get_field("name").max_length
+    )
 
     class Meta:
         model = User

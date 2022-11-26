@@ -8,7 +8,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
-class Model_With_Update(models.Model):
+class Custom_Model(models.Model):
+    @property
+    def meta(self):
+        return self._meta
+
     class Meta:
         abstract = True
 
@@ -19,7 +23,7 @@ class Model_With_Update(models.Model):
             self.save()
 
 
-class Profile(Model_With_Update):
+class Profile(Custom_Model):
     _base_user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField("Name", max_length=30)
     bio = models.TextField(
@@ -56,7 +60,7 @@ class Profile(Model_With_Update):
         super().save(*args, **kwargs)
 
 
-class Post(Model_With_Update):
+class Post(Custom_Model):
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
