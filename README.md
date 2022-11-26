@@ -12,5 +12,5 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 * Model names are capitalised (E.g `Post`)
 * View names are capitalised, end in `View` and have words seperated by underscores (E.g. `Feed_View`)
 * Constants, settings values and field choices are uppercase and have words seperated by underscores (E.g. `STATIC_URL`)
-* Model field names are lowercase, must not contain the model name and have words seperated by underscores (E.g. `date_time_created`, not ~~`postDateTimeCreated`~~)
+* Model field names are lowercase, must not contain the model name and have words seperated by underscores (E.g. `date_time_created`, not ~`postDateTimeCreated`~)
 * HTML template names are lowercase and have words seperated by underscores (E.g. `feed.html`)
