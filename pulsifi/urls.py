@@ -3,17 +3,32 @@
 """
 
 from django.urls import path
+from django.views.generic.base import RedirectView
 
 from . import views
 
 app_name = "pulsifi"
 
 urlpatterns = [
-    path("index/", views.Index_view.as_view(), name="index"),
-    path("feed/", views.Feed_view.as_view(), name="feed"),
-    path("home/", views.Home_view.as_view(), name="home"),
-    path("profile/", views.Profile_view.as_view(), name="profile"),
-    path("profile/1", views.Profile1_view.as_view(), name="profile1"),
-    path("profile/2", views.Profile2_view.as_view(), name="profile2"),
-    path("signup/", views.Signup_view.as_view(), name="signup"),
+    path("", views.Home_View.as_view(), name="home"),
+    path(
+        "index.html",
+        RedirectView.as_view(pattern_name="pulsifi:home"),
+        name="index_html_redirect"
+    ),
+    path(
+        "index/",
+        RedirectView.as_view(pattern_name="pulsifi:home"),
+        name="index_redirect"
+    ),
+    path(
+        "home/",
+        RedirectView.as_view(pattern_name="pulsifi:home"),
+        name="home_redirect"
+    ),
+    path("feed/", views.Feed_View.as_view(), name="feed"),
+    path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
+    path("profile/<int:profile_id>", views.ID_Profile_View.as_view(), name="id_profile"),
+    path("post/create", views.Create_Post_View.as_view(), name="create_post"),
+    path("signup/", views.Signup_View.as_view(), name="signup")
 ]
