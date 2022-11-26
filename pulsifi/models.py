@@ -36,7 +36,7 @@ class Profile(models.Model):
 
 class Post(models.Model):
     user = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    date_time_created = models.DateTimeField(
+    _date_time_created = models.DateTimeField(
         "Post Creation Time",
         auto_now=True
     )
@@ -65,13 +65,9 @@ class Post(models.Model):
         super().save(*args, **kwargs)
 
     def like_post(self):
-        self.update(likes=F("likes") + 1)
+        self.likes = F("likes") + 1
         self.save()
 
     def dislike_post(self):
-        self.update(likes=F("dislikes") + 1)
-        self.save()
-
-    def delete(self):
-        self.delete()
+        self.dislikes = F("dislikes") + 1
         self.save()
