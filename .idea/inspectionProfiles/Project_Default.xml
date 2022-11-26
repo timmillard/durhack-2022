@@ -1,0 +1,88 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="HtmlUnknownAttribute" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="myValues">
+        <value>
+          <list size="1">
+            <item index="0" class="java.lang.String" itemvalue="event|stringformat:" />
+          </list>
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
+    <inspection_tool class="LongLine" enabled="true" level="INFORMATION" enabled_by_default="true" />
+    <inspection_tool class="PyBroadExceptionInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="E305" />
+          <option value="W292" />
+          <option value="E302" />
+          <option value="E265" />
+          <option value="E222" />
+          <option value="E722" />
+          <option value="E501" />
+          <option value="E303" />
+          <option value="E231" />
+          <option value="E304" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N806" />
+          <option value="N801" />
+          <option value="N802" />
+          <option value="N803" />
+          <option value="N812" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyProtectedMemberInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="extras.sqlite.Plugin" />
+          <option value="Website.polls.models.Question.*" />
+          <option value="Website.polls.models.Choice.DoesNotExist" />
+          <option value="django.db.models.fields.DateTimeField.*" />
+          <option value="POS.models.Product.get_name_display" />
+          <option value="POS.models.Product.objects" />
+          <option value="POS.models.Order.id" />
+          <option value="django.db.models.fields.related.ManyToManyField.all" />
+          <option value="django.db.models.fields.related.ManyToManyField.count" />
+          <option value="POS.models.Order.order_item_set" />
+          <option value="POS.models.Order.objects" />
+          <option value="POS.models.Order_Item.*" />
+          <option value="POS.models.User_Group.*" />
+          <option value="django.db.models.fields.related.ForeignKey.get_no_items_remaining" />
+          <option value="django.db.models.fields.related.ForeignKey.status" />
+          <option value="django.db.models.fields.related.ForeignKey.save" />
+          <option value="django.db.models.fields.related.ManyToManyField.*" />
+          <option value="POS.models.Staff_Type.get_name_display" />
+          <option value="POS.models.Staff_Type.objects" />
+          <option value="name" />
+          <option value="link" />
+          <option value="POS.models.Product.id" />
+          <option value="POS.models.Product.get_display_name" />
+          <option value="Web_Server.POS.models.Product.*" />
+          <option value="Web_Server.POS.models.Order.*" />
+          <option value="Web_Server.EPOS.models.Product.*" />
+          <option value="Web_Server.EPOS.models.Order.*" />
+          <option value="Web_Server.EPOS.models.Event.*" />
+          <option value="Web_Server.Empire.models.Game.get__current_topic_display" />
+          <option value="Web_Server.Empire.models.Game.objects" />
+          <option value="Web_Server.Empire.models.Player.objects" />
+          <option value="object.dispatch" />
+          <option value="Web_Server.Empire.models.Player.*" />
+          <option value="Web_Server.Word_Bowl.models.Game.get_status_display" />
+          <option value="Web_Server.Word_Bowl.models.Player.objects" />
+          <option value="Web_Server.Word_Bowl.models.Game.*" />
+          <option value="django.contrib.auth.models.User.profile" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
