@@ -1,11 +1,12 @@
-Durhack 2022
-============
+<h1 style="display:inline">Pulsifi<small> - The most intense social media platform in existence</small></h1>
+
+Created for Durhack 2022
 
 By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 
 <sub><sup>Additional help from [@CarrotManMatt](https://github.com/CarrotManMatt "CarrotManMatt's Github Page")</sup></sub>
 
-# Programming Conventions
+<h2>Programming Conventions</h2>
 
 * Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. `<a href="{% url 'default' %}"></a>`)</nobr>
 * Never put commas after the last item in a list/dictionary <nobr>(E.g. `["a", "b", "c"]`, not <code><del>["a", "b", "c",]</del></code>)</nobr>
