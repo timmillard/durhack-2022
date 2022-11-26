@@ -1,5 +1,4 @@
-<h1 style="display:inline">Pulsifi</h1><h3 style="display:inline"> - The most intense social media platform in existence</h3>
-============
+<h1 style="display:inline">Pulsifi<small> - The most intense social media platform in existence</small></h1>
 
 Created for Durhack 2022
 
