@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 from django.contrib.auth.models import User
 
-from pulsifi.models import Post, Profile, Reply
+from pulsifi.models import Profile, Pulse, Reply
 
 
 class UserCreationForm(BaseUserCreationForm):
@@ -26,9 +26,9 @@ class UserCreationForm(BaseUserCreationForm):
         )
 
 
-class PostForm(forms.ModelForm):
+class PulseForm(forms.ModelForm):
     class Meta:
-        model = Post
+        model = Pulse
         fields = ("creator", "message")
 
 

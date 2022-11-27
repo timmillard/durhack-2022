@@ -23,6 +23,8 @@ LOGIN_URL = reverse_lazy("pulsifi:home")
 LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
+MESSAGE_DISPLAY_LENGTH = 15
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"  # noqa
 

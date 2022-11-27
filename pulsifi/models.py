@@ -2,6 +2,7 @@
     Models in pulsifi application.
 """
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -56,7 +57,7 @@ class Profile(Custom_Model):
         super().save(*args, **kwargs)
 
 
-class Post(Custom_Model):  # TODO: calculate time remaining based on likes & creator follower count, rename to pulse
+class Pulse(Custom_Model):  # TODO: calculate time remaining based on likes & creator follower count
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -97,10 +98,10 @@ class Post(Custom_Model):  # TODO: calculate time remaining based on likes & cre
         return self._dislikes
 
     class Meta:
-        verbose_name = "Post"
+        verbose_name = "Pulse"
 
     def __str__(self):
-        return f"{self.creator}, {self.message[:15]}"
+        return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -112,7 +113,7 @@ class Post(Custom_Model):  # TODO: calculate time remaining based on likes & cre
     def dislike(self):
         self.update(_dislikes=self.dislikes + 1)
 
-class Reply(Post):
+class Reply(Pulse):
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()
     parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
@@ -121,4 +122,4 @@ class Reply(Post):
         verbose_name = "Reply"
 
     def __str__(self):
-        return f"{self.creator}, {self.message[:15]} (For object - {self.parent_object})"
+        return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {self.parent_object})"

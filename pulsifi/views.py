@@ -1,42 +1,55 @@
 """
     Views in pulsifi application.
 """
+from urllib.parse import unquote as urllib_unquote
 
+from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth.views import LoginView
+from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 
 from .forms import ReplyForm, UserCreationForm
-from .models import Post, Profile
+from .models import Profile, Pulse
 
 
 class LikeAndDislikeMixin:
-    @staticmethod
-    def check_like_or_dislike_in_post_request(request):
+    request: WSGIRequest
+
+    def check_like_or_dislike_in_post_request(self):
         try:
-            if request.POST["action"] == "like":
-                request.POST["likeable_object"].like()
-                return f"{request.POST['likeable_object'].__class__.__name__} was liked"
-            elif request.POST["action"] == "dislike":
-                request.POST["dislikeable_object"].dislike()
-                return f"{request.POST['likeable_object'].__class__.__name__} was disliked"
+            if self.request.POST["action"] == "like":
+                self.request.POST["likeable_object"].like()
+                return f"""{self.request.POST["likeable_object"].__class__.__name__} was liked"""
+            elif self.request.POST["action"] == "dislike":
+                self.request.POST["dislikeable_object"].dislike()
+                return f"""{self.request.POST["likeable_object"].__class__.__name__} was disliked"""
         except KeyError:
             return False
 
 
 class ReplyMixin:
-    def check_reply_in_post_request(self, request):
+    request: WSGIRequest
+
+    def render_to_response(self, context, **response_kwargs):  # Abstract implementation of render_to_response() method that is overridden when this mixin is used
+        pass
+
+    def get_context_data(self, **kwargs):  # Abstract implementation of get_context_data() method that is overridden when this mixin is used
+        pass
+
+    def check_reply_in_post_request(self):
         try:
-            if request.POST["action"] == "reply":
-                form = ReplyForm(request.POST)
+            if self.request.POST["action"] == "reply":
+                form = ReplyForm(self.request.POST)
                 if form.is_valid():
                     reply = form.save()
-                    return redirect("catalog:display_post", post_id=reply.parent_object.id)
+                    return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.parent_object.id}""")
                 else:
                     return self.render_to_response(self.get_context_data(form=form))
 
@@ -48,43 +61,65 @@ class DeletePostOrReplyMixin:  # TODO: Create delete mixin
     pass
 
 
-class Home_View(LoginView):  # TODO: toast for account deletion, send message after successful redirect (within `form_valid()`)
+class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to login when redirecting here (show modal)
     template_name = "pulsifi/home.html"
     redirect_authenticated_user = True
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "New user successfully created!", extra_tags="user_creation")
+        return response
 
-class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll posts, POST actions for posts & replies, only show post if within time, show replies, only show replies and posts of active users, toast for successful redirect after login
-    template_name = "pulsifi/feed.html"
 
-    def get_queryset(self):
-        return Post.objects.filter(
-            creator__id__in=Profile.objects.get(
-                _base_user__id=self.request.user.id
-            ).following.all().values_list("id", flat=True)
-        ).order_by("_date_time_created")
-
-    def post(self, request, *args, **kwargs):
-        if self.check_like_or_dislike_in_post_request(request) is False or self.check_reply_in_post_request(request) is False:
-            return HttpResponseBadRequest()
-        else:
-            return redirect(self.request.path_info)
+# class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, show replies, only show replies and pulses of active users, toast for successful redirect after login, highlight pulse/reply at top of page
+#     template_name = "pulsifi/feed.html"
+#     context_object_name = "pulse_list"
+#     model = Pulse
+#
+#     def get_queryset(self):
+#         queryset = Pulse.objects.filter(
+#             creator__id__in=Profile.objects.get(
+#                 _base_user__id=self.request.user.id
+#             ).following.exclude(
+#                 _base_user__is_active=False
+#             ).values_list("id", flat=True)
+#         ).order_by("_date_time_created")
+#
+#         print(queryset)
+#         if self.request.method == "GET" and "highlight" in self.request.GET:
+#             print(self.context_object_name)
+#             return queryset.exclude(id=int(self.request.GET["highlight"]))
+#         return queryset
+#
+#     def get(self, request, *args, **kwargs):
+#         getstuff = super().get(request, *args, **kwargs)
+#         print(self.get_context_data(), self.object_list)
+#         return getstuff
+#
+#     def post(self, request, *args, **kwargs):
+#         if self.check_like_or_dislike_in_post_request() is False or self.check_reply_in_post_request() is False:
+#             return HttpResponseBadRequest()
+#         else:
+#             return redirect(self.request.path_info)
 
 
 class Self_Profile_View(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         return ID_Profile_View.as_view()(
-            request,
+            self.request,
             profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
         )
 
     def post(self, request, *args, **kwargs):
         return ID_Profile_View.as_view()(
-            request,
+            self.request,
             profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
         )
 
 
-class ID_Profile_View(LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll posts, POST actions for posts & replies, only show post if within time, change profile parts (if self profile), delete post or account with modal (if self profile), show replies, toast for account creation, only show replies and posts of active users
+class ID_Profile_View(
+    LoginRequiredMixin, DetailView
+):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
     model = Profile
     pk_url_kwarg = "profile_id"
     template_name = "pulsifi/profile.html"
@@ -93,7 +128,7 @@ class ID_Profile_View(LoginRequiredMixin, DetailView):  # TODO: lookup how const
 # TODO: profile search view
 
 
-class Create_Post_View(LoginRequiredMixin, CreateView):
+class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
@@ -113,10 +148,12 @@ class Signup_View(CreateView):
         )
         login(self.request, base_user)
 
-        return redirect("pulsifi:self_profile")
+        if "next" in self.request.POST:
+            return redirect(urllib_unquote(self.request.POST["next"]))
+        else:
+            return redirect("pulsifi:self_profile")
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
-
 
 # TODO: logout view, password change view

@@ -27,7 +27,7 @@
             {% csrf_token %}
             <div class="form-group">
                 <label>Name</label>
-                <input type = "text" name = "name" class = "form-control" maxlength = "30" required id = "sign-up-name" placeholder="Enter your full name" autofocus required>
+                <input type = "text" name = "name" class = "form-control" maxlength = "30" id = "sign-up-name" placeholder="Enter your full name" autofocus required>
             </div>
             <div class="form-group">
                 <label>Email Address</label>
@@ -45,6 +45,9 @@
                 <label>Confirm Password</label>
                 <input type = "password" name="password2" class = "form-control" id = "sign-up-password-conf" placeholder="Re-enter your password to check you can spell" required>
             </div>
+            {% if "next" in request.GET %}
+                <input type="hidden" name="next" value="{{ request.GET.next|urlencode }}">
+            {% endif %}
             <button type="submit" class="btn text-white" id="sign-up-submit" style = "background-color: #ba03fc;">Sign Up</button>
         </form>   <!--TODO: show errors in modal-->
     </body>

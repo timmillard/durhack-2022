@@ -40,7 +40,7 @@
             <h1 style="color:#ba03fc">Your Feed</h1>
     </div>
     <div class="col-sm-2 pt-3">
-        <button type="button" class="btn w3-purple" style="float: right;" id="post-create">New Pulse</button>
+        <button type="button" class="btn w3-purple" style="float: right;" id="pulse-create">New Pulse</button>
     </div>
 </div>
 </div>
@@ -135,7 +135,7 @@
                                                 <span class="text-small">11 Min Ago</span>
                                         <p class="text-danger">Post will be deleted in 00:00</p>                                                    </div>
                                                 <p>
-                                            [Whoops! This post ran out of time and has been removed.]                                                </p>
+                                            [Whoops! This pulse ran out of time and has been removed.]                                                </p>
                                                 <span class="text-small">0 Likes</span>
                                                 <a href="#" class="btn btn-sm btn-success">Like</a>
                                                 <a href="#" class="btn btn-sm btn-danger">Dislike</a>
@@ -156,13 +156,13 @@
     
 
 <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
-<div class="modal fade" id="post-create-modal" tabindex="-1">
+<div class="modal fade" id="pulse-create-modal" tabindex="-1">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">New Pulse</h5>
-                <button type="button" class="close" id="close-create-new-post" aria-label="Close"
-                    onclick="closeModal('post-create-modal');">
+                <button type="button" class="close" id="close-create-new-pulse" aria-label="Close"
+                    onclick="closeModal('pulse-create-modal');">
                     <span aria-hidden="true">x</span>
                 </button>
             </div>
@@ -170,12 +170,12 @@
                 <form>
                     <div class="form-group">
                         <label>What do you want to share today?</label>
-                        <input type="textarea" class="form-control" id="new-post-content"
+                        <input type="textarea" class="form-control" id="new-pulse-content"
                             placeholder="What are you thinking...?">
                     </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn text-white" id="new-post-submit"
+                <button type="button" class="btn text-white" id="new-pulse-submit"
                     style="background-color: #ba03fc;">Post to Pulsifi</button>
             </div>
             </form>
