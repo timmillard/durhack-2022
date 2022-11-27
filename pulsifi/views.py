@@ -43,12 +43,17 @@ class ReplyMixin:
         except KeyError:
             return False
 
-class Home_View(LoginView):
+
+class DeletePostOrReplyMixin:  # TODO: Create delete mixin
+    pass
+
+
+class Home_View(LoginView):  # TODO: toast for account deletion, send message after successful redirect (within `form_valid()`)
     template_name = "pulsifi/home.html"
     redirect_authenticated_user = True
 
 
-class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):
+class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll posts, POST actions for posts & replies, only show post if within time, show replies, only show replies and posts of active users, toast for successful redirect after login
     template_name = "pulsifi/feed.html"
 
     def get_queryset(self):
@@ -79,10 +84,13 @@ class Self_Profile_View(LoginRequiredMixin, View):
         )
 
 
-class ID_Profile_View(LoginRequiredMixin, DetailView):
+class ID_Profile_View(LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll posts, POST actions for posts & replies, only show post if within time, change profile parts (if self profile), delete post or account with modal (if self profile), show replies, toast for account creation, only show replies and posts of active users
     model = Profile
     pk_url_kwarg = "profile_id"
     template_name = "pulsifi/profile.html"
+
+
+# TODO: profile search view
 
 
 class Create_Post_View(LoginRequiredMixin, CreateView):
@@ -109,3 +117,6 @@ class Signup_View(CreateView):
 
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form))
+
+
+# TODO: logout view, password change view

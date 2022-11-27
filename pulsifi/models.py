@@ -56,7 +56,7 @@ class Profile(Custom_Model):
         super().save(*args, **kwargs)
 
 
-class Post(Custom_Model):
+class Post(Custom_Model):  # TODO: calculate time remaining based on likes & creator follower count, rename to pulse
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,

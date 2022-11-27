@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+<!DOCTYPE html>  <!--TODO: load from base.html-->
 <html lang="en-GB">
 {% load static %}
 <head>
@@ -12,7 +11,7 @@
 
 <main>
     <body>
-        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">
+        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">   <!--TODO: load from navbar.html (only show links if logged in)-->
             <a class="navbar-brand align-middle" href="http://127.0.0.1:8000/home/"><img height=30px src="{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
                 aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,7 +22,7 @@
                     <a class="nav-link px-3 text text-white" href="http://127.0.0.1:8000/feed/">Feed</a>
                     <a class="nav-link px-3 text-white" href="#">Profile</a>
                 </div>
-            </div>
+            </div>   <!--TODO: add profile icon-->
         </nav>
         
 
@@ -93,10 +92,10 @@
                                         </div>
 
                                         <p>
-                                            I slept terribly last night- turns out lecture theatre chairs aren't the best beds, eh.
+                                            I slept terribly last night - turns out lecture theatre chairs aren't the best beds, eh.
                                         </p>
-                                        <span class="text-small">0 Likes</span>
-                                        <a href="#" class="btn btn-sm btn-success">Like</a>
+                                        <span class="text-small">0 Likes</span>   <!--TODO: like counter-->
+                                        <a href="#" class="btn btn-sm btn-success">Like</a>   <!--TODO: POST actions-->
                                         <a href="#" class="btn btn-sm btn-danger">Dislike</a>
                                         <a href="#" class="btn btn-sm btn-secondary">Reply</a>
                                     </div>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html>  <!--TODO: load from base.html-->
 <html lang="en-GB">
 {% load static %}
 
@@ -12,7 +12,7 @@
 <main>
 
     <body>
-        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">
+        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">   <!--TODO: load from navbar.html (only show links if logged in)-->
             <a class="navbar-brand align-middle" href="{% url 'default' %}"><img height=30px
                     src="{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup"
@@ -24,7 +24,7 @@
                     <a href="{% url 'pulsifi:signup' %}" class="nav-link"><button type="button" class="btn btn-light" id="sign-up">Sign Up</button></a>
                     <a class="nav-link"><button type="button" class="btn btn-light" id="sign-in">Sign In</button></a>
                 </div>
-            </div>
+            </div>   <!--TODO: add profile icon-->
         </nav>
 
         <div class="mx-auto" style="width: 75%">
@@ -35,7 +35,7 @@
                         <italic>intense</italic>
                     </strong> social media platform in existence {{ request.user }}</h3>
                 <br>
-                <img class="p-3" src="{% static 'pulsifi/brand/Logo-Purple_Transparent.png' %}" width=50%>
+                <img class="p-3" src="{% static 'pulsifi/brand/Logo-Purple_Transparent.png' %}" width=50%>   <!--TODO: remove redundant image-->
                 <br>
                 <h4>How does Pulsifi work?</h4>
                 <br>
@@ -82,7 +82,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>   <!--TODO: show errors in modal-->
             <div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
 
     </body>
