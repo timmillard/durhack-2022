@@ -8,7 +8,8 @@ from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth.views import LoginView
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
-from django.views.generic import CreateView, DetailView, ListView, TemplateView
+from django.views import View
+from django.views.generic import CreateView, DetailView, ListView
 
 from .forms import ReplyForm, UserCreationForm
 from .models import Post, Profile
@@ -64,12 +65,24 @@ class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):
             return redirect(self.request.path_info)
 
 
-class Self_Profile_View(LoginRequiredMixin, TemplateView):
-    template_name = "pulsifi/profile.html"
+class Self_Profile_View(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        return ID_Profile_View.as_view()(
+            request,
+            profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
+        )
+
+    def post(self, request, *args, **kwargs):
+        return ID_Profile_View.as_view()(
+            request,
+            profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
+        )
 
 
 class ID_Profile_View(LoginRequiredMixin, DetailView):
-    pass
+    model = Profile
+    pk_url_kwarg = "profile_id"
+    template_name = "pulsifi/profile.html"
 
 
 class Create_Post_View(LoginRequiredMixin, CreateView):

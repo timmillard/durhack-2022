@@ -12,7 +12,7 @@ from pulsifi.models import Post, Profile, Reply
 class UserCreationForm(BaseUserCreationForm):
     email = forms.EmailField(required=True)
     name = forms.CharField(
-        max_length=Profile.meta.get_field("name").max_length
+        max_length=Profile._meta.get_field("name").max_length
     )
 
     class Meta:
@@ -35,7 +35,7 @@ class PostForm(forms.ModelForm):
 class ReplyForm(forms.ModelForm):
     class Meta:
         model = Reply
-        fields = ("creator", "message", "parent_object")
+        fields = ("creator", "message")
 
 
 class ProfilePicForm(forms.ModelForm):

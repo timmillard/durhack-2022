@@ -9,10 +9,6 @@ from django.db import models
 
 
 class Custom_Model(models.Model):
-    @property
-    def meta(self):
-        return self._meta
-
     class Meta:
         abstract = True
 
