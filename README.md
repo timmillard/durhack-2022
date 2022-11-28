@@ -15,3 +15,4 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 * Constants, settings values and field choices are uppercase and have words seperated by underscores <nobr>(E.g. `STATIC_URL`)</nobr>
 * Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. `date_time_created`, not <code><del>postDateTimeCreated</del></code>)</nobr>
 * HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. `feed.html`)</nobr>
+* Be very cautious when using `QuerySet.update()`, as this will *NOT* execute the `save()` method of each object instance. There are unlikely to be cases where the performance decrease of using the custom `Custom_Model.update()` method, on each instance individually, is so significant that `QuerySet.update()` has to be used. If in doubt, iterate through each instance with a `for` loop, and call `Custom_Model.update()` individually.

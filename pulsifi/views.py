@@ -61,6 +61,10 @@ class DeletePostOrReplyMixin:  # TODO: Create delete mixin
     pass
 
 
+class ReportPostOrReplyMixin:  # TODO: Create delete mixin
+    pass
+
+
 class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to login when redirecting here (show modal)
     template_name = "pulsifi/home.html"
     redirect_authenticated_user = True
