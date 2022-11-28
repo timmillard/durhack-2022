@@ -125,9 +125,7 @@ class Self_Profile_View(LoginRequiredMixin, View):
         )
 
 
-class ID_Profile_View(
-    LoginRequiredMixin, DetailView
-):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
+class ID_Profile_View(LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
     model = Profile
     pk_url_kwarg = "profile_id"
     template_name = "pulsifi/profile.html"
