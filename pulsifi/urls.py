@@ -26,7 +26,7 @@ urlpatterns = [
         RedirectView.as_view(pattern_name="pulsifi:home"),
         name="home_redirect"
     ),
-    # path("feed/", views.Feed_View.as_view(), name="feed"),
+    path("feed/", views.Feed_View.as_view(), name="feed"),
     # TODO: profile search url
     path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
     path(
