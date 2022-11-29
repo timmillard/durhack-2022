@@ -3,7 +3,7 @@
 """
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as BaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -38,8 +38,8 @@ class Visible_Model(Custom_Base_Model):
 
 
 class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
-    _base_user = models.OneToOneField(User, null=True, on_delete=models.SET_NULL)
-    name = models.CharField("Name", max_length=30)
+    _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)
+    name = models.CharField("Name", max_length=30)  # TODO: remove this name field and decide what email, username & full name actually mean (which is the unique identifier? if both allow login with either?)
     bio = models.TextField(
         "Bio",
         max_length=200,
@@ -76,7 +76,13 @@ class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in o
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # TODO: make non-active base users become not visible
+        if not self.base_user.is_active:
+            self.visible = False
+        elif not self.visible:
+            self.base_user.is_active = False
+            self.base_user.save()
+
+        self.full_clean()
         super().save(*args, **kwargs)
 
 

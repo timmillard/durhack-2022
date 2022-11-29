@@ -6,7 +6,6 @@ from urllib.parse import unquote as urllib_unquote
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import User as BaseUser
 from django.contrib.auth.views import LoginView
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponseBadRequest
@@ -17,7 +16,7 @@ from django.views.generic import CreateView, DetailView, ListView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from .forms import ReplyForm, UserCreationForm
-from .models import Profile, Pulse, Reply
+from .models import BaseUser, Profile, Pulse, Reply
 
 
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
