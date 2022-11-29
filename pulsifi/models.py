@@ -37,7 +37,7 @@ class Visible_Model(Custom_Base_Model):
         return self._report.first()
 
 
-class Profile(Visible_Model):
+class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
     _base_user = models.OneToOneField(User, null=True, on_delete=models.SET_NULL)
     name = models.CharField("Name", max_length=30)
     bio = models.TextField(
@@ -110,7 +110,7 @@ class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & c
     )
 
     @property
-    def likes(self):
+    def likes(self):  # TODO: prevent users from increasing the time by liking then unliking then reliking
         return self._likes
 
     @property

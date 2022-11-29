@@ -144,7 +144,7 @@ class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  #
             return HttpResponseBadRequest()
 
 
-# TODO: profile search view
+# TODO: profile search view, leaderboard view
 
 
 class Create_Pulse_View(LoginRequiredMixin, CreateView):
