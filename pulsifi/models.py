@@ -9,19 +9,36 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
-class Custom_Model(models.Model):
+class Custom_Base_Model(models.Model):
     class Meta:
         abstract = True
 
-    def update(self, commit=True, **kwargs):
+    def update(self, commit=True, save_func=None, **kwargs):
+        if save_func is None:
+            save_func = self.save
+
         for key, value in kwargs.items():
             setattr(self, key, value)
         if commit:
-            self.save()
+            save_func()
 
 
-class Profile(Custom_Model):
-    _base_user = models.OneToOneField(User, on_delete=models.CASCADE)
+class Visible_Model(Custom_Base_Model):
+    visible = models.BooleanField("Visibility", default=True)
+    _report = GenericRelation(
+        "Report",
+        content_type_field='_content_type',
+        object_id_field='_object_id',
+        related_query_name="reverse_parent_object"
+    )
+
+    @property
+    def report(self):
+        return self._report.first()
+
+
+class Profile(Visible_Model):
+    _base_user = models.OneToOneField(User, null=True, on_delete=models.SET_NULL)
     name = models.CharField("Name", max_length=30)
     bio = models.TextField(
         "Bio",
@@ -50,21 +67,28 @@ class Profile(Custom_Model):
         verbose_name = "User"
 
     def __str__(self):
-        return f"@{self.base_user.username}"
+        return_value = f"@{self.base_user.username}"
+        if self.visible:
+            return return_value
+        return "".join(letter + "\u0336" for letter in return_value)
+
+    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
+        return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.full_clean()  # TODO: make non-active base users become not visible
         super().save(*args, **kwargs)
 
 
-class Pulse(Custom_Model):  # TODO: calculate time remaining based on likes & creator follower count
+class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & creator follower count
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
-        verbose_name="Creator"
+        verbose_name="Creator",
+        related_name="pulses_and_replies"
     )
     message = models.TextField("Message")
-    visible = models.BooleanField("Visibility", default=True)
+    unlisted = models.BooleanField("Unlisted", default=False)
     _likes = models.PositiveIntegerField(
         "Number of Likes",
         default=0
@@ -73,10 +97,6 @@ class Pulse(Custom_Model):  # TODO: calculate time remaining based on likes & cr
         "Number of Dislikes",
         default=0
     )
-    _date_time_created = models.DateTimeField(
-       "Creation Date & Time",
-       auto_now=True
-    )
     replies = GenericRelation(
         "Reply",
         content_type_field='_content_type',
@@ -84,10 +104,10 @@ class Pulse(Custom_Model):  # TODO: calculate time remaining based on likes & cr
         related_query_name="reverse_parent_object",
         verbose_name="Replies"
     )
-
-    @property
-    def date_time_created(self):
-        return self._date_time_created
+    _date_time_created = models.DateTimeField(
+       "Creation Date & Time",
+       auto_now=True
+    )
 
     @property
     def likes(self):
@@ -97,14 +117,26 @@ class Pulse(Custom_Model):  # TODO: calculate time remaining based on likes & cr
     def dislikes(self):
         return self._dislikes
 
+    @property
+    def date_time_created(self):
+        return self._date_time_created
+
     class Meta:
         verbose_name = "Pulse"
 
     def __str__(self):
-        return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
+        if self.visible:
+            return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
+        return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH])
+
+    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
+        return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         self.full_clean()
+        if not self.visible and Pulse.objects.get(id=self.id).visible:
+            for reply in Reply.objects.filter(_original_pulse=self):
+                reply.update(save_func=reply.super_save, visible=False)
         super().save(*args, **kwargs)
 
     def like(self):
@@ -117,9 +149,106 @@ class Reply(Pulse):
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()
     parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+    _original_pulse = models.ForeignKey(
+        Pulse,
+        on_delete=models.CASCADE,
+        blank=True,
+        verbose_name="Original Pulse",
+        related_name="+"
+    )
+
+    @property
+    def original_pulse(self):
+        return self._original_pulse
 
     class Meta:
         verbose_name = "Reply"
 
     def __str__(self):
-        return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {self.parent_object})"
+        if self.visible:
+            return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {self.parent_object})"
+        return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {self.parent_object})"
+
+    def save(self, *args, **kwargs):
+        if self.original_pulse is None:
+            self._original_pulse = self._find_original_pulse(self)
+
+        if not self.original_pulse.visible:
+            self.visible = False
+
+        self.super_save(self, *args, **kwargs)
+
+    def super_save(self, *args, **kwargs):
+        self.full_clean()
+        Visible_Model.save(self, *args, **kwargs)
+
+    @staticmethod
+    def _find_original_pulse(reply):
+        if isinstance(reply.parent_object, Pulse):
+            return reply.parent_object
+        return Reply._find_original_pulse(reply.parent_object)
+
+class Report(Custom_Base_Model):
+    SPAM = "SPM"
+    SEXUAL = "SEX"
+    HATE = "HAT"
+    VIOLENCE = "VIO"
+    ILLEGAL_GOODS = "IGL"
+    BULLYING = "BUL"
+    INTELLECTUAL_PROPERTY = "INP"
+    SELF_INJURY = "INJ"
+    SCAM = "SCM"
+    FALSE_INFO = "FLS"
+    IN_PROGRESS = "PR"
+    RESOLVED = "RE"
+    category_choices = [
+        (SPAM, "Spam"),
+        (SEXUAL, "Nudity or sexual activity"),
+        (HATE, "Hate speech or symbols"),
+        (VIOLENCE, "Violence or dangerous organisations"),
+        (ILLEGAL_GOODS, "Sale of illegal or regulated goods"),
+        (BULLYING, "Bullying or harassment"),
+        (INTELLECTUAL_PROPERTY, "Intellectual property violation"),
+        (SELF_INJURY, "Suicide or self-injury"),
+        (SCAM, "Scam or fraud"),
+        (FALSE_INFO, "False or misleading information")
+    ]
+    status_choices = [(IN_PROGRESS, "In progress"), (RESOLVED, "Resolved")]
+
+    _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    _object_id = models.PositiveIntegerField()
+    parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+    reporter = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        verbose_name="Reporter"
+    )
+    reason = models.TextField("Reason")
+    category = models.CharField(
+        "Category",
+        max_length=3,
+        choices=category_choices
+    )
+    status = models.CharField(
+        "Status",
+        max_length=2,
+        choices=status_choices
+    )
+    _date_time_created = models.DateTimeField(
+       "Creation Date & Time",
+       auto_now=True
+    )
+
+    @property
+    def date_time_created(self):
+        return self._date_time_created
+
+    class Meta:
+        verbose_name = "Reply"
+
+    def __str__(self):
+        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (For object - {self.parent_object})"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

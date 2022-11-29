@@ -18,7 +18,7 @@ ALLOWED_HOSTS = [os_getenv("ALLOWED_HOSTS")]
 ALLOWED_ORIGINS = [os_getenv("ALLOWED_ORIGINS")]  # TODO: work out how to host site
 CSRF_TRUSTED_ORIGINS = ALLOWED_ORIGINS.copy()
 STATIC_ROOT = "/collected_static/"
-STATIC_URL = "/static/"
+STATIC_URL = "static/"
 MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
 

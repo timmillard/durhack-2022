@@ -14,12 +14,13 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
+from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from .forms import ReplyForm, UserCreationForm
 from .models import Profile, Pulse, Reply
 
 
-class LikeAndDislikeMixin:
+class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
     request: WSGIRequest
 
     def check_like_or_dislike_in_post_request(self):
@@ -37,10 +38,6 @@ class LikeAndDislikeMixin:
         else:
             return False
 
-
-class ReplyMixin:
-    request: WSGIRequest
-
     def check_reply_in_post_request(self):
         if "action" in self.request.POST:
             action: str = self.request.POST["action"]
@@ -56,13 +53,22 @@ class ReplyMixin:
         else:
             return False
 
+    def check_report_in_post_request(self):  # TODO: Create check_report_in_post_request functionality
+        pass
 
-class DeletePostOrReplyMixin:  # TODO: Create delete mixin
-    pass
-
-
-class ReportPostOrReplyMixin:  # TODO: Create delete mixin
-    pass
+    def check_edit_in_post_request(self):
+        if self.check_like_or_dislike_in_post_request():
+            return redirect(self.request.path_info)
+        elif reply := self.check_reply_in_post_request():
+            if isinstance(reply, Reply):
+                return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.parent_object.id}""")
+            elif isinstance(reply, ReplyForm):
+                return self.render_to_response(self.get_context_data(form=reply))
+        # TODO: what to do if a post is reported
+        # elif self.check_report_in_post_request():
+        #     if isinstance()
+        else:
+            return False
 
 
 class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to login when redirecting here (show modal)
@@ -79,7 +85,7 @@ class Home_View(LoginView):  # TODO: toast for account deletion, show admin link
         return response
 
 
-class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, show replies, only show replies and pulses of active users, toast for successful redirect after login, highlight pulse/reply at top of page
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time & not unlisted & visible & not in any reports, show replies, only show replies and pulses of active non-reported users, toast for successful redirect after login, highlight pulse/reply at top of page
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
     model = Pulse
@@ -100,13 +106,8 @@ class Feed_View(LikeAndDislikeMixin, ReplyMixin, LoginRequiredMixin, ListView): 
         return queryset
 
     def post(self, request, *args, **kwargs):
-        if self.check_like_or_dislike_in_post_request():
-            return redirect(self.request.path_info)
-        elif reply := self.check_reply_in_post_request():
-            if isinstance(reply, Reply):
-                redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.parent_object.id}""")
-            elif isinstance(reply, ReplyForm):
-                self.render_to_response(self.get_context_data(form=reply))
+        if response := self.check_edit_in_post_request():
+            return response
         else:
             return HttpResponseBadRequest()
 
@@ -125,10 +126,22 @@ class Self_Profile_View(LoginRequiredMixin, View):
         )
 
 
-class ID_Profile_View(LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
+class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
     model = Profile
     pk_url_kwarg = "profile_id"
     template_name = "pulsifi/profile.html"
+
+    def check_delete_in_post_request(self):  # TODO: Create check_delete_in_post_request functionality
+        pass
+
+    def post(self, request, *args, **kwargs):
+        if response := self.check_edit_in_post_request():
+            return response
+        # TODO: what to do if a post is deleted
+        # elif self.check_delete_in_post_request():
+        #     return redirect("pulsifi:feed")
+        else:
+            return HttpResponseBadRequest()
 
 
 # TODO: profile search view
