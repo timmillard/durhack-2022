@@ -39,7 +39,7 @@ class Visible_Model(Custom_Base_Model):
 
 class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
     _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)
-    name = models.CharField("Name", max_length=30)  # TODO: remove this name field and decide what email, username & full name actually mean (which is the unique identifier? if both allow login with either?)
+    name = models.CharField("Name", max_length=30)  # TODO: use django all-auth to store this
     bio = models.TextField(
         "Bio",
         max_length=200,
