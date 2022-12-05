@@ -38,12 +38,6 @@ class ReplyForm(forms.ModelForm):
         fields = ("creator", "message")
 
 
-class ProfilePicForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ("profile_pic",)
-
-
 class BioForm(forms.ModelForm):
     class Meta:
         model = Profile

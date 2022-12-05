@@ -46,12 +46,6 @@ class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in o
         blank=True,
         null=True
     )
-    profile_pic = models.ImageField(
-        "Profile Picture",
-        upload_to="profile_pic",
-        blank=True,
-        null=True
-    )
     following = models.ManyToManyField(
         "self",
         symmetrical=False,

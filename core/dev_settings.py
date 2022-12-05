@@ -26,6 +26,7 @@ LOGOUT_REDIRECT_URL = reverse_lazy("default")
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_USERNAME_MIN_LENGTH = 4
 ACCOUNT_EMAIL_REQUIRED = True
+AVATAR_GRAVATAR_DEFAULT = "mp"
 
 MESSAGE_DISPLAY_LENGTH = 15
 FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time of pulses & replies scales with follower count
@@ -58,7 +59,8 @@ INSTALLED_APPS = [
     "django_otp",
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_static",
-    "allauth_2fa"
+    "allauth_2fa",
+    "avatar"
 ]
 
 MIDDLEWARE = [
