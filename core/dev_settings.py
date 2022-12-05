@@ -24,6 +24,8 @@ LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
+ACCOUNT_USERNAME_MIN_LENGTH = 4
+ACCOUNT_EMAIL_REQUIRED = True
 
 MESSAGE_DISPLAY_LENGTH = 15
 FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time of pulses & replies scales with follower count
@@ -42,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",  # noqa
@@ -51,7 +54,11 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.google",  # noqa
     "allauth.socialaccount.providers.microsoft",  # noqa
     "allauth.socialaccount.providers.reddit",  # noqa
-    "allauth.socialaccount.providers.stackexchange"  # noqa
+    "allauth.socialaccount.providers.stackexchange",  # noqa
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
+    "allauth_2fa"
 ]
 
 MIDDLEWARE = [
@@ -60,8 +67,10 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware"
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth_2fa.middleware.AllauthTwoFactorMiddleware",
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
@@ -69,6 +78,8 @@ WSGI_APPLICATION = "core.wsgi.application"
 ROOT_URLCONF = "core.urls"
 
 SITE_ID = 1
+
+ACCOUNT_ADAPTER = "allauth_2fa.adapter.OTPAdapter"
 
 TEMPLATES = [
     {
