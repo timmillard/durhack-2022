@@ -23,6 +23,8 @@ LOGIN_URL = reverse_lazy("pulsifi:home")
 LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"
+
 MESSAGE_DISPLAY_LENGTH = 15
 FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time of pulses & replies scales with follower count
 
@@ -39,7 +41,17 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles"
+    "django.contrib.staticfiles",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",  # noqa
+    "allauth.socialaccount.providers.discord",  # noqa
+    "allauth.socialaccount.providers.facebook",  # noqa
+    "allauth.socialaccount.providers.github",  # noqa
+    "allauth.socialaccount.providers.google",  # noqa
+    "allauth.socialaccount.providers.microsoft",  # noqa
+    "allauth.socialaccount.providers.reddit",  # noqa
+    "allauth.socialaccount.providers.stackexchange"  # noqa
 ]
 
 MIDDLEWARE = [
@@ -55,6 +67,8 @@ MIDDLEWARE = [
 WSGI_APPLICATION = "core.wsgi.application"
 
 ROOT_URLCONF = "core.urls"
+
+SITE_ID = 1
 
 TEMPLATES = [
     {
@@ -80,6 +94,11 @@ DATABASES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend'
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
