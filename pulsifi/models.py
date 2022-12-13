@@ -7,7 +7,6 @@ from django.contrib.auth.models import User as BaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from allauth.socialaccount.views import signup
 
 
 class Custom_Base_Model(models.Model):
@@ -25,6 +24,9 @@ class Custom_Base_Model(models.Model):
 
 
 class Visible_Model(Custom_Base_Model):
+    class Meta:
+        abstract = True
+
     visible = models.BooleanField("Visibility", default=True)
     _report = GenericRelation(
         "Report",
