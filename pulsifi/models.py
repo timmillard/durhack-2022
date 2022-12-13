@@ -7,6 +7,7 @@ from django.contrib.auth.models import User as BaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from allauth.socialaccount.views import signup
 
 
 class Custom_Base_Model(models.Model):
