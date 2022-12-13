@@ -3,3 +3,4 @@ tzdata~=2022.7
 Pillow~=9.3.0
 django-allauth-2fa~=0.10.0
 django-avatar~=7.0.1
+django-allauth~=0.51.0
