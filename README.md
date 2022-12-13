@@ -6,6 +6,11 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 
 <sub><sup>Additional help from [@CarrotManMatt](https://github.com/CarrotManMatt "CarrotManMatt's Github Page")</sup></sub>
 
+<h2>How to start Development of Pulsifi</h2>  <!-- TODO: Add how to develop instructions -->
+1. ...
+2. ...
+3. ...
+
 <h2>Programming Conventions</h2>
 
 * Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. `<a href="{% url 'default' %}"></a>`)</nobr>

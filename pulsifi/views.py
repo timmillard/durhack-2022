@@ -98,9 +98,7 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
             ).values_list("id", flat=True)
         ).order_by("_date_time_created")
 
-        print(queryset)
         if self.request.method == "GET" and "highlight" in self.request.GET:
-            print(self.context_object_name)
             return queryset.exclude(id=int(self.request.GET["highlight"]))
         return queryset
 
