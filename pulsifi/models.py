@@ -91,7 +91,6 @@ class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & c
         related_name="pulses_and_replies"
     )
     message = models.TextField("Message")
-    unlisted = models.BooleanField("Unlisted", default=False)
     _likes = models.PositiveIntegerField(
         "Number of Likes",
         default=0
@@ -191,7 +190,7 @@ class Reply(Pulse):
             return reply.parent_object
         return Reply._find_original_pulse(reply.parent_object)
 
-class Report(Custom_Base_Model):
+class Report(Custom_Base_Model):  # TODO: create user privileges that can access reporting screens, add extra solved_by field linking user model
     SPAM = "SPM"
     SEXUAL = "SEX"
     HATE = "HAT"
@@ -203,7 +202,8 @@ class Report(Custom_Base_Model):
     SCAM = "SCM"
     FALSE_INFO = "FLS"
     IN_PROGRESS = "PR"
-    RESOLVED = "RE"
+    REJECTED = "RE"
+    CONFIRMED = "CN"
     category_choices = [
         (SPAM, "Spam"),
         (SEXUAL, "Nudity or sexual activity"),
@@ -216,7 +216,11 @@ class Report(Custom_Base_Model):
         (SCAM, "Scam or fraud"),
         (FALSE_INFO, "False or misleading information")
     ]
-    status_choices = [(IN_PROGRESS, "In progress"), (RESOLVED, "Resolved")]
+    status_choices = [
+        (IN_PROGRESS, "In progress"),
+        (REJECTED, "Rejected"),
+        (CONFIRMED, "Confirmed")
+    ]
 
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()

@@ -84,7 +84,7 @@ class Home_View(LoginView):  # TODO: toast for account deletion, show admin link
         return response
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time & not unlisted & visible & not in any reports, show replies, only show replies and pulses of active non-reported users, toast for successful redirect after login, highlight pulse/reply at top of page
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time & visible & not in any non-rejected reports, show replies, only show replies and pulses of active non-reported users, toast for successful redirect after login, highlight pulse/reply at top of page
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
     model = Pulse
