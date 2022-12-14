@@ -83,7 +83,7 @@ class Home_View(LoginView):  # TODO: toast for account deletion, show admin link
         return response
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time & visible & not in any non-rejected reports, show replies, only show replies and pulses of active non-reported users, toast for successful redirect after login, highlight pulse/reply at top of page
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply at top of page
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
     model = Pulse
@@ -122,13 +122,10 @@ class Self_Profile_View(LoginRequiredMixin, View):  # TODO: Show toast for users
         )
 
 
-class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulse if within time, change profile parts (if self profile), delete pulse or account with modal (if self profile), show replies, toast for account creation, only show replies and pulses of active users
+class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
     model = Profile
     pk_url_kwarg = "profile_id"
     template_name = "pulsifi/profile.html"
-
-    def check_delete_in_post_request(self):  # TODO: Create check_delete_in_post_request functionality
-        pass
 
     def post(self, request, *args, **kwargs):
         if response := self.check_action_in_post_request():
@@ -150,4 +147,4 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
 class Signup_View(BaseSignupView):
     template_name = "pulsifi/signup.html"
 
-# TODO: logout view, password change view
+# TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
