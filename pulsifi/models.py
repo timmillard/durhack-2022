@@ -45,6 +45,7 @@ class Profile(Visible_Reportable_Model):  # TODO: store which pulses a user has 
         blank=True,
         null=True
     )
+    verified = models.BooleanField("Verified", default=False)  # TODO: Add verification process
     following = models.ManyToManyField(
         "self",
         symmetrical=False,
