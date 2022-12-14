@@ -12,7 +12,6 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 3. ...
 
 <h2>Programming Conventions</h2>
-
 * Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. `<a href="{% url 'default' %}"></a>`)</nobr>
 * Never put commas after the last item in a list/dictionary <nobr>(E.g. `["a", "b", "c"]`, not <code><del>["a", "b", "c",]</del></code>)</nobr>
 * Model names are capitalised <nobr>(E.g `Post`)</nobr>

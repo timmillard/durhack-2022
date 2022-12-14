@@ -23,26 +23,22 @@ class Custom_Base_Model(models.Model):
             save_func()
 
 
-class Visible_Model(Custom_Base_Model):
+class Visible_Reportable_Model(Custom_Base_Model):
     class Meta:
         abstract = True
 
     visible = models.BooleanField("Visibility", default=True)
-    _report = GenericRelation(
+    reports = GenericRelation(
         "Report",
         content_type_field='_content_type',
         object_id_field='_object_id',
-        related_query_name="reverse_parent_object"
+        related_query_name="reverse_parent_object",
+        verbose_name="Reports"
     )
 
-    @property
-    def report(self):
-        return self._report.first()
 
-
-class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
+class Profile(Visible_Reportable_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
     _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)
-    name = models.CharField("Name", max_length=30)  # TODO: use django all-auth to store this
     bio = models.TextField(
         "Bio",
         max_length=200,
@@ -83,7 +79,7 @@ class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in o
         super().save(*args, **kwargs)
 
 
-class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & creator follower count
+class Pulse(Visible_Reportable_Model):  # TODO: calculate time remaining based on likes & creator follower count
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -182,7 +178,7 @@ class Reply(Pulse):
 
     def super_save(self, *args, **kwargs):
         self.full_clean()
-        Visible_Model.save(self, *args, **kwargs)
+        Visible_Reportable_Model.save(self, *args, **kwargs)
 
     @staticmethod
     def _find_original_pulse(reply):

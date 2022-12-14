@@ -28,7 +28,11 @@ LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_USERNAME_MIN_LENGTH = 4
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_REQUIRED = True
 AVATAR_GRAVATAR_DEFAULT = "mp"
 
@@ -64,7 +68,8 @@ INSTALLED_APPS = [
     "django_otp",
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_static",
-    "allauth_2fa"
+    "allauth_2fa",
+    "avatar"
 ]
 
 MIDDLEWARE = [

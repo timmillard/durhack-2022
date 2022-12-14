@@ -1,10 +1,9 @@
 """
     Views in pulsifi application.
 """
-from urllib.parse import unquote as urllib_unquote
 
+from allauth.account.views import SignupView as BaseSignupView
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.handlers.wsgi import WSGIRequest
@@ -15,8 +14,8 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
-from .forms import ReplyForm, UserCreationForm
-from .models import BaseUser, Profile, Pulse, Reply
+from .forms import ReplyForm, SignupForm
+from .models import Profile, Pulse, Reply
 
 
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
@@ -55,7 +54,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
     def check_report_in_post_request(self):  # TODO: Create check_report_in_post_request functionality
         pass
 
-    def check_edit_in_post_request(self):
+    def check_action_in_post_request(self):
         if self.check_like_or_dislike_in_post_request():
             return redirect(self.request.path_info)
         elif reply := self.check_reply_in_post_request():
@@ -103,13 +102,13 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
         return queryset
 
     def post(self, request, *args, **kwargs):
-        if response := self.check_edit_in_post_request():
+        if response := self.check_action_in_post_request():
             return response
         else:
             return HttpResponseBadRequest()
 
 
-class Self_Profile_View(LoginRequiredMixin, View):
+class Self_Profile_View(LoginRequiredMixin, View):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
     def get(self, request, *args, **kwargs):
         return ID_Profile_View.as_view()(
             self.request,
@@ -132,7 +131,7 @@ class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  #
         pass
 
     def post(self, request, *args, **kwargs):
-        if response := self.check_edit_in_post_request():
+        if response := self.check_action_in_post_request():
             return response
         # TODO: what to do if a post is deleted
         # elif self.check_delete_in_post_request():
@@ -148,28 +147,8 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
-class Signup_View(CreateView):
+class Signup_View(BaseSignupView):  # Errors
     template_name = "pulsifi/signup.html"
-    form_class = UserCreationForm
-
-    def form_valid(self, form):
-        base_user = BaseUser.objects.create_user(
-            username=form.cleaned_data["username"],
-            password=form.cleaned_data["password1"],
-            email=form.cleaned_data["email"],
-        )
-        Profile.objects.create(
-            _base_user=base_user,
-            name=form.cleaned_data["name"],
-        )
-        login(self.request, base_user)
-
-        if "next" in self.request.POST:
-            return redirect(urllib_unquote(self.request.POST["next"]))
-        else:
-            return redirect("pulsifi:self_profile")
-
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form))
+    form_class = SignupForm
 
 # TODO: logout view, password change view

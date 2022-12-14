@@ -2,28 +2,54 @@
     Forms in pulsifi application.
 """
 
+from allauth.account.forms import SignupForm as BaseSignupForm
 from django import forms
-from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
-from django.contrib.auth.models import User
 
 from pulsifi.models import Profile, Pulse, Reply
 
 
-class UserCreationForm(BaseUserCreationForm):
-    email = forms.EmailField(required=True)
-    name = forms.CharField(
-        max_length=Profile._meta.get_field("name").max_length
-    )
+class SignupForm(BaseSignupForm):
+    template_name = "pulsifi/signup_form_snippet.html"
 
-    class Meta:
-        model = User
-        fields = (
-            "name",
-            "email",
-            "username",
-            "password1",
-            "password2"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["email"].label = "Email Address"
+        self.fields["email"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Enter your Email Address"
+            }
         )
+
+        self.fields["username"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Choose a Username"
+            }
+        )
+
+        self.fields["password1"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Choose a Password"
+            }
+        )
+
+        self.fields["password2"].label = "Confirm Password"
+        self.fields["password2"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Re-enter your Password, to check that you can spell"
+            }
+        )
+
+        self.label_suffix = ""
+
+    def save(self, request):
+        base_user = super().save(request)
+        Profile.objects.create(_base_user=base_user)
+        return base_user
 
 
 class PulseForm(forms.ModelForm):
