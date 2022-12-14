@@ -14,7 +14,7 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
-from .forms import ReplyForm, SignupForm
+from .forms import ReplyForm
 from .models import Profile, Pulse, Reply
 
 
@@ -147,8 +147,7 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
-class Signup_View(BaseSignupView):  # Errors
+class Signup_View(BaseSignupView):
     template_name = "pulsifi/signup.html"
-    form_class = SignupForm
 
 # TODO: logout view, password change view
