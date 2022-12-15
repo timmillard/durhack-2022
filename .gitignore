@@ -1,6 +1,8 @@
 # TODO: Add correct ignore files from https://www.toptal.com/developers/gitignore/api/windows,pycharm,django,venv
 
 .idea/
+!.idea/runConfigurations/
+!.idea/scopes
 
 # dotenv
 .env
