@@ -50,13 +50,15 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 </ul>
 
 <h2>Programming Conventions</h2>
-* Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. `<a href="{% url 'default' %}"></a>`)</nobr>
-* Never put commas after the last item in a list/dictionary <nobr>(E.g. `["a", "b", "c"]`, not <code><del>["a", "b", "c",]</del></code>)</nobr>
-* Model names are capitalised <nobr>(E.g `Post`)</nobr>
-* View names are capitalised, end in <nobr>`View`</nobr> and have words seperated by underscores <nobr>(E.g. `Feed_View`)</nobr>
-* Constants, settings values and field choices are uppercase and have words seperated by underscores <nobr>(E.g. `STATIC_URL`)</nobr>
-* Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. `date_time_created`, not <code><del>postDateTimeCreated</del></code>)</nobr>
-* HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. `feed.html`)</nobr>
-* Please use comments and docstrings to help others understand code functionality
-* Be very cautious when using <nobr>`QuerySet.update()`,</nobr> as this will *NOT* execute the <nobr>`save()`</nobr> method of each object instance (which is essential to ensure data integrity & validity). There are unlikely to be cases where the performance decrease of using the custom <nobr>`Custom_Model.update()`</nobr> method, on each instance individually, is so significant that <nobr>`QuerySet.update()`</nobr> has to be used. If in doubt, iterate through each instance with a <nobr>`for` loop,</nobr> and call <nobr>`Custom_Model.update()`</nobr> individually.
-* Never use any bulk edit functions <nobr>(E.g. <nobr><code><del>QuerySet.delete()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_create()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_update()</del></code>,</nobr> etc.)</nobr>, as these will not execute the respective, overridden `Model.save()` or `Model.delete()` methods (which is essential to ensure data integrity & validity).
+<ul>
+  <li>Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. <code>&lt;a href="{% url 'default' %}"&gt;&lt;/a&gt;</code>)</nobr></li>
+  <li>Never put commas after the last item in a list/dictionary <nobr>(E.g. `["a", "b", "c"]`, not <code><del>["a", "b", "c",]</del></code>)</nobr></li>
+  <li>Model names are capitalised <nobr>(E.g `Post`)</nobr></li>
+  <li>View names are capitalised, end in <nobr>`View`</nobr> and have words seperated by underscores <nobr>(E.g. `Feed_View`)</nobr></li>
+  <li>Constants, settings values and field choices are uppercase and have words seperated by underscores <nobr>(E.g. `STATIC_URL`)</nobr></li>
+  <li>Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. `date_time_created`, not <code><del>postDateTimeCreated</del></code>)</nobr></li>
+  <li>HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. `feed.html`)</nobr></li>
+  <li>Please use comments and docstrings to help others understand code functionality</li>
+  <li>Be very cautious when using <nobr>`QuerySet.update()`,</nobr> as this will *NOT* execute the <nobr>`save()`</nobr> method of each object instance (which is essential to ensure data integrity & validity). There are unlikely to be cases where the performance decrease of using the custom <nobr>`Custom_Model.update()`</nobr> method, on each instance individually, is so significant that <nobr>`QuerySet.update()`</nobr> has to be used. If in doubt, iterate through each instance with a <nobr>`for` loop,</nobr> and call <nobr>`Custom_Model.update()`</nobr> individually.</li>
+  <li>Never use any bulk edit functions <nobr>(E.g. <nobr><code><del>QuerySet.delete()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_create()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_update()</del></code>,</nobr> etc.)</nobr>, as these will not execute the respective, overridden `Model.save()` or `Model.delete()` methods (which is essential to ensure data integrity & validity).</li>
+</ul>
