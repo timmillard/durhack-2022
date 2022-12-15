@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
 ALLOWED_HOSTS = ["localhost"]
-STATIC_ROOT = "/collected_static/"
+STATIC_ROOT = "/staticfiles/"
 STATIC_URL = "static/"
 MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
