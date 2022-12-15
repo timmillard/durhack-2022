@@ -6,7 +6,7 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="C:\Users\mj_no\Documents\University\Fun Stuff\Pulsifi\venv\Scripts\python.exe" />
+    <option name="SDK_HOME" value="$PROJECT_DIR$\venv\Scripts\python.exe" />
     <option name="SDK_NAME" value="Python 3.11 (Pulsifi)" />
     <option name="WORKING_DIRECTORY" value="" />
     <option name="IS_MODULE_SDK" value="false" />
