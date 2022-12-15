@@ -27,7 +27,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
         Any changes made will show up under the changes list, within the <nobr>Source Control view panel</nobr> on the left-hand side. These changes can be committed to your branch then pushed to the remote repository by:
         <ol start="1" type="1">
           <li>Adding them to the staging area, by clicking the <nobr><code>+</code>(plus) button</nobr> next to any of the desired changed files in the changes list</li>
-          <li>Typing a useful commit message in the <nobr><code>Message</code> text-input box</nobr> <nobr>(see <a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a>,</nobr> for how to write good commit messages)</li>
+          <li>Typing a useful commit message in the <nobr><code>Message</code> text-input box</nobr> <nobr>(see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>,</nobr> for how to write good commit messages)</li>
           <li>Clicking the checkmark at the top of the Source Control view panel, to commit your changes to your branch</li>
           <li>Clicking the <nobr>refresh/pull/push/update button</nobr> in the <nobr>bottom-left-hand</nobr> corner next to your currently <nobr>checked-out</nobr> branch name, to push your commits to the remote repository</li>
         </ol>
@@ -52,13 +52,13 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
 <h2>Programming Conventions</h2>
 <ul>
   <li>Always use double quotes, unless inside an HTML template variable string within an HTML tag attribute <nobr>(E.g. <code>&lt;a href="{% url 'default' %}"&gt;&lt;/a&gt;</code>)</nobr></li>
-  <li>Never put commas after the last item in a list/dictionary <nobr>(E.g. `["a", "b", "c"]`, not <code><del>["a", "b", "c",]</del></code>)</nobr></li>
-  <li>Model names are capitalised <nobr>(E.g `Post`)</nobr></li>
-  <li>View names are capitalised, end in <nobr>`View`</nobr> and have words seperated by underscores <nobr>(E.g. `Feed_View`)</nobr></li>
-  <li>Constants, settings values and field choices are uppercase and have words seperated by underscores <nobr>(E.g. `STATIC_URL`)</nobr></li>
-  <li>Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. `date_time_created`, not <code><del>postDateTimeCreated</del></code>)</nobr></li>
-  <li>HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. `feed.html`)</nobr></li>
+  <li>Never put commas after the last item in a list/dictionary <nobr>(E.g. <nobr><code>["a", "b", "c"]</code></nobr>, not <nobr><code><del>["a", "b", "c",]</del></code></nobr>)</nobr></li>
+  <li>Model names are capitalised <nobr>(E.g <code>Post</code>)</nobr></li>
+  <li>View names are capitalised, end in <nobr><code>View</code></nobr> and have words seperated by underscores <nobr>(E.g. <code>Feed_View</code>)</nobr></li>
+  <li>Constants, settings values and field choices are uppercase and have words seperated by underscores <nobr>(E.g. <code>STATIC_URL</code>)</nobr></li>
+  <li>Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. <code>date_time_created</code>, not <code><del>postDateTimeCreated</del></code>)</nobr></li>
+  <li>HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. <code>feed.html</code>)</nobr></li>
   <li>Please use comments and docstrings to help others understand code functionality</li>
-  <li>Be very cautious when using <nobr>`QuerySet.update()`,</nobr> as this will *NOT* execute the <nobr>`save()`</nobr> method of each object instance (which is essential to ensure data integrity & validity). There are unlikely to be cases where the performance decrease of using the custom <nobr>`Custom_Model.update()`</nobr> method, on each instance individually, is so significant that <nobr>`QuerySet.update()`</nobr> has to be used. If in doubt, iterate through each instance with a <nobr>`for` loop,</nobr> and call <nobr>`Custom_Model.update()`</nobr> individually.</li>
-  <li>Never use any bulk edit functions <nobr>(E.g. <nobr><code><del>QuerySet.delete()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_create()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_update()</del></code>,</nobr> etc.)</nobr>, as these will not execute the respective, overridden `Model.save()` or `Model.delete()` methods (which is essential to ensure data integrity & validity).</li>
+  <li>Be very cautious when using <nobr><code>QuerySet.update()</code>,</nobr> as this will *NOT* execute the <nobr><code>save()</code></nobr> method of each object instance (which is essential to ensure data integrity & validity). There are unlikely to be cases where the performance decrease of using the custom <nobr><code>Custom_Model.update()</code></nobr> method, on each instance individually, is so significant that <nobr><code>QuerySet.update()</code></nobr> has to be used. If in doubt, iterate through each instance with a <nobr><code>for</code> loop,</nobr> and call <nobr><code>Custom_Model.update()</code></nobr> individually.</li>
+  <li>Never use any bulk edit functions <nobr>(E.g. <nobr><code><del>QuerySet.delete()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_create()</del></code>,</nobr> <nobr><code><del>QuerySet.bulk_update()</del></code>,</nobr> etc.)</nobr>, as these will not execute the respective, overridden <code>Model.save()</code> or <code>Model.delete()</code> methods (which is essential to ensure data integrity & validity).</li>
 </ul>
