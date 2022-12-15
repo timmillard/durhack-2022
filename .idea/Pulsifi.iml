@@ -17,8 +17,7 @@
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
-      <excludeFolder url="file://$MODULE_DIR$/.run" />
-      <excludeFolder url="file://$MODULE_DIR$/collected_static" />
+      <excludeFolder url="file://$MODULE_DIR$/staticfiles" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 (Pulsifi)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -1,0 +1,23 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All Tests" type="DjangoTestsConfigurationType">
+    <module name="Pulsifi" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+    </envs>
+    <option name="SDK_HOME" value="C:\Users\mj_no\Documents\University\Fun Stuff\Pulsifi\venv\Scripts\python.exe" />
+    <option name="SDK_NAME" value="Python 3.11 (Pulsifi)" />
+    <option name="WORKING_DIRECTORY" value="" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+    <option name="TARGET" value="" />
+    <option name="SETTINGS_FILE" value="$PROJECT_DIR$/core/dev_settings.py" />
+    <option name="CUSTOM_SETTINGS" value="true" />
+    <option name="USE_OPTIONS" value="false" />
+    <option name="OPTIONS" value="" />
+    <method v="2" />
+  </configuration>
+</component>
