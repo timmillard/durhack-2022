@@ -21,8 +21,8 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>Select <nobr><code>Clone Repository</code>,</nobr> and paste the copied repository URL into the <nobr>Git: Clone</nobr> prompt</li>
       <li>Select <nobr><code>Clone from GitHub</code></nobr> <nobr>(this is usually the second option in the list dropdown),</nobr> and authenticate your GitHub account with VS Code if necessary</li>
       <li>If the prompt still persists <nobr>(and is asking for the <code>Repository name</code>),</nobr> <nobr>enter "timmillard/durhack-2022"</nobr> to search for the repository, and select the correct one from the dropdown list</li>
-      <li>Choose the local directory that you would like to use to store a local copy of the <nobr>checked-out</nobr> parts of the repository</li>
-      <li>Ensure your newly created branch is checked out for you to work on by making sure the name of your branch is shown below the settings cog in the <nobr>bottom-left-hand corner</nobr></li>
+      <li>Create a directory called <b><nobr><code>Pulsifi</code></nobr></b> in a location of your choosing, to store a local copy of the <nobr>checked-out</nobr> parts of the repository (<em><b>THE DIRECTORY/PROJECT NAME MUST BE TYPED EXACTLY AS SHOWN</b></em> in order to prevent errors with the workspace configuration files)</li>
+      <li>Ensure your newly created branch is checked out for you to work on by making sure the name of your branch is shown below the settings cog in the <nobr>bottom left corner</nobr></li>
       <li>Use the <nobr><code>Ctrl+Shift+`</code> keyboard shortcut</nobr> to create and open a new terminal panel at the current directory</li>
       <li>Create and activate a new Python virtual environment using the <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\scripts\activate</code></nobr> commands (make sure these commands are run within the directory containing your local copy of the repository)</li>
       <li>Update the pip package with this command: <nobr><code>python -m pip install --upgrade pip</code></nobr></li>
@@ -32,10 +32,10 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>
         Any changes you do make will show up under the changes list, within the <nobr>Source Control view panel</nobr> on the left-hand side. These changes can be committed to your branch then pushed to the remote repository by:
         <ol start="1" type="1">
-          <li>Adding them to the staging area, by clicking the <nobr><code>+</code>(plus) button</nobr> next to any of the desired changed files in the changes list</li>
+          <li>Adding them to the staging area, by clicking the <nobr><code>+</code>(plus) button</nobr> next to any of the desired changed files in the changes list (only add files that you have purposefully changed, to the staging area. E.g. don't add <nobr><code>pulsifi.iml</code></nobr> or <nobr><code>workspace.xml</code></nobr> if these have been changed, but not by you)</li>
           <li>Typing a useful commit message in the <nobr><code>Message</code> text-input box</nobr> <nobr>(see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>,</nobr> for how to write good commit messages)</li>
           <li>Clicking the checkmark at the top of the Source Control view panel, to commit your changes to your branch</li>
-          <li>Clicking the <nobr>refresh/pull/push/update button,</nobr> on the status bar, in the <nobr>bottom-left-hand</nobr> corner next to your currently <nobr>checked-out</nobr> branch name, to push your commits to the remote repository</li>
+          <li>Clicking the <nobr>refresh/pull/push/update button,</nobr> on the status bar, in the <nobr>bottom left</nobr> corner next to your currently <nobr>checked-out</nobr> branch name, to push your commits to the remote repository</li>
         </ol>
       </li>
       <li>To run the development server, use the <nobr><code>py manage.py runserver localhost:8080</code></nobr> command, then navigate to <nobr><a href="http://localhost:8080"><code>http://localhost:8080</code></a></nobr> to view the site</li>
@@ -45,7 +45,13 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
   <li>
     <h3>Pycharm (Preferred):</h3>
     <ol start="3" type="1">
-      <li>...</li>
+      <li>Open/run Pycharm and close all currently open projects in order to return to the <nobr><code>Welcome</code> window</nobr></li>
+      <li>Click the <nobr><code>Get from VCS</code> button</nobr> in the top right corner of the window, then choose GitHub as the source on the left-hand side of the VCS pop-up window</li>
+      <li>Log in to GitHub, then select the <nobr><code>timmillard/durhack-2022</code> repository</nobr> from the list (if you cannot see the <nobr><code>timmillard/durhack-2022</code> repository</nobr> in the list please ask @timmillard to be added to the repository, as a contributor)</li>
+      <li>Click the folder icon on the far right-hand side of the <nobr><code>Directory</code> text-input box</nobr>, then create a directory called <b><nobr><code>Pulsifi</code></nobr></b> in a location of your choosing, to store a local copy of the <nobr>checked-out</nobr> parts of the repository (<em><b>THE DIRECTORY/PROJECT NAME MUST BE TYPED EXACTLY AS SHOWN</b></em> in order to prevent errors with the workspace configuration files)</li>
+      <li>Click the <nobr><code>Clone</code> button</nobr></li>
+      <li>Open the <nobr><code>Git</code> Tool Window</nobr> by clicking the <nobr><code>Git</code> button</nobr> in the bottom left corner or using the <nobr><code>alt+9</code> keyboard shortcut</nobr></li>
+      <li>Right-click your newly created branch from the list under the <nobr><code>Remote/origin</code> folder</nobr> and select <nobr><code>Checkout</code></nobr> to switch editing to your newly created branch</li>
     </ol>
   </li>
   <li>
