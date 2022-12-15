@@ -32,7 +32,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>
         Any changes you do make will show up under the changes list, within the <nobr>Source Control view panel</nobr> on the left-hand side. These changes can be committed to your branch then pushed to the remote repository by:
         <ol start="1" type="1">
-          <li>Adding them to the staging area, by clicking the <nobr><code>+</code>(plus) button</nobr> next to any of the desired changed files in the changes list (only add files that you have purposefully changed, to the staging area. E.g. don't add <nobr><code>pulsifi.iml</code></nobr> or <nobr><code>workspace.xml</code></nobr> if these have been changed, but not by you)</li>
+          <li>Adding them to the staging area, by clicking the <nobr>plus (<code>+</code>) button</nobr> next to any of the desired changed files in the changes list (only add files that you have purposefully changed, to the staging area. E.g. don't add <nobr><code>pulsifi.iml</code></nobr> or <nobr><code>workspace.xml</code></nobr> if these have been changed, but not by you)</li>
           <li>Typing a useful commit message in the <nobr><code>Message</code> text-input box</nobr> <nobr>(see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>,</nobr> for how to write good commit messages)</li>
           <li>Clicking the checkmark at the top of the Source Control view panel, to commit your changes to your branch</li>
           <li>Clicking the <nobr>refresh/pull/push/update button,</nobr> on the status bar, in the <nobr>bottom left</nobr> corner next to your currently <nobr>checked-out</nobr> branch name, to push your commits to the remote repository</li>
@@ -47,11 +47,53 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
     <ol start="3" type="1">
       <li>Open/run Pycharm and close all currently open projects in order to return to the <nobr><code>Welcome</code> window</nobr></li>
       <li>Click the <nobr><code>Get from VCS</code> button</nobr> in the top right corner of the window, then choose GitHub as the source on the left-hand side of the VCS pop-up window</li>
-      <li>Log in to GitHub, then select the <nobr><code>timmillard/durhack-2022</code> repository</nobr> from the list (if you cannot see the <nobr><code>timmillard/durhack-2022</code> repository</nobr> in the list please ask @timmillard to be added to the repository, as a contributor)</li>
-      <li>Click the folder icon on the far right-hand side of the <nobr><code>Directory</code> text-input box</nobr>, then create a directory called <b><nobr><code>Pulsifi</code></nobr></b> in a location of your choosing, to store a local copy of the <nobr>checked-out</nobr> parts of the repository (<em><b>THE DIRECTORY/PROJECT NAME MUST BE TYPED EXACTLY AS SHOWN</b></em> in order to prevent errors with the workspace configuration files)</li>
+      <li>Log in to GitHub, then select the <nobr><code>timmillard/durhack-2022</code> repository</nobr> from the list</li>
+      <li>Click the folder icon (<code>🗁</code>) on the far right-hand side of the <nobr><code>Directory</code> text-input box</nobr>, then create a directory called <b><nobr><code>Pulsifi</code></nobr></b> in a location of your choosing, to store a local copy of the <nobr>checked-out</nobr> parts of the repository (<em><b>THE DIRECTORY/PROJECT NAME MUST BE TYPED EXACTLY AS SHOWN</b></em> in order to prevent errors with the workspace configuration files)</li>
       <li>Click the <nobr><code>Clone</code> button</nobr></li>
       <li>Open the <nobr><code>Git</code> Tool Window</nobr> by clicking the <nobr><code>Git</code> button</nobr> in the bottom left corner or using the <nobr><code>alt+9</code> keyboard shortcut</nobr></li>
       <li>Right-click your newly created branch from the list under the <nobr><code>Remote/origin</code> folder</nobr> and select <nobr><code>Checkout</code></nobr> to switch editing to your newly created branch</li>
+      <li>
+        Set up your workspace to use Django by:
+        <ol start="1" type="1">
+          <li>Going to: <nobr><code>Settings/Languages & Frameworks/Django</code></nobr> and selecting <nobr><code>Enable Django Support</code></nobr> (use the folder button (<code>🗁</code>) to navigate to the directory using the GUI)</li>
+          <li>Choosing the root <nobr><code>Pulsifi/</code></nobr> directory as the <nobr><code>Django project root</code></nobr></li>
+          <li>
+            It will also be useful to configure the project structure <nobr>(Go to: <code>Settings/Project: Pulsifi/Project Structure</code>)</nobr>:
+            <ul>
+              <li>Add the root <nobr><code>Pulsifi/</code></nobr> directory to the list of <nobr><code>Source Folders</code></nobr></li>
+              <li>Add the <nobr><code>Pulsifi/.idea/</code></nobr> directory to the list of <nobr><code>Excluded Folders</code></nobr></li>
+              <li>Add the <nobr><code>Pulsifi/staticfiles/</code></nobr> directory to the list of <nobr><code>Excluded Folders</code></nobr> (if it exists)</li>
+              <li>Add the <nobr><code>Pulsifi/pulsifi/templates/</code></nobr> directory to the list of <nobr><code>Template Folders</code></nobr></li>
+              <li>Add the <nobr><code>Pulsifi/pulsifi/static/</code></nobr> directory to the list of <nobr><code>Resource Folders</code></nobr></li>
+            </ul>
+          </li>
+          <li>Click the <nobr><code>Apply</code> button,</nobr> then the <nobr><code>OK</code> button</nobr> to save your changes</li>
+          <li>Use the <nobr><code>hide __init__.py</code> scope</nobr> by choosing it from the drop-down list in the top left of the <nobr><code>project</code> pane</nobr> (it will say <nobr><code>Project Files</code></nobr> by default)</li>
+          <li>Configure your python interpreter by clicking the default interpreter name <nobr>(<code>Python 3.11 (Pulsifi)</code>)</nobr> in the bottom right corner, then choosing: <nobr><code>Add New Interpreter</code></nobr> then <nobr><code>Add Local Interpreter...</code></nobr></li>
+          <li>Make sure the <nobr><code>Environment</code></nobr> is set to <nobr><code>New</code>,</nobr> then click <nobr><code>OK</code></nobr></li>
+          <li>Wait for Pycharm to index the interpreter</li>
+          <li>Open the <nobr><code>Terminal</code> pane</nobr> by clicking the <nobr><code>Terminal</code> button</nobr> in the bottom left corner or using the <nobr><code>alt+F12</code> keyboard shortcut</nobr></li>
+          <li>Install all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr> (if an error appears, saying that pip could not be installed due to access being denied, it can be ignored, just <b>make sure to run the command again</b>)</li>
+        </ol>
+      </li>
+      <li>You can now make the edits you desire to the code within your branch</li>
+      <li>
+        If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by:
+        <ol>
+          <li>Opening the <nobr><code>Run manage.py Task...</code> pane,</nobr> by selecting it from the <nobr><code>Tools</code> drop-down menu</nobr> at the top or using the <nobr><code>ctrl+alt+R</code> keyboard shortcut</nobr></li>
+          <li>Running these commands: <nobr><code>makemigrations</code></nobr> and <nobr><code>migrate</code></nobr> (it is also a good idea to run both of these commands, just in case, before committing any changes)</li>
+        </ol>
+      </li>
+      <li>
+        Any changes you do make will show up under the changes list, within the <nobr>commit panel</nobr> on the far left-hand side (also accessible by using the <nobr><code>alt+0</code> keyboard shortcut</nobr>). These changes can be committed to your branch then pushed to the remote repository by:
+        <ol start="1" type="1">
+          <li>Checking all the selection boxes next to any of the desired changed files in the changes list (only select files that you have purposefully changed. E.g. don't select <nobr><code>pulsifi.iml</code></nobr> or <nobr><code>workspace.xml</code></nobr> if these have been changed, but not by you)</li>
+          <li>Typing a useful commit message in the <nobr><code>Commit Message</code> text-input box</nobr> <nobr>(see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>,</nobr> for how to write good commit messages)</li>
+          <li>Clicking the <nobr><code>Commit and Push...</code></nobr> button, to commit and push your changes to your branch</li>
+        </ol>
+      </li>
+      <li>To run the development server, select the <nobr><code>Main Development</code> run configuration,</nobr> from the run configuration list in the top right corner, then click the green run arrow (<code>▶</code>), a browser window to the correct URL should open (if not navigate to <nobr><a href="http://localhost:8080"><code>http://localhost:8080</code></a></nobr> to view the site)</li>
+      <li>To run the test suite, select the <nobr><code>All Tests</code> run configuration,</nobr> from the run configuration list in the top right corner, then click the green run arrow (<code>▶</code>)</li>
     </ol>
   </li>
   <li>
