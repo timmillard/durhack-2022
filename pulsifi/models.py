@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
 
-class Custom_Base_Model(models.Model):
+class _Custom_Base_Model(models.Model):
     """
         Base model that provides extra utility methods for all other models to
         use.
@@ -34,7 +34,7 @@ class Custom_Base_Model(models.Model):
             save_func()
 
 
-class Visible_Reportable_Model(Custom_Base_Model):
+class _Visible_Reportable_Model(_Custom_Base_Model):
     """
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
@@ -54,13 +54,74 @@ class Visible_Reportable_Model(Custom_Base_Model):
     )  # Provides a link to the set of all Report objects that link to this object
 
 
-class Profile(Visible_Reportable_Model):  # TODO: store which pulses a user has liked & disliked (in order to disable the correct buttons)
+class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count, check creating reply does not create pulse
+    message = models.TextField("Message")
+    _likes = models.PositiveIntegerField(
+        "Number of Likes",
+        default=0
+    )
+    _dislikes = models.PositiveIntegerField(
+        "Number of Dislikes",
+        default=0
+    )
+    replies = GenericRelation(
+        "Reply",
+        content_type_field='_content_type',
+        object_id_field='_object_id',
+        related_query_name="reverse_parent_object",
+        verbose_name="Replies"
+    )
+    _date_time_created = models.DateTimeField(
+        "Creation Date & Time",
+        auto_now=True
+    )
+
+    @property
+    def likes(self):  # TODO: prevent users from increasing the time by liking then unliking then reliking
+        return self._likes
+
+    @property
+    def dislikes(self):
+        return self._dislikes
+
+    @property
+    def date_time_created(self):
+        return self._date_time_created
+
+    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+        abstract = True
+
+    def __str__(self):
+        if self.visible:
+            return self.message[:settings.MESSAGE_DISPLAY_LENGTH]
+        return "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH])
+
+    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
+        return super().delete(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        if not self.visible and Pulse.objects.get(id=self.id).visible:
+            for reply in Reply.objects.filter(_original_pulse=self):
+                reply.update(save_func=reply.super_save, visible=False)
+        super().save(*args, **kwargs)
+
+    def like(self):  # TODO: add Pulse to profile's like list
+        self.update(_likes=self.likes + 1)
+
+    def dislike(self):  # TODO: add Pulse to profile's dislike list
+        self.update(_dislikes=self.dislikes + 1)
+
+
+class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has liked & disliked (in order to disable the correct buttons)
     """
         Custom expansion class that holds extra data about a user (specific to
         Pulsifi).
     """
 
-    _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
+    _base_user = models.OneToOneField(
+        BaseUser, null=True, on_delete=models.SET_NULL
+        )  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
     bio = models.TextField(
         "Bio",
         max_length=200,
@@ -106,45 +167,13 @@ class Profile(Visible_Reportable_Model):  # TODO: store which pulses a user has 
         super().save(*args, **kwargs)
 
 
-class Pulse(Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count, check creating reply does not create pulse
+class Pulse(_User_Generated_Content_Model):
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
         verbose_name="Creator",
-        related_name="pulses_and_replies"
-    )  # Provides a link to the Profile that created this Pulse/Reply
-    message = models.TextField("Message")
-    _likes = models.PositiveIntegerField(
-        "Number of Likes",
-        default=0
-    )
-    _dislikes = models.PositiveIntegerField(
-        "Number of Dislikes",
-        default=0
-    )
-    replies = GenericRelation(
-        "Reply",
-        content_type_field='_content_type',
-        object_id_field='_object_id',
-        related_query_name="reverse_parent_object",
-        verbose_name="Replies"
-    )
-    _date_time_created = models.DateTimeField(
-        "Creation Date & Time",
-        auto_now=True
-    )
-
-    @property
-    def likes(self):  # TODO: prevent users from increasing the time by liking then unliking then reliking
-        return self._likes
-
-    @property
-    def dislikes(self):
-        return self._dislikes
-
-    @property
-    def date_time_created(self):
-        return self._date_time_created
+        related_name="pulses"
+    )  # Provides a link to the Profile that created this Pulse
 
     class Meta:
         verbose_name = "Pulse"
@@ -154,24 +183,14 @@ class Pulse(Visible_Reportable_Model):  # TODO: calculate time remaining based o
             return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
         return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH])
 
-    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
-        return super().delete(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        if not self.visible and Pulse.objects.get(id=self.id).visible:
-            for reply in Reply.objects.filter(_original_pulse=self):
-                reply.update(save_func=reply.super_save, visible=False)
-        super().save(*args, **kwargs)
-
-    def like(self):  # TODO: add Pulse to profile's like list
-        self.update(_likes=self.likes + 1)
-
-    def dislike(self):  # TODO: add Pulse to profile's dislike list
-        self.update(_dislikes=self.dislikes + 1)
-
-
-class Reply(Pulse):
+class Reply(_User_Generated_Content_Model):
+    creator = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        verbose_name="Creator",
+        related_name="replies"
+    )  # Provides a link to the Profile that created this Reply
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()
     parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
@@ -208,7 +227,7 @@ class Reply(Pulse):
 
     def super_save(self, *args, **kwargs):
         self.full_clean()
-        Visible_Reportable_Model.save(self, *args, **kwargs)
+        _Visible_Reportable_Model.save(self, *args, **kwargs)
 
     @staticmethod
     def _find_original_pulse(reply):
@@ -217,7 +236,7 @@ class Reply(Pulse):
         return Reply._find_original_pulse(reply.parent_object)
 
 
-class Report(Custom_Base_Model):  # TODO: create user privileges that can access reporting screens, add extra solved_by field linking user model
+class Report(_Custom_Base_Model):  # TODO: create user privileges that can access reporting screens, add extra solved_by field linking user model
     SPAM = "SPM"
     SEXUAL = "SEX"
     HATE = "HAT"
@@ -244,7 +263,7 @@ class Report(Custom_Base_Model):  # TODO: create user privileges that can access
         (FALSE_INFO, "False or misleading information")
     ]
     status_choices = [
-        (IN_PROGRESS, "In progress"),
+        (IN_PROGRESS, "In Progress"),
         (REJECTED, "Rejected"),
         (CONFIRMED, "Confirmed")
     ]

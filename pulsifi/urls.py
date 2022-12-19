@@ -33,7 +33,7 @@ urlpatterns = [
         "profile/<int:profile_id>",
         views.ID_Profile_View.as_view(),
         name="id_profile"
-    ),
+    ),  # Change id to username
     path("create-new-pulse", views.Create_Pulse_View.as_view(), name="create_pulse"),
     path("signup/", views.Signup_View.as_view(), name="signup")
     # TODO: logout view, password change view
