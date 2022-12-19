@@ -56,7 +56,7 @@
                                 <li class="clearfix">
                                     <div class="float-left">
                                         <div class="flex-shrink-0">
-                                            <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                            <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;"> <!-- TODO: ADD in pfp intergration -->
                                         </div>
                                     </div>
                                     <div class="act-content">
@@ -64,7 +64,7 @@
                                             <a href="{% url 'pulsifi:id_profile' pulse.creator.id %}" class="font600">{{ pulse.creator}}</a> Posted
                                         </div>
                                         <span class="text-small">15 Min Ago</span>
-                                        <div>Post will be deleted in <p id="time">00:00</p></div>
+                                        <div>Post will be deleted in <p id="time">00:00</p></div> <!-- TODO: fix timing for each pulse -->
                                         <p>
                                             {{ pulse.message }}
                                         </p>
