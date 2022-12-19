@@ -30,61 +30,58 @@
             <div class="mx-auto" style="width: 900px;">
 
             </div>
-
+        </body>
 
 <div class="container py-5">
-<div class="mx-auto">
-    <div class="container-fluid p-5">
-<div class="row">
-    <div class="col-sm">
-            <h1 style="color:#ba03fc">Your Feed</h1>
+    <div class="mx-auto">
+        <div class="container-fluid p-5">
+            <div class="row">
+                <div class="col-sm">
+                    <h1 style="color:#ba03fc">Your Feed</h1>
+                </div>
+                <div class="col-sm-2 pt-3">
+                    <button type="button" class="btn w3-purple" style="float: right;" id="pulse-create">New Pulse</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="col-sm-2 pt-3">
-        <button type="button" class="btn w3-purple" style="float: right;" id="pulse-create">New Pulse</button>
-    </div>
-</div>
-</div>
-</div>
 
 
 {% for pulse in pulse_list %}
-<div class = "container-fluid p-5 text-center">
-    <div class = "card flex-x5-nowrap">
-         <div class="tab-content admin-tab-content pt30">
-        <div role="tabpanel" class="tab-pane active show" id="t1">
-            <ul class="activity-list list-unstyled">
-                <li class="clearfix">
-                    <div class="float-left">
-                        <div class="flex-shrink-0">
-                        <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}"
- alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">
-                        </div>
-                    </div>
-                    <div class="act-content">
-                        <div class="font400">
-    
-                            <a href="{% url 'pulsifi:id_profile' pulse.creator.id %}" class="font600">{{ pulse.creator}}</a> Posted
-                        </div>
-                        <span class="text-small">15 Min Ago</span>
-                            <div>Post will be deleted in <p id="time">00:00</p></div>
-                        <p>
-                            {{ pulse.message }}
-                        </p>
-                        <span class="text-small">{{ pulse.likes}} likes</span>
-                        <a href="#" class="btn btn-sm btn-success">Like</a>
-                        <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                        <span class="text-small">{{ pulse.dislikes}} dislikes</span>
-                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
-
-                    </div>
-                </li>
-            </ul>
+    <div class = "container-fluid p-5 text-center">
+        <div class = "card flex-x5-nowrap">
+            <div class="tab-content admin-tab-content pt30">
+                <div role="tabpanel" class="tab-pane active show" id="t1">
+                    <ul class="activity-list list-unstyled">
+                        <li class="clearfix">
+                            <div class="float-left">
+                                <div class="flex-shrink-0">
+                                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                </div>
+                            </div>
+                            <div class="act-content">
+                                <div class="font400">
+                                    <a href="{% url 'pulsifi:id_profile' pulse.creator.id %}" class="font600">{{ pulse.creator}}</a> Posted
+                                </div>
+                                <span class="text-small">15 Min Ago</span>
+                                <div>Post will be deleted in <p id="time">00:00</p></div>
+                                <p>
+                                    {{ pulse.message }}
+                                </p>
+                                <span class="text-small">{{ pulse.likes}} likes</span>
+                                <a href="#" class="btn btn-sm btn-success">Like</a>
+                                <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                <span class="text-small">{{ pulse.dislikes}} dislikes</span>
+                                <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-        </div>
-        </div>
+    </div>
+    {% endfor %}
 </div>
-{% endfor %}
-
      
 
     
@@ -95,8 +92,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">New Pulse</h5>
-                <button type="button" class="close" id="close-create-new-pulse" aria-label="Close"
-                    onclick="closeModal('pulse-create-modal');">
+                <button type="button" class="close" id="close-create-new-pulse" aria-label="Close" onclick="closeModal('pulse-create-modal');">
                     <span aria-hidden="true">x</span>
                 </button>
             </div>
@@ -107,12 +103,12 @@
                         <input type="textarea" class="form-control" id="new-pulse-content"
                             placeholder="What are you thinking...?">
                     </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn text-white" id="new-pulse-submit"
                     style="background-color: #ba03fc;">Post to Pulsifi</button>
             </div>
-            </form>
         </div>
     </div>
 </div>
