@@ -7,11 +7,11 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.handlers.wsgi import WSGIRequest
-from django.http import HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.views import View
-from django.views.generic import CreateView, DetailView, ListView
+from django.utils.translation import gettext as _
+from django.views.generic import CreateView, DetailView, ListView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from .forms import ReplyForm
@@ -108,26 +108,36 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
             return HttpResponseBadRequest()
 
 
-class Self_Profile_View(LoginRequiredMixin, View):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
-    def get(self, request, *args, **kwargs):
-        return ID_Profile_View.as_view()(
-            self.request,
-            profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
+class Self_Profile_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
+    query_string = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse(
+            "pulsifi:username_profile",
+            kwargs={"url_username": Profile.objects.get(
+                _base_user__id=self.request.user.id
+            ).username}
         )
 
-    def post(self, request, *args, **kwargs):
-        return ID_Profile_View.as_view()(
-            self.request,
-            profile_id=Profile.objects.get(_base_user__id=self.request.user.id).id
-        )
 
-
-class ID_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
-    model = Profile
-    pk_url_kwarg = "profile_id"
+class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
     template_name = "pulsifi/profile.html"
 
-    def post(self, request, *args, **kwargs):
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = Profile.objects.all()
+        username = self.kwargs.get("url_username")
+        try:
+            # Get the single item from the filtered queryset
+            obj = queryset.filter(_base_user__username=username).get()
+        except queryset.model.DoesNotExist:
+            raise Http404(
+                _("No %(verbose_name)s found matching the query")
+                % {"verbose_name": queryset.model._meta.verbose_name}
+            )
+        return obj
+
+    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions if view is for logged in user
         if response := self.check_action_in_post_request():
             return response
         # TODO: what to do if a post is deleted

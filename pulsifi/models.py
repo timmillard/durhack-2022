@@ -140,11 +140,19 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
     def base_user(self):  # Public getter for the private field _base_user
         return self._base_user
 
+    @property
+    def username(self):  # Shortcut getter for the obfuscated field base_user.username
+        return self.base_user.username
+
+    @property
+    def email(self):  # Shortcut getter for the obfuscated field base_user.email
+        return self.base_user.email
+
     class Meta:
         verbose_name = "User"
 
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
-        return_value = f"@{self.base_user.username}"
+        return_value = f"@{self.username}"
         if self.visible:
             return return_value
         return "".join(letter + "\u0336" for letter in return_value)

@@ -30,11 +30,11 @@ urlpatterns = [
     # TODO: profile search url, leaderboard url
     path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
     path(
-        "profile/<int:profile_id>",
-        views.ID_Profile_View.as_view(),
-        name="id_profile"
-    ),  # Change id to username
+        "profile/<str:url_username>",
+        views.Specific_Profile_View.as_view(),
+        name="username_profile"
+    ),
     path("create-new-pulse", views.Create_Pulse_View.as_view(), name="create_pulse"),
     path("signup/", views.Signup_View.as_view(), name="signup")
-    # TODO: logout view, password change view
+    # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
 ]
