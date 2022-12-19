@@ -62,17 +62,18 @@
                                     <div class="act-content">
                                         <div class="font400">
                                             <a href="{% url 'pulsifi:id_profile' pulse.creator.id %}" class="font600">{{ pulse.creator}}</a> Posted
+
+                                            <span class="text-small">15 Min Ago</span>
+                                            <div>Post will be deleted in <p id="time">00:00</p></div> <!-- TODO: fix timing for each pulse -->
+                                            <p>
+                                                {{ pulse.message }}
+                                            </p>
+                                            <span class="text-small">{{ pulse.likes}} likes</span>
+                                            <a href="#" class="btn btn-sm btn-success">Like</a>
+                                            <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                            <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                            <span class="text-small">{{ pulse.dislikes}} dislikes</span>
                                         </div>
-                                        <span class="text-small">15 Min Ago</span>
-                                        <div>Post will be deleted in <p id="time">00:00</p></div> <!-- TODO: fix timing for each pulse -->
-                                        <p>
-                                            {{ pulse.message }}
-                                        </p>
-                                        <span class="text-small">{{ pulse.likes}} likes</span>
-                                        <a href="#" class="btn btn-sm btn-success">Like</a>
-                                        <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                                        <span class="text-small">{{ pulse.dislikes}} dislikes</span>
-                                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>
                                     </div>
                                 </li>
                             </ul>
