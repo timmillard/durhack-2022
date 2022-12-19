@@ -15,14 +15,14 @@
     <main>   <!--TODO: fix indentation-->
         <body>
             <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style ="background-color: #ba03fc;">   <!--TODO: load from navbar.html (only show links if logged in)-->
-                <a class="navbar-brand align-middle" href="http://127.0.0.1:8000/home/"><img height = 30px src = "{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
+                <a class="navbar-brand align-middle" href="{% url 'default' %}"><img height = 30px src = "{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                     <div class="navbar-nav">
                     <a class="nav-link px-3 text text-white" href="#">Feed</a>
-                    <a class="nav-link px-3 text-white" href="http://127.0.0.1:8000/profile/">Profile</a>
+                    <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_profile' %}">Profile</a>
                     </div>
                 </div>   <!--TODO: add profile icon-->
             </nav>
