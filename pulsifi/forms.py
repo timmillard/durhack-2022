@@ -9,7 +9,9 @@ from pulsifi.models import Profile, Pulse, Reply
 
 
 class SignupForm(BaseSignupForm):
-    template_name = "pulsifi/signup_form_snippet.html"
+    """ Form to customise the HTML & CSS generated for the signup form. """
+
+    template_name = "pulsifi/signup_form_snippet.html"  # Specify how the fields & labels of the form should be turned into HTML
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,27 +46,33 @@ class SignupForm(BaseSignupForm):
             }
         )
 
-        self.label_suffix = ""
+        self.label_suffix = ""  # Remove the colon from after the value, in the field label
 
     def save(self, request):
         base_user = super().save(request)
-        Profile.objects.create(_base_user=base_user)
+        Profile.objects.create(_base_user=base_user)  # Create an associated Profile object whenever a user is successfully created
         return base_user
 
 
 class PulseForm(forms.ModelForm):
+    """ Form for creating a new Puls.e """
+
     class Meta:
         model = Pulse
-        fields = ("creator", "message")
+        fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field)
 
 
 class ReplyForm(forms.ModelForm):
+    """ Form for creating a new reply. """
+
     class Meta:
         model = Reply
-        fields = ("creator", "message")
+        fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field), add parent object field
 
 
 class BioForm(forms.ModelForm):
+    """ Form for updating a user's bio. """
+
     class Meta:
         model = Profile
         fields = ("bio",)

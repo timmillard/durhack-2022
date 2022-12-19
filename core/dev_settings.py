@@ -8,9 +8,10 @@ from pathlib import Path
 
 from django.urls import reverse_lazy
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Build paths inside the project like this: BASE_DIR / "subdir"
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Namespace resolving settings
 DEBUG = True
 ALLOWED_HOSTS = ["localhost"]
 STATIC_ROOT = "/staticfiles/"
@@ -19,10 +20,13 @@ MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
 
 
+# Default URL redirect settings (used for authentication)
 LOGIN_URL = reverse_lazy("pulsifi:home")
 LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
+
+# Authentication configuration settings (mainly for allauth & its associated packages)
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
@@ -34,6 +38,7 @@ ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = "mp"
 
 
+# Custom settings values (used to control functionality of the app)
 MESSAGE_DISPLAY_LENGTH = 15
 FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time of pulses & replies scales with follower count
 
@@ -44,8 +49,7 @@ FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time
 SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"  # noqa
 
 
-# Application definition
-
+# Application definitions
 INSTALLED_APPS = [
     "pulsifi.apps.PulsifiConfig",
     "django.contrib.admin",
@@ -138,6 +142,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Language & time settings
 LANGUAGE_CODE = "en-gb"
 TIME_ZONE = "Europe/London"
 USE_I18N = True
