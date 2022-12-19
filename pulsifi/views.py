@@ -96,7 +96,7 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
                 _base_user__is_active=False
             ).values_list("id", flat=True)
         ).order_by("_date_time_created")
-
+        queryset = Pulse.objects.all()  # TODO: remove when following is set up
         if self.request.method == "GET" and "highlight" in self.request.GET:
             return queryset.exclude(id=int(self.request.GET["highlight"]))
         return queryset
