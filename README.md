@@ -79,7 +79,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>You can now make the edits you desire to the code within your branch</li>
       <li>
         If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by:
-        <ol>
+        <ol start="1" type="1">
           <li>Opening the <nobr><code>Run manage.py Task...</code> pane,</nobr> by selecting it from the <nobr><code>Tools</code> drop-down menu</nobr> at the top or using the <nobr><code>ctrl+alt+R</code> keyboard shortcut</nobr></li>
           <li>Running these commands: <nobr><code>makemigrations</code></nobr> and <nobr><code>migrate</code></nobr> (it is also a good idea to run both of these commands, just in case, before committing any changes)</li>
         </ol>
@@ -107,7 +107,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li> Switch to your newly created branch by using the checkout command: <nobr><code>git checkout &lt;YOUR NEW BRANCH NAME&gt;</code></nobr> <nobr>(replace <code>&lt;YOUR NEW BRANCH NAME&gt</code> with the name you chose in step 2)</nobr></li>
       <li>
         You now need to create a Python virtual environment by:
-        <ol>
+        <ol start="1" type="1">
           <li>Opening/running the Windows Terminal and executing these commands: <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\scripts\activate</code></nobr> (make sure these commands are run within the directory containing your local copy of the repository)</li>
           <li>Updating the pip package with this command: <nobr><code>python -m pip install --upgrade pip</code></nobr></li>
           <li>Installing all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr></li>
