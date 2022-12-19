@@ -97,9 +97,27 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
     </ol>
   </li>
   <li>
-    <h3>Using the git commandline & an alternative IDE:</h3>
+    <h3>Using the Git Commandline & Your Favourite Text Editor:</h3>
     <ol start="3" type="1">
-      <li>...</li>
+      <li>Now select your newly created branch from the list & copy the https download link using the <nobr>green <nobr><code>˂˃ Code ▼</code></nobr> button</nobr></li>
+      <li>Download and install the <nobr><a href="https://git-scm.com/download/win">latest version of Git for Windows</a></nobr></li>
+      <li>Create a directory called <b><nobr><code>Pulsifi</code></nobr></b> in a location of your choosing, to store a local copy of the <nobr>checked-out</nobr> parts of the repository (<em><b>THE DIRECTORY/PROJECT NAME MUST BE TYPED EXACTLY AS SHOWN</b></em> in order to prevent errors with the workspace configuration files)</li>
+      <li>Open the Git-bash terminal and use the `cd` command to navigate to your newly created directory</li>
+      <li>Once inside this directory execute the clone command to pull down the remote repository: <nobr><code>git clone &lt;YOUR GITHUB HTTPS LINK&gt;</code></nobr> <nobr>(replace <code>&lt;YOUR GITHUB HTTPS LINK&gt</code> with the link you downloaded in step 3)</nobr></li>
+      <li> Switch to your newly created branch by using the checkout command: <nobr><code>git checkout &lt;YOUR NEW BRANCH NAME&gt;</code></nobr> <nobr>(replace <code>&lt;YOUR NEW BRANCH NAME&gt</code> with the name you chose in step 2)</nobr></li>
+      <li>
+        You now need to create a Python virtual environment by:
+        <ol>
+          <li>Opening/running the Windows Terminal and executing these commands: <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\scripts\activate</code></nobr> (make sure these commands are run within the directory containing your local copy of the repository)</li>
+          <li>Updating the pip package with this command: <nobr><code>python -m pip install --upgrade pip</code></nobr></li>
+          <li>Installing all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr></li>
+        </ol>
+      </li>
+      <li>You can now make the edits you desire to the code within your branch, using your favourite text editor</li>
+      <li>If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by running these commands: <nobr><code>py manage.py makemigrations</code></nobr> and <nobr><code>py manage.py migrate</code></nobr> within the Windows Terminal (it is also a good idea to run both of these commands, just in case, before committing any changes)</li>
+      <li>Any changes you make can be committed to your branch by executing these commands within the Git-bash terminal: <nobr><code>git add -A</code></nobr> and <nobr><code>git commit -m "&lt;YOUR COMMIT MESSAGE&gt;"</code></nobr> <nobr>(replace <code>&lt;YOUR COMMIT MESSAGE&gt</code></nobr> with a suitable message for the changes you have made, see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>, for how to write good commit messages)</li>
+      <li>To run the development server, open/run Windows Terminal and use the <nobr><code>py manage.py runserver localhost:8080</code></nobr> command, then navigate to <nobr><a href="http://localhost:8080"><code>http://localhost:8080</code></a></nobr> to view the site</li>
+      <li>To run the test suite, use the <nobr><code>py manage.py test</code></nobr> command</li>
     </ol>
   </li>
 </ul>
