@@ -1,6 +1,7 @@
 """
     Models in pulsifi application.
 """
+from typing import Callable
 
 from django.conf import settings
 from django.contrib.auth.models import User as BaseUser
@@ -10,60 +11,78 @@ from django.db import models
 
 
 class Custom_Base_Model(models.Model):
-    class Meta:
+    """
+        Base model that provides extra utility methods for all other models to
+        use.
+    """
+
+    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
-    def update(self, commit=True, save_func=None, **kwargs):
-        if save_func is None:
+    def update(self, commit=True, save_func: Callable[[], None] = None, **kwargs):
+        """
+            Change an object's values & save that object to the database all in
+            one operation (based on Django's Queryset bulk update method).
+        """
+
+        if save_func is None:  # Use objects default save method if none is provided
             save_func = self.save
 
-        for key, value in kwargs.items():
+        for key, value in kwargs.items():  # Update the values of the kwargs provided
             setattr(self, key, value)
-        if commit:
+        if commit:  # Save the new object's state to the database as long as commit has been requested
             save_func()
 
 
-class Visible_Model(Custom_Base_Model):
-    class Meta:
+class Visible_Reportable_Model(Custom_Base_Model):
+    """
+        Base model that prevents objects from actually being deleted (making
+        them invisible instead), as well as allowing all objects of this type
+        to have reports made about them.
+    """
+
+    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     visible = models.BooleanField("Visibility", default=True)
-    _report = GenericRelation(
+    reports = GenericRelation(
         "Report",
         content_type_field='_content_type',
         object_id_field='_object_id',
-        related_query_name="reverse_parent_object"
-    )
-
-    @property
-    def report(self):
-        return self._report.first()
+        related_query_name="reverse_parent_object",
+        verbose_name="Reports"
+    )  # Provides a link to the set of all Report objects that link to this object
 
 
-class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in order to disable the correct buttons)
-    _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)
-    name = models.CharField("Name", max_length=30)  # TODO: use django all-auth to store this
+class Profile(Visible_Reportable_Model):  # TODO: store which pulses a user has liked & disliked (in order to disable the correct buttons)
+    """
+        Custom expansion class that holds extra data about a user (specific to
+        Pulsifi).
+    """
+
+    _base_user = models.OneToOneField(BaseUser, null=True, on_delete=models.SET_NULL)  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
     bio = models.TextField(
         "Bio",
         max_length=200,
         blank=True,
         null=True
     )
+    verified = models.BooleanField("Verified", default=False)  # TODO: Add verification process
     following = models.ManyToManyField(
         "self",
         symmetrical=False,
         related_name="followers",
         blank=True
-    )
+    )  # Provides a link to the set of other Profiles that this object is following (as well as an implied reverse set of followers)
 
     @property
-    def base_user(self):
+    def base_user(self):  # Public getter for the private field _base_user
         return self._base_user
 
     class Meta:
         verbose_name = "User"
 
-    def __str__(self):
+    def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
         return_value = f"@{self.base_user.username}"
         if self.visible:
             return return_value
@@ -73,25 +92,28 @@ class Profile(Visible_Model):  # TODO: store which pulses a user has liked (in o
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        if not self.base_user.is_active:
+        if not self.base_user:
             self.visible = False
-        elif not self.visible:
-            self.base_user.is_active = False
-            self.base_user.save()
+        else:
+            if not self.base_user.is_active:  # Makes Profile invisible if the underlying User object has been deactivated
+                self.visible = False
+            elif not self.visible:  # Deactivates the underlying User object if Profile has been made invisible
+                self.base_user.is_active = False
+                self.base_user.save()
+            # TODO: make invisible if _base_user is null
 
-        self.full_clean()
+        self.full_clean()  # Perform full model validation before saving the object
         super().save(*args, **kwargs)
 
 
-class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & creator follower count
+class Pulse(Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count, check creating reply does not create pulse
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
         verbose_name="Creator",
         related_name="pulses_and_replies"
-    )
+    )  # Provides a link to the Profile that created this Pulse/Reply
     message = models.TextField("Message")
-    unlisted = models.BooleanField("Unlisted", default=False)
     _likes = models.PositiveIntegerField(
         "Number of Likes",
         default=0
@@ -108,8 +130,8 @@ class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & c
         verbose_name="Replies"
     )
     _date_time_created = models.DateTimeField(
-       "Creation Date & Time",
-       auto_now=True
+        "Creation Date & Time",
+        auto_now=True
     )
 
     @property
@@ -142,11 +164,12 @@ class Pulse(Visible_Model):  # TODO: calculate time remaining based on likes & c
                 reply.update(save_func=reply.super_save, visible=False)
         super().save(*args, **kwargs)
 
-    def like(self):
+    def like(self):  # TODO: add Pulse to profile's like list
         self.update(_likes=self.likes + 1)
 
-    def dislike(self):
+    def dislike(self):  # TODO: add Pulse to profile's dislike list
         self.update(_dislikes=self.dislikes + 1)
+
 
 class Reply(Pulse):
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -173,17 +196,19 @@ class Reply(Pulse):
         return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {self.parent_object})"
 
     def save(self, *args, **kwargs):
-        if self.original_pulse is None:
+        try:
+            self.original_pulse()
+        except Pulse.DoesNotExist:
             self._original_pulse = self._find_original_pulse(self)
 
         if not self.original_pulse.visible:
             self.visible = False
 
-        self.super_save(self, *args, **kwargs)
+        self.super_save(*args, **kwargs)
 
     def super_save(self, *args, **kwargs):
         self.full_clean()
-        Visible_Model.save(self, *args, **kwargs)
+        Visible_Reportable_Model.save(self, *args, **kwargs)
 
     @staticmethod
     def _find_original_pulse(reply):
@@ -191,7 +216,8 @@ class Reply(Pulse):
             return reply.parent_object
         return Reply._find_original_pulse(reply.parent_object)
 
-class Report(Custom_Base_Model):
+
+class Report(Custom_Base_Model):  # TODO: create user privileges that can access reporting screens, add extra solved_by field linking user model
     SPAM = "SPM"
     SEXUAL = "SEX"
     HATE = "HAT"
@@ -203,7 +229,8 @@ class Report(Custom_Base_Model):
     SCAM = "SCM"
     FALSE_INFO = "FLS"
     IN_PROGRESS = "PR"
-    RESOLVED = "RE"
+    REJECTED = "RE"
+    CONFIRMED = "CN"
     category_choices = [
         (SPAM, "Spam"),
         (SEXUAL, "Nudity or sexual activity"),
@@ -216,7 +243,11 @@ class Report(Custom_Base_Model):
         (SCAM, "Scam or fraud"),
         (FALSE_INFO, "False or misleading information")
     ]
-    status_choices = [(IN_PROGRESS, "In progress"), (RESOLVED, "Resolved")]
+    status_choices = [
+        (IN_PROGRESS, "In progress"),
+        (REJECTED, "Rejected"),
+        (CONFIRMED, "Confirmed")
+    ]
 
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()
@@ -238,8 +269,8 @@ class Report(Custom_Base_Model):
         choices=status_choices
     )
     _date_time_created = models.DateTimeField(
-       "Creation Date & Time",
-       auto_now=True
+        "Creation Date & Time",
+        auto_now=True
     )
 
     @property
