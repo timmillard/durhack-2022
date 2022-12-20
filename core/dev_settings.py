@@ -6,14 +6,52 @@
 
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
+from environ import Env
+
+#Getting setting default values for some settings that are collected from the attached environment variables file (if they are not specified in the file, these default values will be used)
+env = Env(
+    DEBUG=(bool, True),
+    ALLOWED_HOSTS=(list, ["localhost"]),
+    ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=(int, 1),
+    AVATAR_GRAVATAR_DEFAULT=(str, "mp"),
+    EMAIL_HOST=(str, "smtppro.zoho.eu"),  # noqa
+    EMAIL_PORT=(int, 465),
+    EMAIL_HOST_USER=(str, "no-reply@pulsifi.tech"),
+    EMAIL_USE_SSL=(bool, True),
+    MESSAGE_DISPLAY_LENGTH=(int, 15),
+    FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear")
+)
+
+#Confirming that the supplied environment variable values for these settings are one of the valid choices
+if not env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS") > 0:
+    raise ImproperlyConfigured(f"ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS must be an integer greater than 0")
+_AVATAR_GRAVATAR_DEFAULT_choices = ("404", "mp", "identicon", "monsterid", "wavatar", "retro", "robohash")  # noqa
+if env("AVATAR_GRAVATAR_DEFAULT") not in _AVATAR_GRAVATAR_DEFAULT_choices:
+    raise ImproperlyConfigured(f"AVATAR_GRAVATAR_DEFAULT must be one of {_AVATAR_GRAVATAR_DEFAULT_choices}")
+if not 0 < env("EMAIL_PORT") <= 65535:
+    raise ImproperlyConfigured(f"EMAIL_PORT must be a valid port number (an integer between 0 and 65536)")
+if "@" not in env("EMAIL_HOST_USER"):
+    raise ImproperlyConfigured(f"EMAIL_HOST_USER must be a valid email address")
+if not env("MESSAGE_DISPLAY_LENGTH") > 0:
+    raise ImproperlyConfigured(f"MESSAGE_DISPLAY_LENGTH must be an integer greater than 0")
+_FOLLOWER_COUNT_SCALING_FUNCTION_choices = ("logarithmic", "linear", "quadratic", "linearithmic", "exponential", "factorial")
+if env("FOLLOWER_COUNT_SCALING_FUNCTION") not in _FOLLOWER_COUNT_SCALING_FUNCTION_choices:
+    raise ImproperlyConfigured(f"FOLLOWER_COUNT_SCALING_FUNCTION must be one of {_FOLLOWER_COUNT_SCALING_FUNCTION_choices}")
+
 
 # Build paths inside the project like this: BASE_DIR / "subdir"
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+#Adding additional (not manually specified) environment variables as settings values
+Env.read_env(BASE_DIR / ".env")
+
+
 # Namespace resolving settings
-DEBUG = True
-ALLOWED_HOSTS = ["localhost"]
+DEBUG = env("DEBUG")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 STATIC_ROOT = "/staticfiles/"
 STATIC_URL = "static/"
 MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
@@ -32,21 +70,28 @@ ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_USERNAME_MIN_LENGTH = 4
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS")
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
-AVATAR_GRAVATAR_DEFAULT = "mp"
+AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
+
+
+# Email settings to configure how Django should send emails
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env("EMAIL_PORT")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_USE_SSL = env("EMAIL_USE_SSL")
 
 
 # Custom settings values (used to control functionality of the app)
-MESSAGE_DISPLAY_LENGTH = 15
-FOLLOWER_COUNT_SCALING_FUNCTION = None  # TODO: Add function for how delete time of pulses & replies scales with follower count
+MESSAGE_DISPLAY_LENGTH = env("MESSAGE_DISPLAY_LENGTH")
+FOLLOWER_COUNT_SCALING_FUNCTION = env("FOLLOWER_COUNT_SCALING_FUNCTION")  # TODO: Add function for how delete time of pulses & replies scales with follower count (y=log_2(x+1), y=x, y=xlog_2(x+1), y=2^x-1, y=(x+1)!-1)
 
 
-# TODO: Email setup with pulsifi.tech domain
-
-
-SECRET_KEY = "django-insecure-6dsvxca6m@u%(fqvlzz1*=6utyg-%^ha+zyr4n_!+hu0xe-7u#"  # noqa
+#Secret key that is used for important secret stuff (keep the one used in production a secret!)
+SECRET_KEY = env("SECRET_KEY")
 
 
 # Application definitions

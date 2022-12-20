@@ -169,7 +169,6 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
             elif not self.visible:  # Deactivates the underlying User object if Profile has been made invisible
                 self.base_user.is_active = False
                 self.base_user.save()
-            # TODO: make invisible if _base_user is null
 
         self.full_clean()  # Perform full model validation before saving the object
         super().save(*args, **kwargs)

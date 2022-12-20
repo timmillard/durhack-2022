@@ -27,6 +27,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>Create and activate a new Python virtual environment using the <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\scripts\activate</code></nobr> commands (make sure these commands are run within the directory containing your local copy of the repository)</li>
       <li>Update the pip package with this command: <nobr><code>python -m pip install --upgrade pip</code></nobr></li>
       <li>Install all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr></li>
+      <li>Create a file in the project's root directory called <nobr><code>.env</code></nobr>, any of the values from the supplied <nobr><code>.env.example</code></nobr> file can be added & configured (only <nobr><code>EMAIL_HOST_PASSWORD</code></nobr> & <nobr><code>SECRET_KEY</code></nobr> are required)</li>
       <li>You can now make the edits you desire to the code within your branch</li>
       <li>If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by running these commands: <nobr><code>py manage.py makemigrations</code></nobr> and <nobr><code>py manage.py migrate</code></nobr> (it is also a good idea to run both of these commands, just in case, before committing any changes)</li>
       <li>
@@ -76,6 +77,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
           <li>Install all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr> (if an error appears, saying that pip could not be installed due to access being denied, it can be ignored, just <b>make sure to run the command again</b>)</li>
         </ol>
       </li>
+      <li>Create a file in the project's root directory called <nobr><code>.env</code></nobr>, any of the values from the supplied <nobr><code>.env.example</code></nobr> file can be added & configured (only <nobr><code>EMAIL_HOST_PASSWORD</code></nobr> & <nobr><code>SECRET_KEY</code></nobr> are required)</li>
       <li>You can now make the edits you desire to the code within your branch</li>
       <li>
         If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by:
@@ -113,6 +115,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
           <li>Installing all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr></li>
         </ol>
       </li>
+      <li>Create a file in the project's root directory called <nobr><code>.env</code></nobr>, any of the values from the supplied <nobr><code>.env.example</code></nobr> file can be added & configured (only <nobr><code>EMAIL_HOST_PASSWORD</code></nobr> & <nobr><code>SECRET_KEY</code></nobr> are required)</li>
       <li>You can now make the edits you desire to the code within your branch, using your favourite text editor</li>
       <li>If you make any changes to the <nobr><code>models.py</code></nobr> file you need to migrate these changes to the database by running these commands: <nobr><code>py manage.py makemigrations</code></nobr> and <nobr><code>py manage.py migrate</code></nobr> within the Windows Terminal (it is also a good idea to run both of these commands, just in case, before committing any changes)</li>
       <li>Any changes you make can be committed to your branch by executing these commands within the Git-bash terminal: <nobr><code>git add -A</code></nobr> and <nobr><code>git commit -m "&lt;YOUR COMMIT MESSAGE&gt;"</code></nobr> <nobr>(replace <code>&lt;YOUR COMMIT MESSAGE&gt</code></nobr> with a suitable message for the changes you have made, see <nobr><a href="https://gist.github.com/robertpainsi/b632364184e70900af4ab688decf6f53" title="Robert Painsi's Commit Message Guidelines">Robert Painsi's Commit Message Guidelines</a></nobr>, for how to write good commit messages)</li>
