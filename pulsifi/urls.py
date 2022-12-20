@@ -30,7 +30,7 @@ urlpatterns = [
     # TODO: profile search url, leaderboard url
     path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
     path(
-        "profile/<str:url_username>",
+        "profile/@<str:url_username>",
         views.Specific_Profile_View.as_view(),
         name="username_profile"
     ),
