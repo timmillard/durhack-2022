@@ -11,4 +11,5 @@ class PulsifiConfig(AppConfig):
     verbose_name = "Pulsifi"
 
     def ready(self):
-        pass
+        from . import signals
+        signals.ready()
