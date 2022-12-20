@@ -48,14 +48,9 @@ class SignupForm(BaseSignupForm):
 
         self.label_suffix = ""  # Remove the colon from after the value, in the field label
 
-    def save(self, request):
-        base_user = super().save(request)
-        Profile.objects.create(_base_user=base_user)  # Create an associated Profile object whenever a user is successfully created
-        return base_user
-
 
 class PulseForm(forms.ModelForm):
-    """ Form for creating a new Puls.e """
+    """ Form for creating a new Pulse """
 
     class Meta:
         model = Pulse

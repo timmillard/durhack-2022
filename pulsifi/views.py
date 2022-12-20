@@ -137,7 +137,7 @@ class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
             )
         return obj
 
-    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions if view is for logged in user
+    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username) if view is for logged in user
         if response := self.check_action_in_post_request():
             return response
         # TODO: what to do if a post is deleted
