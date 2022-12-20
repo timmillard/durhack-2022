@@ -75,7 +75,8 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
 SOCIALACCOUNT_PROVIDERS = {  # noqa
-    "google": {"SCOPE": ["email"]}
+    "google": {"SCOPE": ["email"]},
+    "discord": {"SCOPE": ["email"]}
 }
 
 
@@ -93,7 +94,7 @@ MESSAGE_DISPLAY_LENGTH = env("MESSAGE_DISPLAY_LENGTH")
 FOLLOWER_COUNT_SCALING_FUNCTION = env("FOLLOWER_COUNT_SCALING_FUNCTION")  # TODO: Add function for how delete time of pulses & replies scales with follower count (y=log_2(x+1), y=x, y=xlog_2(x+1), y=2^x-1, y=(x+1)!-1)
 
 
-#Secret key that is used for important secret stuff (keep the one used in production a secret!)
+# Secret key that is used for important secret stuff (keep the one used in production a secret!)
 SECRET_KEY = env("SECRET_KEY")
 
 
