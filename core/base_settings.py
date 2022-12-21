@@ -69,7 +69,63 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
-SOCIALACCOUNT_PROVIDERS = {"stackexchange": {"SITE": "stackoverflow"}}  # noqa
+SOCIALACCOUNT_PROVIDERS = {  # noqa
+    "google": {
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "Google",
+            "client_id": "661911946943-ttrstdi5luvlfcee625gq71ikekk7qcg.apps.googleusercontent.com",  # noqa
+            "secret": env("OATH_GOOGLE_SECRET"),
+            "key": ""
+        }
+    },
+    "discord": {
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "Discord",
+            "client_id": "1054763384391876628",  # noqa
+            "secret": env("OATH_DISCORD_SECRET"),
+            "key": ""
+        }
+    },
+    "github": {
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "GitHub",
+            "client_id": "3c53e63beb0fb9cfcce3",  # noqa
+            "secret": env("OATH_GITHUB_SECRET"),
+            "key": ""
+        }
+    },
+    "reddit": {
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "Reddit",
+            "client_id": "",  # noqa
+            "secret": env("OATH_REDDIT_SECRET"),
+            "key": ""
+        }
+    },
+    "microsoft": {
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "Microsoft",
+            "client_id": "6f9ee230-1fc5-4d18-ace3-a45805cc4112",  # noqa
+            "secret": env("OATH_MICROSOFT_SECRET"),
+            "key": ""
+        }
+    },
+    "stackexchange": {
+        "SITE": "stackoverflow",
+        "VERIFIED_EMAIL": True,
+        "APP": {
+            "name": "Stack Exchange",
+            "client_id": "25027",  # noqa
+            "secret": env("OATH_STACK_EXCHANGE_SECRET"),
+            "key": env("OATH_STACK_EXCHANGE_KEY")
+        }
+    }
+}
 
 
 # Email settings to configure how Django should send emails
