@@ -1,6 +1,7 @@
 """
     Models in pulsifi application.
 """
+from random import choice as random_choice
 from typing import Callable
 
 from django.conf import settings
@@ -8,6 +9,18 @@ from django.contrib.auth.models import User as BaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+
+
+def _choose_default_assigned_staff():
+    default_assigned_staff_QS = Profile.objects.filter(
+        id=random_choice(
+            Profile.objects.filter(_base_user__is_staff=True).values_list("id", flat=True)
+        )
+    )
+
+    if default_assigned_staff_QS.exists():
+        return default_assigned_staff_QS.get().id
+    return None
 
 
 class _Custom_Base_Model(models.Model):
@@ -77,7 +90,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
     )
 
     @property
-    def likes(self):  # TODO: prevent users from increasing the time by liking then unliking then reliking
+    def likes(self):
         return self.liked_by.count()
 
     @property
@@ -104,8 +117,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
                 reply.update(save_func=reply.super_save, visible=False)
         super().save(*args, **kwargs)
 
-    def like(self, profile: "Profile"):
-        print(self.disliked_by.filter(id=profile.id))
+    def like(self, profile: "Profile"):  # TODO: prevent users from increasing the time by liking then unliking then reliking
         if self.disliked_by.filter(id=profile.id).exists():
             self.remove_dislike(profile)
         self.liked_by.add(profile)
@@ -281,7 +293,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return Reply._find_original_pulse(reply.parent_object)
 
 
-class Report(_Custom_Base_Model):  # TODO: create user privileges that can access reporting screens, add extra solved_by field linking user model
+class Report(_Custom_Base_Model):  # TODO: create user privileges that can access reporting screens
     SPAM = "SPM"
     SEXUAL = "SEX"
     HATE = "HAT"
@@ -319,7 +331,16 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
     reporter = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
-        verbose_name="Reporter"
+        verbose_name="Reporter",
+        related_name="reports"
+    )
+    assigned_staff = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        verbose_name="Assigned Staff Member",
+        related_name="assigned_reports",
+        limit_choices_to={"_base_user__is_staff": True},
+        default=_choose_default_assigned_staff
     )
     reason = models.TextField("Reason")
     category = models.CharField(
