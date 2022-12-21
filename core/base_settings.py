@@ -7,6 +7,7 @@ from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
+# noinspection PyPackageRequirements
 from environ import Env
 
 env = Env(
@@ -138,6 +139,7 @@ SITE_ID = 1
 
 ACCOUNT_ADAPTER = "allauth_2fa.adapter.OTPAdapter"
 
+# noinspection PyUnresolvedReferences
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",

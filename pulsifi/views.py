@@ -69,7 +69,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
             return False
 
 
-class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to login when redirecting here (show modal)
+class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal)
     template_name = "pulsifi/home.html"
     redirect_authenticated_user = True
 
@@ -128,16 +128,16 @@ class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
             queryset = Profile.objects.all()
         username = self.kwargs.get("url_username")
         try:
-            # Get the single item from the filtered queryset
-            obj = queryset.filter(_base_user__username=username).get()
+            obj = queryset.filter(_base_user__username=username).get()  # Get the single item from the filtered queryset
         except queryset.model.DoesNotExist:
+            # noinspection PyProtectedMember
             raise Http404(
                 _("No %(verbose_name)s found matching the query")
                 % {"verbose_name": queryset.model._meta.verbose_name}
             )
         return obj
 
-    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username) if view is for logged in user
+    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username) if view is for logged-in user
         if response := self.check_action_in_post_request():
             return response
         # TODO: what to do if a post is deleted
