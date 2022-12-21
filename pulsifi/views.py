@@ -154,7 +154,7 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
-class Signup_View(BaseSignupView):
+class Signup_View(BaseSignupView):  # make signup a modal on the home view
     template_name = "pulsifi/signup.html"
 
 # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
