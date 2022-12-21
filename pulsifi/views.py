@@ -88,7 +88,7 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
     context_object_name = "pulse_list"
     model = Pulse
 
-    def get_queryset(self):
+    def get_queryset(self):  # TODO: get queryset from models.py not views.py
         queryset = Pulse.objects.filter(
             creator__id__in=Profile.objects.get(
                 _base_user__id=self.request.user.id
