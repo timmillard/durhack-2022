@@ -34,7 +34,7 @@ class _Custom_Base_Model(models.Model):
             save_func()
 
 
-class _Visible_Reportable_Model(_Custom_Base_Model):
+class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibility only based on is active flag
     """
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
@@ -53,22 +53,17 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
-    def string_when_visible(self, string):
+    def string_when_visible(self, string: str):
         if self.visible:
             return string
         return "".join(f"{char}\u0336" for char in string)
 
 
-class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count, check creating reply does not create pulse
+class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
+    liked_by: models.ManyToManyField
+    disliked_by: models.ManyToManyField
+
     message = models.TextField("Message")
-    _likes = models.PositiveIntegerField(
-        "Number of Likes",
-        default=0
-    )
-    _dislikes = models.PositiveIntegerField(
-        "Number of Dislikes",
-        default=0
-    )
     replies = GenericRelation(
         "Reply",
         content_type_field='_content_type',
@@ -83,11 +78,11 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
 
     @property
     def likes(self):  # TODO: prevent users from increasing the time by liking then unliking then reliking
-        return self._likes
+        return self.liked_by.count()
 
     @property
     def dislikes(self):
-        return self._dislikes
+        return self.disliked_by.count()
 
     @property
     def date_time_created(self):
@@ -109,14 +104,25 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
                 reply.update(save_func=reply.super_save, visible=False)
         super().save(*args, **kwargs)
 
-    def like(self):  # TODO: add Pulse to profile's like list
-        self.update(_likes=self.likes + 1)
+    def like(self, profile: "Profile"):
+        print(self.disliked_by.filter(id=profile.id))
+        if self.disliked_by.filter(id=profile.id).exists():
+            self.remove_dislike(profile)
+        self.liked_by.add(profile)
 
-    def dislike(self):  # TODO: add Pulse to profile's dislike list
-        self.update(_dislikes=self.dislikes + 1)
+    def dislike(self, profile: "Profile"):
+        if self.liked_by.filter(id=profile.id).exists():
+            self.remove_like(profile)
+        self.disliked_by.add(profile)
+
+    def remove_like(self, profile: "Profile"):
+        self.liked_by.remove(profile)
+
+    def remove_dislike(self, profile: "Profile"):
+        self.disliked_by.remove(profile)
 
 
-class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has liked & disliked (in order to disable the correct buttons)
+class Profile(_Visible_Reportable_Model):
     """
         Custom expansion class that holds extra data about a user (specific to
         Pulsifi).
@@ -163,6 +169,10 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
     def email(self):  # Shortcut getter for the obfuscated field base_user.email
         return self.base_user.email
 
+    @property
+    def date_joined(self):
+        return self.base_user.date_joined
+
     class Meta:
         verbose_name = "User"
 
@@ -186,13 +196,23 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
         super().save(*args, **kwargs)
 
 
-class Pulse(_User_Generated_Content_Model):
+class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
         verbose_name="Creator",
         related_name="pulses"
     )  # Provides a link to the Profile that created this Pulse
+    liked_by = models.ManyToManyField(
+        Profile,
+        related_name="liked_pulses",
+        blank=True
+    )
+    disliked_by = models.ManyToManyField(
+        Profile,
+        related_name="disliked_pulses",
+        blank=True
+    )
 
     class Meta:
         verbose_name = "Pulse"
@@ -201,7 +221,7 @@ class Pulse(_User_Generated_Content_Model):
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
 
-class Reply(_User_Generated_Content_Model):
+class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     creator = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -217,6 +237,16 @@ class Reply(_User_Generated_Content_Model):
         blank=True,
         verbose_name="Original Pulse",
         related_name="+"
+    )
+    liked_by = models.ManyToManyField(
+        Profile,
+        related_name="liked_replies",
+        blank=True
+    )
+    disliked_by = models.ManyToManyField(
+        Profile,
+        related_name="disliked_replies",
+        blank=True
     )
 
     @property
