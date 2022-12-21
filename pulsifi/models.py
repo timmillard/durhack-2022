@@ -41,9 +41,6 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
         to have reports made about them.
     """
 
-    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
-        abstract = True
-
     visible = models.BooleanField("Visibility", default=True)
     reports = GenericRelation(
         "Report",
@@ -52,6 +49,14 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
         related_query_name="reverse_parent_object",
         verbose_name="Reports"
     )  # Provides a link to the set of all Report objects that link to this object
+
+    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+        abstract = True
+
+    def string_when_visible(self, string):
+        if self.visible:
+            return string
+        return "".join(f"{char}\u0336" for char in string)
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count, check creating reply does not create pulse
@@ -92,9 +97,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         abstract = True
 
     def __str__(self):
-        if self.visible:
-            return self.message[:settings.MESSAGE_DISPLAY_LENGTH]
-        return "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH])
+        return self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])
 
     def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
         return super().delete(*args, **kwargs)
@@ -121,7 +124,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
 
     _base_user = models.OneToOneField(
         BaseUser, null=True, on_delete=models.SET_NULL
-        )  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
+    )  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
     bio = models.TextField(
         "Bio",
         max_length=200,
@@ -138,6 +141,18 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
 
     @property
     def base_user(self):  # Public getter for the private field _base_user
+        if self._base_user is None:
+            return BaseUser(
+                username="???",
+                password="???",
+                email="???",
+                is_active=False,
+                is_staff=None,
+                is_superuser=None,
+                first_name=None,
+                last_name=None,
+                date_joined=None
+            )
         return self._base_user
 
     @property
@@ -152,10 +167,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: store which pulses a user has
         verbose_name = "User"
 
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
-        return_value = f"@{self.username}"
-        if self.visible:
-            return return_value
-        return "".join(letter + "\u0336" for letter in return_value)
+        return self.string_when_visible(f"@{self.username}")
 
     def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
         return super().delete(*args, **kwargs)
@@ -186,9 +198,7 @@ class Pulse(_User_Generated_Content_Model):
         verbose_name = "Pulse"
 
     def __str__(self):
-        if self.visible:
-            return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
-        return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH])
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
 
 class Reply(_User_Generated_Content_Model):
@@ -217,9 +227,7 @@ class Reply(_User_Generated_Content_Model):
         verbose_name = "Reply"
 
     def __str__(self):
-        if self.visible:
-            return f"{self.creator}, {self.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {self.parent_object})"
-        return f"{self.creator}, " + "".join(letter + "\u0336" for letter in self.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {self.parent_object})"
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.parent_object})"
 
     def save(self, *args, **kwargs):
         try:
