@@ -230,9 +230,9 @@ class Reply(_User_Generated_Content_Model):
         if not self.original_pulse.visible:
             self.visible = False
 
-        self.super_save(*args, **kwargs)
+        self.base_save(*args, **kwargs)
 
-    def super_save(self, *args, **kwargs):
+    def base_save(self, *args, **kwargs):
         self.full_clean()
         _Visible_Reportable_Model.save(self, *args, **kwargs)
 

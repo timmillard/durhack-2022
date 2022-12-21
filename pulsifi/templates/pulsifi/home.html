@@ -1,6 +1,7 @@
 <!DOCTYPE html>  <!--TODO: load from base.html-->
 <html lang="en-GB">
 {% load static %}
+{% load account socialaccount %}
 
 <head>
     <meta charset="utf-8" />
@@ -54,6 +55,16 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    {% get_providers as socialaccount_providers %}
+                    {% if socialaccount_providers %}
+                        {% for socialaccount_provider in socialaccount_providers %}
+                            <form action="{% provider_login_url socialaccount_provider.id %}" method="post">
+                                  {% csrf_token %}
+                                  <button class="btn text-white mb-1" type="submit" style="background-color: #ba03fc;">Continue with {{ socialaccount_provider.name }}</button>
+                            </form>
+                        {% endfor %}
+                    {% endif %}
+
                     <form method="post">  <!--TODO: generate form from default AuthenticationForm-->
                         {% csrf_token %}
                         <div class="form-group">

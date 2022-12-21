@@ -268,3 +268,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+#Custom Ignores
+/Extra Branding/
