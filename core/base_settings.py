@@ -71,7 +71,8 @@ ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
 SOCIALACCOUNT_PROVIDERS = {  # noqa
     "google": {"SCOPE": ["email"]},
-    "discord": {"SCOPE": ["email"]}
+    "discord": {"SCOPE": ["email"]},
+    "github": {"SCOPE": ["user:email"]}
 }
 
 
