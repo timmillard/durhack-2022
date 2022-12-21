@@ -95,17 +95,6 @@ SOCIALACCOUNT_PROVIDERS = {  # noqa
             "key": ""
         }
     },
-    "reddit": {
-        "AUTH_PARAMS": {"duration": "permanent"},
-        "VERIFIED_EMAIL": True,
-        "APP": {
-            "name": "Reddit",
-            "client_id": "H63hvSvLW5YPEPLW-3D-tQ",  # noqa
-            "secret": env("OATH_REDDIT_SECRET"),
-            "key": ""
-        },
-        "USER_AGENT": f"django:pulsifi:{env('VERSION')} (by /u/pulsifi)"
-    },
     "microsoft": {
         "VERIFIED_EMAIL": True,
         "APP": {
@@ -113,16 +102,6 @@ SOCIALACCOUNT_PROVIDERS = {  # noqa
             "client_id": "6f9ee230-1fc5-4d18-ace3-a45805cc4112",  # noqa
             "secret": env("OATH_MICROSOFT_SECRET"),
             "key": ""
-        }
-    },
-    "stackexchange": {
-        "SITE": "stackoverflow",
-        "VERIFIED_EMAIL": True,
-        "APP": {
-            "name": "Stack Exchange",
-            "client_id": "25027",  # noqa
-            "secret": env("OATH_STACK_EXCHANGE_SECRET"),
-            "key": env("OATH_STACK_EXCHANGE_KEY")
         }
     }
 }
@@ -161,8 +140,6 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.github",  # noqa
     "allauth.socialaccount.providers.google",  # noqa
     "allauth.socialaccount.providers.microsoft",  # noqa
-    "allauth.socialaccount.providers.reddit",  # noqa
-    "allauth.socialaccount.providers.stackexchange",  # noqa
     "django_otp",
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_static",
