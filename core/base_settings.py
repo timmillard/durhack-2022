@@ -69,6 +69,7 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
+SOCIALACCOUNT_PROVIDERS = {"stackexchange": {"SITE": "stackoverflow"}}  # noqa
 
 
 # Email settings to configure how Django should send emails
