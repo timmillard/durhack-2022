@@ -2,7 +2,6 @@
     Models in pulsifi application.
 """
 from random import choice as random_choice
-from typing import Callable
 
 from django.conf import settings
 from django.contrib.auth.models import User as BaseUser
@@ -32,19 +31,42 @@ class _Custom_Base_Model(models.Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
-    def update(self, commit=True, save_func: Callable[[], None] = None, **kwargs):
+    def base_save(self, *args, **kwargs):
+        pass
+
+    def refresh_from_db(self, using=None, fields=None, deep=True):
+        super().refresh_from_db(using=using, fields=fields)
+
+        if deep:
+            if fields:
+                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]
+            else:
+                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]
+
+            updated_model = self._meta.model.objects.get(id=self.id)
+
+            field: models.Field
+            for field in update_fields:
+                if not isinstance(field, models.ManyToManyField) and not isinstance(field, GenericRelation):
+                    try:
+                        setattr(self, field.name, getattr(updated_model, field.name))
+                    except (AttributeError, TypeError) as e:
+                        pass  # TODO: use logging to log the error
+
+    def update(self, commit=True, base_save=False, clean=True, **kwargs):
         """
             Change an object's values & save that object to the database all in
             one operation (based on Django's Queryset bulk update method).
         """
 
-        if save_func is None:  # Use objects default save method if none is provided
-            save_func = self.save
-
         for key, value in kwargs.items():  # Update the values of the kwargs provided
             setattr(self, key, value)
+
         if commit:  # Save the new object's state to the database as long as commit has been requested
-            save_func()
+            if base_save:
+                self.base_save(clean)
+            else:
+                self.save()
 
 
 class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibility only based on is active flag
@@ -81,7 +103,6 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         "Reply",
         content_type_field='_content_type',
         object_id_field='_object_id',
-        related_query_name="reverse_parent_object",
         verbose_name="Replies"
     )
     _date_time_created = models.DateTimeField(
@@ -109,13 +130,6 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
 
     def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
         return super().delete(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        if not self.visible and Pulse.objects.get(id=self.id).visible:
-            for reply in Reply.objects.filter(_original_pulse=self):
-                reply.update(save_func=reply.super_save, visible=False)
-        super().save(*args, **kwargs)
 
     def like(self, profile: "Profile"):  # TODO: prevent users from increasing the time by liking then unliking then reliking
         if self.disliked_by.filter(id=profile.id).exists():
@@ -226,11 +240,28 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         blank=True
     )
 
+    @property
+    def all_replies(self):
+        return Reply.objects.filter(_original_pulse=self)
+
     class Meta:
         verbose_name = "Pulse"
 
     def __str__(self):
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+
+        if not self.visible and Pulse.objects.get(id=self.id).visible:
+            for reply in self.all_replies:
+                reply.update(base_save=True, clean=False, visible=False)
+
+        elif self.visible and not Pulse.objects.get(id=self.id).visible:
+            for reply in self.all_replies:
+                reply.update(base_save=True, clean=False, visible=True)
+
+        super().save(*args, **kwargs)
 
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
@@ -263,27 +294,33 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     @property
     def original_pulse(self):
-        return self._original_pulse
+        try:
+            return self._original_pulse
+        except Pulse.DoesNotExist:
+            return self._find_original_pulse(self)
 
     class Meta:
         verbose_name = "Reply"
+        verbose_name_plural = "Replies"
 
     def __str__(self):
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.parent_object})"
 
     def save(self, *args, **kwargs):
-        try:
-            self.original_pulse()
-        except Pulse.DoesNotExist:
-            self._original_pulse = self._find_original_pulse(self)
+        self.full_clean()
+
+        self._original_pulse = self.original_pulse
 
         if not self.original_pulse.visible:
             self.visible = False
+        elif self.original_pulse.visible:
+            self.visible = True
 
-        self.base_save(*args, **kwargs)
+        self.base_save(clean=False, *args, **kwargs)
 
-    def base_save(self, *args, **kwargs):
-        self.full_clean()
+    def base_save(self, clean=True, *args, **kwargs):
+        if clean:
+            self.full_clean()
         _Visible_Reportable_Model.save(self, *args, **kwargs)
 
     @staticmethod
@@ -306,7 +343,7 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
     FALSE_INFO = "FLS"
     IN_PROGRESS = "PR"
     REJECTED = "RE"
-    CONFIRMED = "CN"
+    COMPLETED = "CM"
     category_choices = [
         (SPAM, "Spam"),
         (SEXUAL, "Nudity or sexual activity"),
@@ -322,7 +359,7 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
     status_choices = [
         (IN_PROGRESS, "In Progress"),
         (REJECTED, "Rejected"),
-        (CONFIRMED, "Confirmed")
+        (COMPLETED, "Completed")
     ]
 
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -351,7 +388,8 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
     status = models.CharField(
         "Status",
         max_length=2,
-        choices=status_choices
+        choices=status_choices,
+        default=IN_PROGRESS
     )
     _date_time_created = models.DateTimeField(
         "Creation Date & Time",
@@ -366,7 +404,7 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
         verbose_name = "Reply"
 
     def __str__(self):
-        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (For object - {self.parent_object})"
+        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (Assigned Staff Member - {self.assigned_staff})(For object - {self.parent_object})"
 
     def save(self, *args, **kwargs):
         self.full_clean()
