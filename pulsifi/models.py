@@ -11,15 +11,19 @@ from django.db import models
 
 
 def _choose_default_assigned_staff():
+    """
+        Returns a random staff member's Profile to be used as the default for a
+        newly created report.
+    """
     default_assigned_staff_QS = Profile.objects.filter(
         id=random_choice(
             Profile.objects.filter(_base_user__is_staff=True).values_list("id", flat=True)
-        )
+        )  # Choose a random ID from the list of staff member IDs
     )
 
     if default_assigned_staff_QS.exists():
         return default_assigned_staff_QS.get().id
-    return None
+    return None  # Set the link to a staff member's ID to None because no staff members currently xist in the database (will cause a validation error on Report because assigned_staff cannot be null, so staff members should be added before reports are made)
 
 
 class _Custom_Base_Model(models.Model):
@@ -31,45 +35,56 @@ class _Custom_Base_Model(models.Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
-    def base_save(self, *args, **kwargs):
+    def base_save(self, clean=True, *args, **kwargs) -> None:
+        """
+            Abstract declaration of method that MUST be implemented
+            by child classes.
+        """
+
         pass
 
     def refresh_from_db(self, using=None, fields=None, deep=True):
-        super().refresh_from_db(using=using, fields=fields)
+        """
+            Custom implementation of refreshing in-memory objects from the
+            database, which also updates any related fields on this object.
+        """
+
+        super().refresh_from_db(using=using, fields=fields)  # Update all normal fields using the base refresh_from_db method
 
         if deep:
             if fields:
-                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]
+                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]  # Limit the fields to be updated by the ones supplied in the "fields" argument with a valid field name (not a "+")
             else:
-                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]
+                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # Limit the fields to be updated by the ones with a valid field name (not a "+")
 
-            updated_model = self._meta.model.objects.get(id=self.id)
+            updated_model = self._meta.model.objects.get(id=self.id)  # Get the updated version of the object from the database (for related fields to be replaced from)
 
             field: models.Field
             for field in update_fields:
-                if not isinstance(field, models.ManyToManyField) and not isinstance(field, GenericRelation):
+                if field.is_relation and not isinstance(field, models.ManyToManyField) and not isinstance(field, GenericRelation):  # Limit the fields to be updated by the ones that are not a queryset of related objects
                     try:
-                        setattr(self, field.name, getattr(updated_model, field.name))
+                        setattr(self, field.name, getattr(updated_model, field.name))  # Set the value of the field to be that of the corresponding field retrieved from the database
                     except (AttributeError, TypeError, ValueError) as e:
                         pass  # TODO: use logging to log the error
 
     def update(self, commit=True, base_save=False, clean=True, **kwargs):
         """
-            Change an object's values & save that object to the database all in
-            one operation (based on Django's Queryset bulk update method).
+            Changes an in-memory object's values & savse that object to the
+            database all in one operation (based on Django's
+            Queryset.bulk_update method).
         """
 
         for key, value in kwargs.items():  # Update the values of the kwargs provided
             setattr(self, key, value)
 
         if commit:  # Save the new object's state to the database as long as commit has been requested
-            if base_save:
+            if base_save:  # Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
                 self.base_save(clean)
             else:
-                self.save()
+                self.save()  # Otherwise use the normal full save method of the model to save the object
 
 
-class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibility only based on is active flag
+class _Visible_Reportable_Model(_Custom_Base_Model):
     """
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
@@ -77,21 +92,33 @@ class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibili
     """
 
     visible: bool
+    """
+        Abstract declaration of field that MUST be implemented by child
+        classes.
+    """
     reports = GenericRelation(
         "Report",
         content_type_field='_content_type',
         object_id_field='_object_id',
         related_query_name="reverse_parent_object",
         verbose_name="Reports"
-    )  # Provides a link to the set of all Report objects that link to this object
+    )
+    """
+        Provides a link to the set of all Report objects that link to this
+        object.
+    """
 
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     def string_when_visible(self, string: str):
+        """
+            Returns the given string, or the given string but crossed out if
+            this object is not visible.
+        """
         if self.visible:
             return string
-        return "".join(f"{char}\u0336" for char in string)
+        return "".join(f"{char}\u0336" for char in string)  # Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
