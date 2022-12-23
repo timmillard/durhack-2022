@@ -15,14 +15,14 @@ def _choose_default_assigned_staff():
         Returns a random staff member's Profile to be used as the default for a
         newly created report.
     """
-    default_assigned_staff_QS = Profile.objects.filter(
-        id=random_choice(
-            Profile.objects.filter(_base_user__is_staff=True).values_list("id", flat=True)
-        )  # Choose a random ID from the list of staff member IDs
-    )
 
-    if default_assigned_staff_QS.exists():
-        return default_assigned_staff_QS.get().id
+    staff_QS = Profile.objects.filter(_base_user__is_staff=True)
+
+    if staff_QS.exists():
+        return Profile.objects.filter(
+            id=random_choice(staff_QS.values_list("id", flat=True))
+        ).get().id  # Choose a random ID from the list of staff member IDs
+
     return None  # Set the link to a staff member's ID to None because no staff members currently xist in the database (will cause a validation error on Report because assigned_staff cannot be null, so staff members should be added before reports are made)
 
 
