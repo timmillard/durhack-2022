@@ -83,7 +83,7 @@ class Home_View(LoginView):  # TODO: toast for account deletion, show admin link
         return response
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply at top of page
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply at top of page
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
     model = Pulse
@@ -120,7 +120,7 @@ class Self_Profile_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
         )
 
 
-class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+non-rejected & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
+class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
     template_name = "pulsifi/profile.html"
 
     def get_object(self, queryset=None):

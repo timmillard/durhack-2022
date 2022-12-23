@@ -50,7 +50,7 @@ class _Custom_Base_Model(models.Model):
                 if not isinstance(field, models.ManyToManyField) and not isinstance(field, GenericRelation):
                     try:
                         setattr(self, field.name, getattr(updated_model, field.name))
-                    except (AttributeError, TypeError) as e:
+                    except (AttributeError, TypeError, ValueError) as e:
                         pass  # TODO: use logging to log the error
 
     def update(self, commit=True, base_save=False, clean=True, **kwargs):
@@ -76,7 +76,7 @@ class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibili
         to have reports made about them.
     """
 
-    visible = models.BooleanField("Visibility", default=True)
+    visible: bool
     reports = GenericRelation(
         "Report",
         content_type_field='_content_type',
@@ -97,7 +97,7 @@ class _Visible_Reportable_Model(_Custom_Base_Model):  # TODO: Make user visibili
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
     liked_by: models.ManyToManyField
     disliked_by: models.ManyToManyField
-
+    visible = models.BooleanField("Visibility", default=True)
     message = models.TextField("Message")
     replies = GenericRelation(
         "Reply",
@@ -199,25 +199,29 @@ class Profile(_Visible_Reportable_Model):
     def date_joined(self):
         return self.base_user.date_joined
 
+    @property
+    def visible(self):
+        if self.base_user.date_joined is None:
+            return False
+        return self.base_user.is_active
+
     class Meta:
         verbose_name = "User"
 
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
 
-    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set visibility to false)
+    @visible.setter
+    def visible(self, value: bool):
+        if self.base_user.date_joined is not None:
+            self.base_user.is_active = value
+            self.base_user.full_clean()
+            self.base_user.save()
+
+    def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set base user active to false)
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        if not self.base_user:
-            self.visible = False
-        else:
-            if not self.base_user.is_active:  # Makes Profile invisible if the underlying User object has been deactivated
-                self.visible = False
-            elif not self.visible:  # Deactivates the underlying User object if Profile has been made invisible
-                self.base_user.is_active = False
-                self.base_user.save()
-
         self.full_clean()  # Perform full model validation before saving the object
         super().save(*args, **kwargs)
 
@@ -311,10 +315,8 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         self._original_pulse = self.original_pulse
 
-        if not self.original_pulse.visible:
+        if not self.original_pulse.visible:  # TODO: make children invisible by recursion (make visible a private field with setter method)
             self.visible = False
-        elif self.original_pulse.visible:
-            self.visible = True
 
         self.base_save(clean=False, *args, **kwargs)
 
