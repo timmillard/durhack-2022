@@ -11,11 +11,12 @@ from django.urls import reverse_lazy
 # noinspection PyPackageRequirements
 from environ import Env
 
+# noinspection SpellCheckingInspection
 env = Env(
     ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=(int, 1),
     AVATAR_GRAVATAR_DEFAULT=(str, "mp"),
     VERSION=(str, "0.1"),
-    EMAIL_HOST=(str, "smtppro.zoho.eu"),  # noqa
+    EMAIL_HOST=(str, "smtppro.zoho.eu"),
     EMAIL_PORT=(int, 465),
     EMAIL_HOST_USER=(str, "no-reply@pulsifi.tech"),
     EMAIL_USE_SSL=(bool, True),
@@ -26,7 +27,8 @@ env = Env(
 # Confirming that the supplied environment variable values for these settings are one of the valid choices
 if not env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS") > 0:
     raise ImproperlyConfigured(f"ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS must be an integer greater than 0")
-_AVATAR_GRAVATAR_DEFAULT_choices = ("404", "mp", "identicon", "monsterid", "wavatar", "retro", "robohash")  # noqa
+# noinspection SpellCheckingInspection
+_AVATAR_GRAVATAR_DEFAULT_choices = ("404", "mp", "identicon", "monsterid", "wavatar", "retro", "robohash")
 if re_search(r"^\d*(?:\.\d*)+$", env("VERSION")) is None:
     raise ImproperlyConfigured(f"VERSION must be in this format: <number>.<number>.<number>")
 if env("AVATAR_GRAVATAR_DEFAULT") not in _AVATAR_GRAVATAR_DEFAULT_choices:
@@ -67,12 +69,13 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
-SOCIALACCOUNT_PROVIDERS = {  # noqa
+# noinspection SpellCheckingInspection
+SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "VERIFIED_EMAIL": True,
         "APP": {
             "name": "Google",
-            "client_id": "661911946943-ttrstdi5luvlfcee625gq71ikekk7qcg.apps.googleusercontent.com",  # noqa
+            "client_id": "661911946943-ttrstdi5luvlfcee625gq71ikekk7qcg.apps.googleusercontent.com",
             "secret": env("OATH_GOOGLE_SECRET"),
             "key": ""
         }
@@ -81,7 +84,7 @@ SOCIALACCOUNT_PROVIDERS = {  # noqa
         "VERIFIED_EMAIL": True,
         "APP": {
             "name": "Discord",
-            "client_id": "1054763384391876628",  # noqa
+            "client_id": "1054763384391876628",
             "secret": env("OATH_DISCORD_SECRET"),
             "key": ""
         }
@@ -90,7 +93,7 @@ SOCIALACCOUNT_PROVIDERS = {  # noqa
         "VERIFIED_EMAIL": True,
         "APP": {
             "name": "GitHub",
-            "client_id": "3c53e63beb0fb9cfcce3",  # noqa
+            "client_id": "3c53e63beb0fb9cfcce3",
             "secret": env("OATH_GITHUB_SECRET"),
             "key": ""
         }
@@ -99,7 +102,7 @@ SOCIALACCOUNT_PROVIDERS = {  # noqa
         "VERIFIED_EMAIL": True,
         "APP": {
             "name": "Microsoft",
-            "client_id": "6f9ee230-1fc5-4d18-ace3-a45805cc4112",  # noqa
+            "client_id": "6f9ee230-1fc5-4d18-ace3-a45805cc4112",
             "secret": env("OATH_MICROSOFT_SECRET"),
             "key": ""
         }
@@ -124,6 +127,7 @@ FOLLOWER_COUNT_SCALING_FUNCTION = env(
 SECRET_KEY = env("SECRET_KEY")
 
 # Application definitions
+# noinspection SpellCheckingInspection
 INSTALLED_APPS = [
     "pulsifi.apps.PulsifiConfig",
     "django.contrib.admin",
@@ -135,11 +139,11 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     "allauth",
     "allauth.account",
-    "allauth.socialaccount",  # noqa
-    "allauth.socialaccount.providers.discord",  # noqa
-    "allauth.socialaccount.providers.github",  # noqa
-    "allauth.socialaccount.providers.google",  # noqa
-    "allauth.socialaccount.providers.microsoft",  # noqa
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.discord",
+    "allauth.socialaccount.providers.github",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.microsoft",
     "django_otp",
     "django_otp.plugins.otp_totp",
     "django_otp.plugins.otp_static",
