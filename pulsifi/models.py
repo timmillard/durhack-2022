@@ -1,6 +1,8 @@
 """
     Models in pulsifi application.
 """
+from abc import abstractmethod
+from datetime import datetime
 from random import choice as random_choice
 
 from django.conf import settings
@@ -35,13 +37,14 @@ class _Custom_Base_Model(models.Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
+    @abstractmethod
     def base_save(self, clean=True, *args, **kwargs) -> None:
         """
             Abstract declaration of method that MUST be implemented
             by child classes.
         """
 
-        pass
+        raise NotImplementedError
 
     def refresh_from_db(self, using=None, fields=None, deep=True):
         """
@@ -91,11 +94,6 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
         to have reports made about them.
     """
 
-    visible: bool
-    """
-        Abstract declaration of field that MUST be implemented by child
-        classes.
-    """
     reports = GenericRelation(
         "Report",
         content_type_field='_content_type',
@@ -111,19 +109,38 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
+    @property
+    @abstractmethod
+    def visible(self) -> bool:
+        """
+            Abstract declaration of field getter that MUST be implemented by
+            child classes.
+        """
+
+        raise NotImplementedError
+
+    @visible.setter
+    @abstractmethod
+    def visible(self, value: bool) -> None:
+        """
+            Abstract declaration of field setter that MUST be implemented by
+            child classes.
+        """
+
+        raise NotImplementedError
+
     def string_when_visible(self, string: str):
         """
             Returns the given string, or the given string but crossed out if
             this object is not visible.
         """
+
         if self.visible:
             return string
         return "".join(f"{char}\u0336" for char in string)  # Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
-    liked_by: models.ManyToManyField
-    disliked_by: models.ManyToManyField
     visible = models.BooleanField("Visibility", default=True)
     message = models.TextField("Message")
     replies = GenericRelation(
@@ -148,6 +165,26 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
     @property
     def date_time_created(self):
         return self._date_time_created
+
+    @property
+    @abstractmethod
+    def liked_by(self) -> models.Manager:
+        """
+            Abstract declaration of field that MUST be implemented by child
+            classes.
+        """
+
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def disliked_by(self) -> models.Manager:
+        """
+            Abstract declaration of field that MUST be implemented by child
+            classes.
+        """
+
+        raise NotImplementedError
 
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
@@ -175,7 +212,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         self.disliked_by.remove(profile)
 
 
-class Profile(_Visible_Reportable_Model):
+class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in username & password
     """
         Custom expansion class that holds extra data about a user (specific to
         Pulsifi).
@@ -201,17 +238,7 @@ class Profile(_Visible_Reportable_Model):
     @property
     def base_user(self):  # Public getter for the private field _base_user
         if self._base_user is None:
-            return BaseUser(
-                username="???",
-                password="???",
-                email="???",
-                is_active=False,
-                is_staff=None,
-                is_superuser=None,
-                first_name=None,
-                last_name=None,
-                date_joined=None
-            )
+            return self._Null_BaseUser(profile=self)
         return self._base_user
 
     @property
@@ -228,19 +255,221 @@ class Profile(_Visible_Reportable_Model):
 
     @property
     def visible(self):
-        if self.base_user.date_joined is None:
+        if self.base_user is None:
             return False
         return self.base_user.is_active
 
     class Meta:
         verbose_name = "User"
 
+    class _Null_BaseUser:  # Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
+        # noinspection PyPropertyDefinition
+        @property
+        def username(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def email(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def password(self):
+            self._does_not_exist()
+
+        @property
+        def is_active(self):
+            return False
+
+        # noinspection PyPropertyDefinition
+        @property
+        def is_staff(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def is_superuser(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def id(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def socialaccount_set(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def avatar_set(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def last_login(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def groups(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def date_joined(self):
+            self._does_not_exist()
+
+        @property
+        def is_anonymous(self):
+            return True
+
+        @property
+        def is_authenticated(self):
+            return False
+
+        # noinspection PyPropertyDefinition
+        @property
+        def emailaddress_set(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def staticdevice_set(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def totpdevice_set(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def _meta(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def _state(self):
+            self._does_not_exist()
+
+        @property
+        def pk(self):
+            return self.id
+
+        # noinspection PyPropertyDefinition
+        @property
+        def user_permissions(self):
+            self._does_not_exist()
+
+        # noinspection PyPropertyDefinition
+        @property
+        def logentry_set(self):
+            self._does_not_exist()
+
+        @property
+        def DoesNotExist(self):
+            return BaseUser.DoesNotExist
+
+        @property
+        def MultipleObjectsReturned(self):
+            return BaseUser.MultipleObjectsReturned
+
+        @property
+        def USERNAME_FIELD(self):
+            return BaseUser.USERNAME_FIELD
+
+        @property
+        def EMAIL_FIELD(self):
+            return BaseUser.EMAIL_FIELD
+
+        @property
+        def REQUIRED_FIELDS(self):
+            return BaseUser.REQUIRED_FIELDS
+
+        def __init__(self, profile):
+            self.profile: Profile = profile
+
+        def __str__(self):  # TODO: implement str method
+            pass
+
+        def __repr__(self):  # TODO: implement repr method
+            pass
+
+        def __bool__(self):
+            return False
+
+        @username.setter
+        def username(self, value: str):
+            self._does_not_exist()
+
+        @email.setter
+        def email(self, value: str):
+            self._does_not_exist()
+
+        @password.setter
+        def password(self, value: str):
+            self._does_not_exist()
+
+        @is_active.setter
+        def is_active(self, value: bool):
+            raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_active must be False")
+
+        @is_staff.setter
+        def is_staff(self, value: bool):
+            self._does_not_exist()
+
+        @is_superuser.setter
+        def is_superuser(self, value: bool):
+            self._does_not_exist()
+
+        @id.setter
+        def id(self, value: int):
+            self._does_not_exist()
+
+        # noinspection SpellCheckingInspection
+        @socialaccount_set.setter
+        def socialaccount_set(self, value):
+            """  """  # TODO: Write docstring
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use socialaccount_set.set() instead.")
+
+        @avatar_set.setter
+        def avatar_set(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use avatar_set.set() instead.")
+
+        @last_login.setter
+        def last_login(self, value: datetime):
+            self._does_not_exist()
+
+        @groups.setter
+        def groups(self, value):
+            self._does_not_exist()
+
+        @date_joined.setter
+        def date_joined(self, value: datetime):
+            self._does_not_exist()
+
+        def get_next_by_date_joined(self):
+            self._does_not_exist()
+
+        # TODO: add null setters & methods
+
+        def get_previous_by_date_joined(self):
+            self._does_not_exist()
+
+        @staticmethod
+        def _does_not_exist():
+            raise BaseUser.DoesNotExist("No User object found for this Profile")
+
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
 
     @visible.setter
     def visible(self, value: bool):
-        if self.base_user.date_joined is not None:
+        print(isinstance(self.base_user, self._Null_BaseUser))
+        if self.base_user is not None and self.base_user.is_active != value:
             self.base_user.is_active = value
             self.base_user.full_clean()
             self.base_user.save()
