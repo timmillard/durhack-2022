@@ -5,11 +5,13 @@ from abc import abstractmethod
 from datetime import datetime
 from random import choice as random_choice
 
+import unicodedata
 from django.conf import settings
 from django.contrib.auth.models import User as BaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.options import Options
 
 
 def _choose_default_assigned_staff():
@@ -415,7 +417,8 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
 
         @is_active.setter
         def is_active(self, value: bool):
-            raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_active must be False")
+            if value:
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_active must be False")
 
         @is_staff.setter
         def is_staff(self, value: bool):
@@ -432,7 +435,6 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         # noinspection SpellCheckingInspection
         @socialaccount_set.setter
         def socialaccount_set(self, value):
-            """  """  # TODO: Write docstring
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use socialaccount_set.set() instead.")
 
         @avatar_set.setter
@@ -451,13 +453,108 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def date_joined(self, value: datetime):
             self._does_not_exist()
 
+        @is_anonymous.setter
+        def is_anonymous(self, value: bool):
+            if not value:
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_anonymous must be True")
+
+        @is_authenticated.setter
+        def is_authenticated(self, value: bool):
+            if value:
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_authenticated must be False")
+
+        # noinspection SpellCheckingInspection
+        @emailaddress_set.setter
+        def emailaddress_set(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use emailaddress_set.set() instead.")
+
+        # noinspection SpellCheckingInspection
+        @staticdevice_set.setter
+        def staticdevice_set(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use staticdevice_set.set() instead.")
+
+        # noinspection SpellCheckingInspection
+        @totpdevice_set.setter
+        def totpdevice_set(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use totpdevice_set.set() instead.")
+
+        @_meta.setter
+        def _meta(self, value: Options):
+            self._does_not_exist()
+
+        @_state.setter
+        def _state(self, value: models.base.ModelState):
+            self._does_not_exist()
+
+        @pk.setter
+        def pk(self, value: int):
+            self.id = value
+
+        @user_permissions.setter
+        def user_permissions(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use user_permissions.set() instead.")
+
+        @logentry_set.setter
+        def logentry_set(self, value):
+            raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use logentry_set.set() instead.")
+
+        def save(self, *args, **kwargs):
+            self._does_not_exist()
+
+        def delete(self, *args, **kwargs):
+            self._does_not_exist()
+
+        def clean(self):
+            self._does_not_exist()
+
+        def full_clean(self, exclude):
+            self._does_not_exist()
+
+        def email_user(self, subject: str, message: str, from_email: str = None, **kwargs):
+            self._does_not_exist()
+
+        def get_username(self):
+            return self.username
+
+        def natural_key(self):
+            return self.get_username(),
+
+        def set_password(self, raw_password: str):
+            self._does_not_exist()
+
+        def check_password(self, raw_password: str):
+            self._does_not_exist()
+
+        def set_unusable_password(self):
+            raise BaseUser.DoesNotExist("No User object exists for this Profile, so an unusable password cannot be set")
+
+        def has_usable_password(self):
+            return False
+
+        def get_session_auth_hash(self):
+            raise BaseUser.DoesNotExist("No User object exists for this Profile, so there will be no sessions to get the auth hashes of.")
+
         def get_next_by_date_joined(self):
             self._does_not_exist()
 
-        # TODO: add null setters & methods
-
         def get_previous_by_date_joined(self):
             self._does_not_exist()
+
+        @classmethod
+        def get_email_field_name(cls):  # TODO: Just do a call to the base user class (passing this class as an argument)
+            try:
+                return cls.EMAIL_FIELD
+            except AttributeError:
+                return "email"
+
+        # noinspection SpellCheckingInspection
+        @classmethod
+        def normalize_username(cls, username):
+            return (
+                unicodedata.normalize("NFKC", username)
+                if isinstance(username, str)
+                else username
+            )
 
         @staticmethod
         def _does_not_exist():
@@ -501,7 +598,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
     )
 
     @property
-    def all_replies(self):
+    def full_depth_replies(self):
         return Reply.objects.filter(_original_pulse=self)
 
     class Meta:
@@ -514,11 +611,11 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         self.full_clean()
 
         if not self.visible and Pulse.objects.get(id=self.id).visible:
-            for reply in self.all_replies:
+            for reply in self.full_depth_replies:
                 reply.update(base_save=True, clean=False, visible=False)
 
         elif self.visible and not Pulse.objects.get(id=self.id).visible:
-            for reply in self.all_replies:
+            for reply in self.full_depth_replies:
                 reply.update(base_save=True, clean=False, visible=True)
 
         super().save(*args, **kwargs)
