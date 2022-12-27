@@ -4,10 +4,12 @@
 from abc import abstractmethod
 from datetime import datetime
 from random import choice as random_choice
+from typing import Iterable
 
 import unicodedata
+from allauth.account.models import EmailAddress
 from django.conf import settings
-from django.contrib.auth.models import User as BaseUser
+from django.contrib.auth.models import User as BaseUser, UserManager
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -39,16 +41,12 @@ class _Custom_Base_Model(models.Model):
     class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
-    @abstractmethod
-    def base_save(self, clean=True, *args, **kwargs) -> None:
-        """
-            Abstract declaration of method that MUST be implemented
-            by child classes.
-        """
+    def base_save(self, clean=True, *args, **kwargs):
+        if clean:
+            self.full_clean()
+        models.Model.save(self, *args, **kwargs)
 
-        raise NotImplementedError
-
-    def refresh_from_db(self, using=None, fields=None, deep=True):
+    def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True):
         """
             Custom implementation of refreshing in-memory objects from the
             database, which also updates any related fields on this object.
@@ -74,7 +72,7 @@ class _Custom_Base_Model(models.Model):
 
     def update(self, commit=True, base_save=False, clean=True, **kwargs):
         """
-            Changes an in-memory object's values & savse that object to the
+            Changes an in-memory object's values & save that object to the
             database all in one operation (based on Django's
             Queryset.bulk_update method).
         """
@@ -214,7 +212,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         self.disliked_by.remove(profile)
 
 
-class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in username & password
+class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in username & password, prevent new accounts with similar usernames (especially verified accounts)
     """
         Custom expansion class that holds extra data about a user (specific to
         Pulsifi).
@@ -239,32 +237,40 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
 
     @property
     def base_user(self):  # Public getter for the private field _base_user
-        if self._base_user is None:
-            return self._Null_BaseUser(profile=self)
-        return self._base_user
+        if self._base_user is not None:
+            return self._base_user
+        return self._Null_BaseUser(profile=self)
 
     @property
-    def username(self):  # Shortcut getter for the obfuscated field base_user.username
+    def username(self) -> str:  # Shortcut getter for the field base_user.username
+        # noinspection PyTypeChecker
         return self.base_user.username
 
     @property
-    def email(self):  # Shortcut getter for the obfuscated field base_user.email
+    def email(self) -> str:  # Shortcut getter for the field base_user.email
+        # noinspection PyTypeChecker
         return self.base_user.email
 
     @property
-    def date_joined(self):
+    def date_joined(self) -> datetime:
+        # noinspection PyTypeChecker
         return self.base_user.date_joined
 
     @property
     def visible(self):
-        if self.base_user is None:
-            return False
         return self.base_user.is_active
+
+    # noinspection SpellCheckingInspection
+    @property
+    def emailaddress_set(self) -> models.Manager:
+        # noinspection PyTypeChecker
+        return self.base_user.emailaddress_set
 
     class Meta:
         verbose_name = "User"
 
-    class _Null_BaseUser:  # Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
+    # Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
+    class _Null_BaseUser:
         # noinspection PyPropertyDefinition
         @property
         def username(self):
@@ -299,7 +305,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def id(self):
             self._does_not_exist()
 
-        # noinspection PyPropertyDefinition
+        # noinspection PyPropertyDefinition, SpellCheckingInspection
         @property
         def socialaccount_set(self):
             self._does_not_exist()
@@ -332,17 +338,17 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def is_authenticated(self):
             return False
 
-        # noinspection PyPropertyDefinition
+        # noinspection PyPropertyDefinition, SpellCheckingInspection
         @property
         def emailaddress_set(self):
             self._does_not_exist()
 
-        # noinspection PyPropertyDefinition
+        # noinspection PyPropertyDefinition, SpellCheckingInspection
         @property
         def staticdevice_set(self):
             self._does_not_exist()
 
-        # noinspection PyPropertyDefinition
+        # noinspection PyPropertyDefinition, SpellCheckingInspection
         @property
         def totpdevice_set(self):
             self._does_not_exist()
@@ -391,97 +397,116 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def REQUIRED_FIELDS(self):
             return BaseUser.REQUIRED_FIELDS
 
-        def __init__(self, profile):
-            self.profile: Profile = profile
+        def __init__(self, profile: "Profile"):
+            self.profile = profile
 
-        def __str__(self):  # TODO: implement str method
-            pass
+        def __str__(self):
+            return "???"
 
-        def __repr__(self):  # TODO: implement repr method
-            pass
+        def __repr__(self):
+            return "<Null_User: ???>"
 
         def __bool__(self):
             return False
 
+        def __eq__(self, other):
+            if not isinstance(other, type(self)):
+                return False
+            return True
+
+        def __hash__(self) -> int:
+            raise TypeError("Null_User instances have no key value, so are unhashable.")
+
+        # noinspection PyUnusedLocal
         @username.setter
         def username(self, value: str):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @email.setter
         def email(self, value: str):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @password.setter
         def password(self, value: str):
             self._does_not_exist()
 
         @is_active.setter
-        def is_active(self, value: bool):
+        def is_active(self, value: bool) -> None:
             if value:
-                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_active must be False")
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_active must be False.")
 
+        # noinspection PyUnusedLocal
         @is_staff.setter
         def is_staff(self, value: bool):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @is_superuser.setter
         def is_superuser(self, value: bool):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @id.setter
         def id(self, value: int):
             self._does_not_exist()
 
         # noinspection SpellCheckingInspection
         @socialaccount_set.setter
-        def socialaccount_set(self, value):
+        def socialaccount_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use socialaccount_set.set() instead.")
 
         @avatar_set.setter
-        def avatar_set(self, value):
+        def avatar_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use avatar_set.set() instead.")
 
+        # noinspection PyUnusedLocal
         @last_login.setter
         def last_login(self, value: datetime):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @groups.setter
         def groups(self, value):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @date_joined.setter
         def date_joined(self, value: datetime):
             self._does_not_exist()
 
         @is_anonymous.setter
-        def is_anonymous(self, value: bool):
+        def is_anonymous(self, value: bool) -> None:
             if not value:
-                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_anonymous must be True")
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_anonymous must be True.")
 
         @is_authenticated.setter
-        def is_authenticated(self, value: bool):
+        def is_authenticated(self, value: bool) -> None:
             if value:
-                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_authenticated must be False")
+                raise BaseUser.DoesNotExist("No User object exists for this Profile, so is_authenticated must be False.")
 
         # noinspection SpellCheckingInspection
         @emailaddress_set.setter
-        def emailaddress_set(self, value):
+        def emailaddress_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use emailaddress_set.set() instead.")
 
         # noinspection SpellCheckingInspection
         @staticdevice_set.setter
-        def staticdevice_set(self, value):
+        def staticdevice_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use staticdevice_set.set() instead.")
 
         # noinspection SpellCheckingInspection
         @totpdevice_set.setter
-        def totpdevice_set(self, value):
+        def totpdevice_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use totpdevice_set.set() instead.")
 
+        # noinspection PyUnusedLocal
         @_meta.setter
         def _meta(self, value: Options):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         @_state.setter
         def _state(self, value: models.base.ModelState):
             self._does_not_exist()
@@ -491,25 +516,43 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
             self.id = value
 
         @user_permissions.setter
-        def user_permissions(self, value):
+        def user_permissions(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use user_permissions.set() instead.")
 
         @logentry_set.setter
-        def logentry_set(self, value):
+        def logentry_set(self, value) -> None:
             raise TypeError("Direct assignment to the reverse side of a related set is prohibited. Use logentry_set.set() instead.")
 
-        def save(self, *args, **kwargs):
+        # noinspection PyUnusedLocal, PyUnusedLocal
+        def save(self, force_insert=False, force_update=False, using: str = None, update_fields: Iterable[str] = None):
             self._does_not_exist()
 
-        def delete(self, *args, **kwargs):
+        # noinspection PyUnusedLocal
+        def delete(self, using: str = None, keep_parents=False):
             self._does_not_exist()
 
         def clean(self):
             self._does_not_exist()
 
-        def full_clean(self, exclude):
+        # noinspection PyUnusedLocal
+        def clean_fields(self, exclude: Iterable[str] = None):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
+        def full_clean(self, exclude: Iterable[str] = None, validate_unique=True, validate_constraints=True):
+            self._does_not_exist()
+
+        # noinspection PyUnusedLocal
+        def validate_unique(self, exclude: Iterable[str] = None):
+            self._does_not_exist()
+
+        def get_constraints(self):
+            raise BaseUser.DoesNotExist("Null_User object is cannot be instantiated, so has no fields, so has no constraints.")
+
+        def validate_constraints(self, exclude: Iterable[str] = None):
+            raise BaseUser.DoesNotExist("Null_User object is cannot be instantiated, so has no fields, so has no constraints.")
+
+        # noinspection PyUnusedLocal
         def email_user(self, subject: str, message: str, from_email: str = None, **kwargs):
             self._does_not_exist()
 
@@ -519,15 +562,22 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def natural_key(self):
             return self.get_username(),
 
+        # noinspection PyUnusedLocal
         def set_password(self, raw_password: str):
             self._does_not_exist()
 
+        # noinspection PyUnusedLocal
         def check_password(self, raw_password: str):
             self._does_not_exist()
 
-        def set_unusable_password(self):
-            raise BaseUser.DoesNotExist("No User object exists for this Profile, so an unusable password cannot be set")
+        # noinspection PyUnusedLocal
+        def refresh_from_db(self, using: str = None, fields: Iterable[str] = None):
+            self._does_not_exist()
 
+        def set_unusable_password(self):
+            raise BaseUser.DoesNotExist("No User object exists for this Profile, so an unusable password cannot be set.")
+
+        # noinspection PyMethodMayBeStatic
         def has_usable_password(self):
             return False
 
@@ -556,17 +606,36 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
                 else username
             )
 
+        # noinspection PyUnusedLocal
+        @classmethod
+        def from_db(cls, db: str, field_names: Iterable[str], values: Iterable):
+            cls._does_not_exist()
+
         @staticmethod
         def _does_not_exist():
-            raise BaseUser.DoesNotExist("No User object found for this Profile")
+            raise BaseUser.DoesNotExist("No User object found for this Profile.")
 
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
 
+    @username.setter
+    def username(self, value: str) -> None:
+        if self.base_user is not None:  # TODO: Log warn attempted to be changed when no base_user
+            if BaseUser.objects.filter(username__in=self.get_similar_usernames(value)).exists():
+                raise ValueError(f"Username ({value}) is already in use.")
+            self.base_user.username = BaseUser.normalize_username(value)
+            self.base_user.full_clean()
+
+    @email.setter
+    def email(self, value: str) -> None:
+        if self.base_user is not None:  # TODO: Log warn attempted to be changed when no base_user
+            if EmailAddress.objects.filter(email=value).exclude(user=self.base_user).exists():
+                raise ValueError(f"Email address ({value}) is already in use.")
+            self.base_user.email = UserManager.normalize_email(value)
+
     @visible.setter
     def visible(self, value: bool):
-        print(isinstance(self.base_user, self._Null_BaseUser))
-        if self.base_user is not None and self.base_user.is_active != value:
+        if self.base_user is not None and self.base_user.is_active != value:  # TODO: Log warn attempted to be changed when no base_user
             self.base_user.is_active = value
             self.base_user.full_clean()
             self.base_user.save()
@@ -577,6 +646,10 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
     def save(self, *args, **kwargs):
         self.full_clean()  # Perform full model validation before saving the object
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def get_similar_usernames(username: str):  # Todo: get similar usernames & prevent new accounts with similar usernames
+        return [username]
 
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
@@ -673,11 +746,6 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         self.base_save(clean=False, *args, **kwargs)
 
-    def base_save(self, clean=True, *args, **kwargs):
-        if clean:
-            self.full_clean()
-        _Visible_Reportable_Model.save(self, *args, **kwargs)
-
     @staticmethod
     def _find_original_pulse(reply):
         if isinstance(reply.parent_object, Pulse):
@@ -706,7 +774,7 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
         (VIOLENCE, "Violence or dangerous organisations"),
         (ILLEGAL_GOODS, "Sale of illegal or regulated goods"),
         (BULLYING, "Bullying or harassment"),
-        (INTELLECTUAL_PROPERTY, "Intellectual property violation"),
+        (INTELLECTUAL_PROPERTY, "Intellectual property violation or impersonation"),
         (SELF_INJURY, "Suicide or self-injury"),
         (SCAM, "Scam or fraud"),
         (FALSE_INFO, "False or misleading information")

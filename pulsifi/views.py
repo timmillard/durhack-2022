@@ -132,12 +132,12 @@ class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(
-                _("No %(verbose_name)s found matching the query")
+                _("No %(verbose_name)s found matching the query.")
                 % {"verbose_name": queryset.model._meta.verbose_name}
             )
         return obj
 
-    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username) if view is for logged-in user
+    def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username(not already in use & using a form)) if view is for logged-in user
         if response := self.check_action_in_post_request():
             return response
         # TODO: what to do if a post is deleted
