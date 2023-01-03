@@ -549,13 +549,13 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
 
     @email.setter
     def email(self, value: str) -> None:
-        if self.base_user:  # TODO: Log warn attempted to be changed when no base_user
+        if self.base_user:
             value = UserManager.normalize_email(value)
 
             if EmailAddress.objects.filter(email=value).exclude(user=self.base_user).exists():
                 raise ValueError(f"Email address ({value}) is already in use.")
 
-            self.base_user.email = value
+        self.base_user.email = value
 
     @visible.setter
     def visible(self, value: bool):

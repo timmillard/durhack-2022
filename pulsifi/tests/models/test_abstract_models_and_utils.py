@@ -127,9 +127,9 @@ class Null_BaseUser_Tests(TestCase):
 
             except BaseUser.DoesNotExist:
                 if profile.base_user or isinstance(profile.base_user, Profile._Null_BaseUser):
-                    self.fail(f"Setting {attribute_name} on BaseUser object <{profile.base_user}> via Profile raised BaseUser.DoesNotExist")
+                    self.fail(f"Setting {attribute_name} on BaseUser object <{profile.base_user}> via Profile raised BaseUser.DoesNotExist, when _base_user should exist")
                 else:
-                    self.fail(f"Setting {attribute_name} on BaseUser object <profile.base_user> via Profile raised BaseUser.DoesNotExist")
+                    self.fail(f"Setting {attribute_name} on BaseUser object <profile.base_user> via Profile raised BaseUser.DoesNotExist, when _base_user should exist")
 
         for attribute_name in BASEUSER_ATTRIBUTE_NAMES:
             try:
@@ -137,9 +137,9 @@ class Null_BaseUser_Tests(TestCase):
 
             except BaseUser.DoesNotExist:
                 if profile.base_user or isinstance(profile.base_user, Profile._Null_BaseUser):
-                    self.fail(f"Accessing {attribute_name} on BaseUser object: <{profile.base_user}> raised BaseUser.DoesNotExist")
+                    self.fail(f"Accessing {attribute_name} on BaseUser object: <{profile.base_user}> raised BaseUser.DoesNotExist, when _base_user should exist")
                 else:
-                    self.fail(f"Accessing {attribute_name} on BaseUser object: <profile.base_user> raised BaseUser.DoesNotExist")
+                    self.fail(f"Accessing {attribute_name} on BaseUser object: <profile.base_user> raised BaseUser.DoesNotExist, when _base_user should exist")
 
             try:
                 setattr(
@@ -149,38 +149,29 @@ class Null_BaseUser_Tests(TestCase):
 
             except BaseUser.DoesNotExist:
                 if profile.base_user or isinstance(profile.base_user, Profile._Null_BaseUser):
-                    self.fail(f"Setting {attribute_name} on BaseUser object: <{profile.base_user}> raised BaseUser.DoesNotExist")
+                    self.fail(f"Setting {attribute_name} on BaseUser object: <{profile.base_user}> raised BaseUser.DoesNotExist, when _base_user should exist")
                 else:
-                    self.fail(f"Setting {attribute_name} on BaseUser object: <profile.base_user> raised BaseUser.DoesNotExist")
+                    self.fail(f"Setting {attribute_name} on BaseUser object: <profile.base_user> raised BaseUser.DoesNotExist, when _base_user should exist")
 
         profile = DeleteBaseUserHelper.delete_base_user(profile)
 
         for attribute_name in PROFILE_ATTRIBUTE_NAMES:
             # noinspection PyTypeChecker
-            with self.assertRaises(BaseUser.DoesNotExist, msg=f"PROFILE_ATTRIBUTES, get attribute_name={attribute_name}"):
+            with self.assertRaises(BaseUser.DoesNotExist, msg=f"Getting {attribute_name} on BaseUser object: <profile.base_user> via Profile did not raise BaseUser.DoesNotExist, when _base_user should not exist"):
                 getattr(profile, attribute_name)
 
-            if attribute_name == "username":
+            if attribute_name != "date_joined":
                 # noinspection PyTypeChecker
-                with self.assertRaises(BaseUser.DoesNotExist, msg=f"PROFILE_ATTRIBUTES, set attribute_name={attribute_name}"):
+                with self.assertRaises(BaseUser.DoesNotExist, msg=f"Setting {attribute_name} on BaseUser object: <profile.base_user> via Profile did not raise BaseUser.DoesNotExist, when _base_user should not exist"):
                     setattr(copy.deepcopy(profile), attribute_name, "value")
-            elif attribute_name != "date_joined":
-                try:
-                    setattr(copy.deepcopy(profile), attribute_name, "value")
-
-                except BaseUser.DoesNotExist:
-                    if profile.base_user or isinstance(profile.base_user, Profile._Null_BaseUser):
-                        self.fail(f"Setting {attribute_name} on BaseUser object <{profile.base_user}> via Profile raised BaseUser.DoesNotExist")
-                    else:
-                        self.fail(f"Setting {attribute_name} on BaseUser object <profile.base_user> via Profile raised BaseUser.DoesNotExist")
 
         for attribute_name in BASEUSER_ATTRIBUTE_NAMES:
             # noinspection PyTypeChecker, SpellCheckingInspection
-            with self.assertRaises(BaseUser.DoesNotExist, msg=f"BASEUSER_ATTRIBUTES, get attribute_name={attribute_name}"):
+            with self.assertRaises(BaseUser.DoesNotExist, msg=f"Getting {attribute_name} on BaseUser object: <profile.base_user> did not raise BaseUser.DoesNotExist, when _base_user should not exist"):
                 getattr(profile.base_user, attribute_name)
 
             # noinspection PyTypeChecker, SpellCheckingInspection
-            with self.assertRaises(BaseUser.DoesNotExist, msg=f"BASEUSER_ATTRIBUTES, set attribute_name={attribute_name}"):
+            with self.assertRaises(BaseUser.DoesNotExist, msg=f"Setting {attribute_name} on BaseUser object: <profile.base_user> did not raise BaseUser.DoesNotExist, when _base_user should not exist"):
                 setattr(
                     copy.deepcopy(profile).base_user,
                     attribute_name,
