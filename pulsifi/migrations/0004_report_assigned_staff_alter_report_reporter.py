@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='report',
             name='assigned_staff',
-            field=models.ForeignKey(default=pulsifi.models._choose_default_assigned_staff, limit_choices_to={'_base_user__is_staff': True}, on_delete=django.db.models.deletion.CASCADE, related_name='assigned_reports', to='pulsifi.profile', verbose_name='Assigned Staff Member'),
+            field=models.ForeignKey(default=pulsifi.models.get_random_staff_member, limit_choices_to={'_base_user__is_staff': True}, on_delete=django.db.models.deletion.CASCADE, related_name='assigned_reports', to='pulsifi.profile', verbose_name='Assigned Staff Member'),
         ),
         migrations.AlterField(
             model_name='report',

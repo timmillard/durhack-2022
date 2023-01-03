@@ -1,10 +1,10 @@
 """
-    Models in pulsifi application.
+    Models in pulsifi app.
 """
+
 from abc import abstractmethod
 from datetime import datetime
-from random import choice as random_choice
-from typing import Iterable
+from typing import Final, Iterable
 
 import unicodedata
 from allauth.account.models import EmailAddress
@@ -15,79 +15,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.options import Options
 
-
-def _choose_default_assigned_staff():
-    """
-        Returns a random staff member's Profile to be used as the default for a
-        newly created report.
-    """
-
-    staff_QS = Profile.objects.filter(_base_user__is_staff=True)
-
-    if staff_QS.exists():
-        return Profile.objects.filter(
-            id=random_choice(staff_QS.values_list("id", flat=True))
-        ).get().id  # Choose a random ID from the list of staff member IDs
-
-    return None  # Set the link to a staff member's ID to None because no staff members currently xist in the database (will cause a validation error on Report because assigned_staff cannot be null, so staff members should be added before reports are made)
+from .models_utils import Custom_Base_Model, get_random_staff_member
 
 
-class _Custom_Base_Model(models.Model):
-    """
-        Base model that provides extra utility methods for all other models to
-        use.
-    """
-
-    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
-        abstract = True
-
-    def base_save(self, clean=True, *args, **kwargs):
-        if clean:
-            self.full_clean()
-        models.Model.save(self, *args, **kwargs)
-
-    def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True):
-        """
-            Custom implementation of refreshing in-memory objects from the
-            database, which also updates any related fields on this object.
-        """
-
-        super().refresh_from_db(using=using, fields=fields)  # Update all normal fields using the base refresh_from_db method
-
-        if deep:
-            if fields:
-                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]  # Limit the fields to be updated by the ones supplied in the "fields" argument with a valid field name (not a "+")
-            else:
-                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # Limit the fields to be updated by the ones with a valid field name (not a "+")
-
-            updated_model = self._meta.model.objects.get(id=self.id)  # Get the updated version of the object from the database (for related fields to be replaced from)
-
-            field: models.Field
-            for field in update_fields:
-                if field.is_relation and not isinstance(field, models.ManyToManyField) and not isinstance(field, GenericRelation):  # Limit the fields to be updated by the ones that are not a queryset of related objects
-                    try:
-                        setattr(self, field.name, getattr(updated_model, field.name))  # Set the value of the field to be that of the corresponding field retrieved from the database
-                    except (AttributeError, TypeError, ValueError) as e:
-                        pass  # TODO: use logging to log the error
-
-    def update(self, commit=True, base_save=False, clean=True, **kwargs):
-        """
-            Changes an in-memory object's values & save that object to the
-            database all in one operation (based on Django's
-            Queryset.bulk_update method).
-        """
-
-        for key, value in kwargs.items():  # Update the values of the kwargs provided
-            setattr(self, key, value)
-
-        if commit:  # Save the new object's state to the database as long as commit has been requested
-            if base_save:  # Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
-                self.base_save(clean)
-            else:
-                self.save()  # Otherwise use the normal full save method of the model to save the object
-
-
-class _Visible_Reportable_Model(_Custom_Base_Model):
+class _Visible_Reportable_Model(Custom_Base_Model):
     """
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
@@ -96,8 +27,8 @@ class _Visible_Reportable_Model(_Custom_Base_Model):
 
     reports = GenericRelation(
         "Report",
-        content_type_field='_content_type',
-        object_id_field='_object_id',
+        content_type_field="_content_type",
+        object_id_field="_object_id",
         related_query_name="reverse_parent_object",
         verbose_name="Reports"
     )
@@ -145,8 +76,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
     message = models.TextField("Message")
     replies = GenericRelation(
         "Reply",
-        content_type_field='_content_type',
-        object_id_field='_object_id',
+        content_type_field="_content_type",
+        object_id_field="_object_id",
         verbose_name="Replies"
     )
     _date_time_created = models.DateTimeField(
@@ -212,7 +143,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         self.disliked_by.remove(profile)
 
 
-class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in username & password, prevent new accounts with similar usernames (especially verified accounts)
+class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit characters allowed in username & password, prevent new accounts with similar usernames (especially verified accounts)
     """
         Custom expansion class that holds extra data about a user (specific to
         Pulsifi).
@@ -271,6 +202,10 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
 
     # Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
     class _Null_BaseUser:
+        USERNAME_FIELD: Final = BaseUser.USERNAME_FIELD
+        EMAIL_FIELD: Final = BaseUser.EMAIL_FIELD
+        REQUIRED_FIELDS: Final = BaseUser.REQUIRED_FIELDS
+
         # noinspection PyPropertyDefinition
         @property
         def username(self):
@@ -377,27 +312,17 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def logentry_set(self):
             self._does_not_exist()
 
-        @property
-        def DoesNotExist(self):
-            return BaseUser.DoesNotExist
+        class DoesNotExist(BaseUser.DoesNotExist, Exception):
+            pass
 
-        @property
-        def MultipleObjectsReturned(self):
-            return BaseUser.MultipleObjectsReturned
+        class MultipleObjectsReturned(BaseUser.MultipleObjectsReturned, Exception):
+            pass
 
-        @property
-        def USERNAME_FIELD(self):
-            return BaseUser.USERNAME_FIELD
-
-        @property
-        def EMAIL_FIELD(self):
-            return BaseUser.EMAIL_FIELD
-
-        @property
-        def REQUIRED_FIELDS(self):
-            return BaseUser.REQUIRED_FIELDS
-
+        # noinspection PyFinal
         def __init__(self, profile: "Profile"):
+            self.USERNAME_FIELD: Final = type(self).USERNAME_FIELD
+            self.EMAIL_FIELD: Final = type(self).EMAIL_FIELD
+            self.REQUIRED_FIELDS: Final = type(self).REQUIRED_FIELDS
             self.profile = profile
 
         def __str__(self):
@@ -611,31 +536,30 @@ class Profile(_Visible_Reportable_Model):  # TODO: limit characters allowed in u
         def from_db(cls, db: str, field_names: Iterable[str], values: Iterable):
             cls._does_not_exist()
 
-        @staticmethod
-        def _does_not_exist():
-            raise BaseUser.DoesNotExist("No User object found for this Profile.")
+        @classmethod
+        def _does_not_exist(cls):
+            raise cls.DoesNotExist("No User object found for this Profile.")
 
     def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
 
     @username.setter
-    def username(self, value: str) -> None:
-        if self.base_user is not None:  # TODO: Log warn attempted to be changed when no base_user
-            if BaseUser.objects.filter(username__in=self.get_similar_usernames(value)).exists():
-                raise ValueError(f"Username ({value}) is already in use.")
-            self.base_user.username = BaseUser.normalize_username(value)
-            self.base_user.full_clean()
+    def username(self, value: str):
+        self.base_user.username = value
 
     @email.setter
     def email(self, value: str) -> None:
-        if self.base_user is not None:  # TODO: Log warn attempted to be changed when no base_user
+        if self.base_user:  # TODO: Log warn attempted to be changed when no base_user
+            value = UserManager.normalize_email(value)
+
             if EmailAddress.objects.filter(email=value).exclude(user=self.base_user).exists():
                 raise ValueError(f"Email address ({value}) is already in use.")
-            self.base_user.email = UserManager.normalize_email(value)
+
+            self.base_user.email = value
 
     @visible.setter
     def visible(self, value: bool):
-        if self.base_user is not None and self.base_user.is_active != value:  # TODO: Log warn attempted to be changed when no base_user
+        if self.base_user and self.base_user.is_active != value:  # TODO: Log warn attempted to be changed when no base_user
             self.base_user.is_active = value
             self.base_user.full_clean()
             self.base_user.save()
@@ -683,13 +607,14 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
     def save(self, *args, **kwargs):
         self.full_clean()
 
-        if not self.visible and Pulse.objects.get(id=self.id).visible:
-            for reply in self.full_depth_replies:
-                reply.update(base_save=True, clean=False, visible=False)
+        if Pulse.objects.filter(id=self.id).exists():
+            if not self.visible and Pulse.objects.get(id=self.id).visible:
+                for reply in self.full_depth_replies:
+                    reply.update(base_save=True, clean=False, visible=False)
 
-        elif self.visible and not Pulse.objects.get(id=self.id).visible:
-            for reply in self.full_depth_replies:
-                reply.update(base_save=True, clean=False, visible=True)
+            elif self.visible and not Pulse.objects.get(id=self.id).visible:
+                for reply in self.full_depth_replies:
+                    reply.update(base_save=True, clean=False, visible=True)
 
         super().save(*args, **kwargs)
 
@@ -753,20 +678,20 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return Reply._find_original_pulse(reply.parent_object)
 
 
-class Report(_Custom_Base_Model):  # TODO: create user privileges that can access reporting screens
-    SPAM = "SPM"
-    SEXUAL = "SEX"
-    HATE = "HAT"
-    VIOLENCE = "VIO"
-    ILLEGAL_GOODS = "IGL"
-    BULLYING = "BUL"
-    INTELLECTUAL_PROPERTY = "INP"
-    SELF_INJURY = "INJ"
-    SCAM = "SCM"
-    FALSE_INFO = "FLS"
-    IN_PROGRESS = "PR"
-    REJECTED = "RE"
-    COMPLETED = "CM"
+class Report(Custom_Base_Model):  # TODO: create user privileges that can access reporting screens
+    SPAM: Final = "SPM"
+    SEXUAL: Final = "SEX"
+    HATE: Final = "HAT"
+    VIOLENCE: Final = "VIO"
+    ILLEGAL_GOODS: Final = "IGL"
+    BULLYING: Final = "BUL"
+    INTELLECTUAL_PROPERTY: Final = "INP"
+    SELF_INJURY: Final = "INJ"
+    SCAM: Final = "SCM"
+    FALSE_INFO: Final = "FLS"
+    IN_PROGRESS: Final = "PR"
+    REJECTED: Final = "RE"
+    COMPLETED: Final = "CM"
     category_choices = [
         (SPAM, "Spam"),
         (SEXUAL, "Nudity or sexual activity"),
@@ -800,7 +725,7 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
         verbose_name="Assigned Staff Member",
         related_name="assigned_reports",
         limit_choices_to={"_base_user__is_staff": True},
-        default=_choose_default_assigned_staff
+        default=get_random_staff_member
     )
     reason = models.TextField("Reason")
     category = models.CharField(
@@ -825,6 +750,24 @@ class Report(_Custom_Base_Model):  # TODO: create user privileges that can acces
 
     class Meta:
         verbose_name = "Reply"
+
+    # noinspection PyFinal
+    def __init__(self, *args, **kwargs):
+        self.SPAM: Final = type(self).SPAM
+        self.SEXUAL: Final = type(self).SEXUAL
+        self.HATE: Final = type(self).HATE
+        self.VIOLENCE: Final = type(self).VIOLENCE
+        self.ILLEGAL_GOODS: Final = type(self).ILLEGAL_GOODS
+        self.BULLYING: Final = type(self).BULLYING
+        self.INTELLECTUAL_PROPERTY: Final = type(self).INTELLECTUAL_PROPERTY
+        self.SELF_INJURY: Final = type(self).SELF_INJURY
+        self.SCAM: Final = type(self).SCAM
+        self.FALSE_INFO: Final = type(self).FALSE_INFO
+        self.IN_PROGRESS: Final = type(self).IN_PROGRESS
+        self.REJECTED: Final = type(self).REJECTED
+        self.COMPLETED: Final = type(self).COMPLETED
+
+        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (Assigned Staff Member - {self.assigned_staff})(For object - {self.parent_object})"
