@@ -1,0 +1,574 @@
+"""
+    Utility classes for pulsifi app test suite.
+"""
+from typing import Iterable
+
+from allauth.account.models import EmailAddress
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import UserManager
+from django.contrib.contenttypes.fields import GenericRelation
+from django.db.models import ManyToManyField, Model
+
+from pulsifi.models import BaseUser, Profile, Pulse, Reply
+
+
+class CreateTestProfileHelper:
+    # noinspection SpellCheckingInspection
+    TEST_PROFILES = [
+        {"username": "padgriffin", "password": "#2@cqt", "email": "padgriffin@gmail.com", "bio": "TV maven. Evil thinker. Infuriatingly humble gamer. Communicator. Pop culture advocate."},
+        {"username": "Extralas55", "password": "321321", "email": "green.anna@hotmail.co.uk", "bio": "The superhero movie was good but they didn't cover the part in his life where he co-founded a pizza restaurant... I assume that will be in the sequel..."},
+        {"username": "Rines1970", "password": "chicken1", "email": "robyn1973@yahoo.com", "bio": "Just explained drain cleaning to my friend. I don't think I did it right, as she's excited to get started."},
+        {"username": "Requit", "password": "pa55word", "email": "alexander.griffiths@shaw.com", "bio": "Our parents blame it on the generation but do they think about who raised us."},
+        {"username": "Nionothe", "password": "turnedrealizeroyal", "email": "pjackpppson@stewart.com", "bio": "Amateurs build planes, professionals built the titanic, how do you feel now?"},
+        {"username": "neha_schumm", "password": "1q2w3e4r", "email": "iyoung@gmail.com", "bio": "When life gives you lemons, throw them back"},
+        {"username": "Myseat59", "password": "password", "email": "viva_konopels@hotmail.com", "bio": "I saw some girl texting and driving the other day and it made me really angry. So I rolled my window down and threw my coffee at her."},
+        {"username": "Tunt1978", "password": "OoYoa9ahf", "email": "rachael2001@gmail.com", "bio": "Liberalism is trust of the people tempered by prudence. Conservatism is distrust of the people tempered by fear."},
+        {"username": "eesait4Oo", "password": "323232", "email": "julia_scott99@reynolds.com", "bio": "As I said before, I never repeat myself."},
+        {"username": "Therhatim", "password": "JORDAN", "email": "ken80@jones.net", "bio": "That awkward moment when you are at a funeral and your phone rings.. your ring tone is 'I Will Survive'."},
+        {"username": "Repostity", "password": "aequei3Eequ", "email": "simpson.mark@clark.co.uk", "bio": "Just had a beer and a taco, and now bout to finish my laundry"},
+        {"username": "Proodents445", "password": "teddybea", "email": "AlfieOsborne@dayrep.com", "bio": "'The best revenge is to live on and prove yourself' - Eddie Vedder"},
+        {"username": "Hassaid", "password": "vh5150", "email": "holly65@gmail.com", "bio": "Zombie trailblazer & unapologetic troublemaker."},
+        {"username": "alexzander", "password": "PulsifiPass123", "email": "khan.imogen@gmail.com", "bio": "Jury duty on Monday...That in itself is a joke"},
+        {"username": "annalise", "password": "24101984", "email": "jessica.price@outlook.com", "bio": "Love is the ultimate theme"},
+        {"username": "walter.her1992", "password": "18atcskd2w", "email": "christian40@bell.biz", "bio": "The relationship between the Prime Minister and the Head Of State"},
+        {"username": "rodger.nader", "password": "letmein", "email": "norene.nikola@gmail.com", "bio": "Bacon fanatic"},
+        {"username": "lorenz._fri1988", "password": "monkey", "email": "Exielenn@studentmail.net", "bio": "My personal style is best described as 'didn't expect to have to get out of the car'"},
+        {"username": "grayson", "password": "Iloveyou", "email": "gus2017@hotmail.com", "bio": "Just taught my kids about taxes by eating 38% of their ice cream"},
+        {"username": "Professor_T", "password": "lung-calf-trams", "email": "trofessor-t@trofessor-t.com", "bio": "Haven't gotten ONE response to my hospital job applications"}
+    ]
+    _test_profile_index = -1
+
+    @classmethod
+    def create_test_profile(cls, save=True, **kwargs):
+        bio = cls.TEST_PROFILES[(cls._test_profile_index + 1) % len(cls.TEST_PROFILES)]["bio"]
+
+        if kwargs:
+            if ("username" not in kwargs or "password" not in kwargs or "email" not in kwargs) and "_base_user" not in kwargs and "bio" not in kwargs:
+                cls._test_profile_index = (cls._test_profile_index + 1) % len(cls.TEST_PROFILES)
+
+            if "bio" in kwargs:
+                bio = kwargs.pop("bio")
+
+            if "_base_user" in kwargs:
+                if "verified" in kwargs or "visible" in kwargs:
+                    _base_user = kwargs.pop("_base_user")
+                    if save:
+                        _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user, primary=True))
+                        return Profile.objects.create(
+                            _base_user=_base_user,
+                            bio=bio,
+                            **kwargs
+                        )
+                    return Profile(_base_user=_base_user, bio=bio, **kwargs)
+
+                if save:
+                    return Profile.objects.create(
+                        _base_user=kwargs.pop("_base_user"),
+                        bio=bio
+                    )
+                return Profile(_base_user=kwargs.pop("_base_user"), bio=bio)
+
+            else:
+                username = cls.TEST_PROFILES[cls._test_profile_index]["username"]
+                password = cls.TEST_PROFILES[cls._test_profile_index]["password"]
+                email = cls.TEST_PROFILES[cls._test_profile_index]["email"]
+
+                if "username" in kwargs:
+                    username = kwargs.pop("username")
+                if "password" in kwargs:
+                    password = kwargs.pop("password")
+                if "email" in kwargs:
+                    email = kwargs.pop("email")
+
+                if "visible" in kwargs:
+                    is_active = kwargs.pop("visible")
+
+                    if "verified" in kwargs:
+                        if "is_superuser" in kwargs or "is_staff" in kwargs or "is_active" in kwargs:
+                            base_user_kwargs = {}
+
+                            if "is_superuser" in kwargs:
+                                base_user_kwargs["is_superuser"] = kwargs.pop("is_superuser")
+                            if "is_staff" in kwargs:
+                                base_user_kwargs["is_staff"] = kwargs.pop("is_staff")
+                            if "is_active" in kwargs:
+                                if kwargs["is_active"] != is_active:
+                                    raise ValueError("Profile attribute <visible> cannot be set to a different value from the Profile.base_user attribute <is_active>.")
+                                else:
+                                    kwargs.pop("is_active")
+
+                            if save:
+                                _base_user = BaseUser.objects.create_user(
+                                    username=username,
+                                    password=password,
+                                    email=email,
+                                    is_active=is_active,
+                                    **base_user_kwargs
+                                )
+                                _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                                return Profile.objects.create(
+                                    _base_user=_base_user,
+                                    bio=bio,
+                                    **kwargs
+                                )
+                            return Profile(
+                                _base_user=cls._create_baseuser(
+                                    username=username,
+                                    password=password,
+                                    email=email,
+                                    is_active=is_active,
+                                    **base_user_kwargs
+                                ),
+                                bio=bio,
+                                **kwargs
+                            )
+
+                        if save:
+                            _base_user = BaseUser.objects.create_user(
+                                username=username,
+                                password=password,
+                                email=email,
+                                is_active=is_active
+                            )
+                            _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                            return Profile.objects.create(
+                                _base_user=_base_user,
+                                bio=bio,
+                                **kwargs
+                            )
+                        return Profile(
+                            _base_user=cls._create_baseuser(
+                                username=username,
+                                password=password,
+                                email=email,
+                                is_active=is_active
+                            ),
+                            bio=bio,
+                            **kwargs
+                        )
+
+                    if save:
+                        _base_user = BaseUser.objects.create_user(
+                            username=username,
+                            password=password,
+                            email=email,
+                            is_active=is_active
+                        )
+                        _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                        return Profile.objects.create(
+                            _base_user=_base_user,
+                            bio=bio
+                        )
+                    return Profile(
+                        _base_user=cls._create_baseuser(
+                            username=username,
+                            password=password,
+                            email=email,
+                            is_active=is_active
+                        ),
+                        bio=bio
+                    )
+
+                elif "verified" in kwargs:
+                    if "is_superuser" in kwargs or "is_staff" in kwargs or "is_active" in kwargs:
+                        base_user_kwargs = {}
+
+                        if "is_superuser" in kwargs:
+                            base_user_kwargs["is_superuser"] = kwargs.pop("is_superuser")
+                        if "is_staff" in kwargs:
+                            base_user_kwargs["is_staff"] = kwargs.pop("is_staff")
+                        if "is_active" in kwargs:
+                            base_user_kwargs["is_active"] = kwargs.pop("is_active")
+
+                        if save:
+                            _base_user = BaseUser.objects.create_user(
+                                username=username,
+                                password=password,
+                                email=email,
+                                **base_user_kwargs
+                            )
+                            _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                            return Profile.objects.create(
+                                _base_user=_base_user,
+                                bio=bio,
+                                **kwargs
+                            )
+                        return Profile(
+                            _base_user=cls._create_baseuser(
+                                username=username,
+                                password=password,
+                                email=email,
+                                **base_user_kwargs
+                            ),
+                            bio=bio,
+                            **kwargs
+                        )
+
+                    if save:
+                        _base_user = BaseUser.objects.create_user(
+                            username=username,
+                            password=password,
+                            email=email
+                        )
+                        _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                        return Profile.objects.create(
+                            _base_user=_base_user,
+                            bio=bio,
+                            **kwargs
+                        )
+                    return Profile(
+                        _base_user=cls._create_baseuser(
+                            username=username,
+                            password=password,
+                            email=email
+                        ),
+                        bio=bio,
+                        **kwargs
+                    )
+
+                if save:
+                    _base_user = BaseUser.objects.create_user(
+                        username=username,
+                        password=password,
+                        email=email
+                    )
+                    _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                    return Profile.objects.create(
+                        _base_user=_base_user,
+                        bio=bio
+                    )
+                return Profile(
+                    _base_user=cls._create_baseuser(
+                        username=username,
+                        password=password,
+                        email=email
+                    ),
+                    bio=bio
+                )
+        else:
+            cls._test_profile_index = (cls._test_profile_index + 1) % len(cls.TEST_PROFILES)
+
+            if save:
+                _base_user = BaseUser.objects.create_user(
+                    username=cls.TEST_PROFILES[cls._test_profile_index]["username"],
+                    password=cls.TEST_PROFILES[cls._test_profile_index]["password"],
+                    email=cls.TEST_PROFILES[cls._test_profile_index]["email"]
+                )
+                _base_user.emailaddress_set.add(EmailAddress.objects.create(user=_base_user, email=_base_user.email, primary=True))
+                return Profile.objects.create(
+                    _base_user=_base_user,
+                    bio=bio
+                )
+            return Profile(
+                _base_user=cls._create_baseuser(
+                    username=cls.TEST_PROFILES[cls._test_profile_index]["username"],
+                    password=cls.TEST_PROFILES[cls._test_profile_index]["password"],
+                    email=cls.TEST_PROFILES[cls._test_profile_index]["email"]
+                ),
+                bio=bio
+            )
+
+    # noinspection SpellCheckingInspection
+    @staticmethod
+    def _create_baseuser(username: str, password: str, email: str, **kwargs):
+        return BaseUser(
+            username=BaseUser.normalize_username(username),
+            password=make_password(password),
+            email=UserManager.normalize_email(email),
+            **kwargs
+        )
+
+    @classmethod
+    def get_test_unknown_field(cls, field_name: str):
+        if field_name == "bio":
+            return cls.create_test_profile(save=False).bio
+        elif field_name == "username":
+            return cls.create_test_profile(save=False).base_user.username
+        elif field_name == "password":
+            return cls.create_test_profile(save=False).base_user.password
+        elif field_name == "email":
+            return cls.create_test_profile(save=False).base_user.email
+        else:
+            raise ValueError(f"Given field_name ({field_name}) is not one that can have test values created for it.")
+
+
+class GetFieldsHelper:
+    @staticmethod
+    def get_non_relation_fields(model: Model, exclude: Iterable[str] = None):
+        if exclude is None:
+            exclude = []
+
+        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and not field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+
+    @staticmethod
+    def get_single_relation_fields(model: Model, exclude: Iterable[str] = None):
+        if exclude is None:
+            exclude = []
+
+        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+
+    @staticmethod
+    def get_multi_relation_fields(model: Model, exclude: Iterable[str] = None):
+        if exclude is None:
+            exclude = []
+
+        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and (isinstance(field, ManyToManyField) or isinstance(field, GenericRelation))]
+
+
+class DeleteBaseUserHelper:
+    @staticmethod
+    def delete_base_user(profile: Profile):
+        profile.base_user.delete()
+        profile.refresh_from_db()
+
+        return profile
+
+
+class CreateTestUserGeneratedContentHelper:
+    TEST_MESSAGES = [
+        "This Vodka says, everything will be okay. At least for a few hours.",
+        "Can anyone tell me the name of that romance movie? You know, the one where she plays the quirky girl who ultimately finds love in the end?",
+        "Some people are so afraid do die that they never begin to live.",
+        "There's a special place in he'll for autocorrect",
+        "I do not think that marriage is one of my talents. I've been much happier unmarried than married.",
+        "There comes a time when you just look at yourself in the mirror, and say \"this is as good as it's gonna get.\"",
+        "I think I'll always be famous. I just hope I don't become infamous.",
+        "The principle of art is to pause, not bypass.",
+        "Being smart doesn't stop you from doing stupid things.",
+        "I am writing a 360 page book...I'm making progress...I already have all the page numbers done",
+        "I never saw any of my dad's stories. My mother said he had piles and piles of manuscripts.",
+        "Wisdom finds its literary expression in wisdom literature.",
+        "If you're not fully satisfied with your life, do something about it. Or complain about it on the internet. Whatever.",
+        "I am a great believer in luck, and I find the harder I work the more I have of it.",
+        "It's weird how many of my ancestors were sepia-toned.",
+        "The best way to keep your kids out of hot water is to put some dishes in it.",
+        "My beer never tells me it has a girlfriend.",
+        "The truth is lived, not taught.",
+        "My grandfather was a lawyer",
+        "I work with really cool people"
+    ]
+    _test_message_index = -1
+
+    @classmethod
+    def create_test_pulse(cls, save=True, **kwargs):
+        if kwargs:
+            if "message" not in kwargs:
+                cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
+                message = cls.TEST_MESSAGES[cls._test_message_index]
+            else:
+                message = kwargs.pop("message")
+
+            if "visible" in kwargs:
+                visible = kwargs.pop("visible")
+
+                if "creator" in kwargs:
+                    if save:
+                        return Pulse.objects.create(
+                            message=message,
+                            creator=kwargs.pop("creator"),
+                            visible=visible
+                        )
+
+                    return Pulse(
+                        message=message,
+                        creator=kwargs.pop("creator"),
+                        visible=visible
+                    )
+                if save:
+                    return Pulse.objects.create(
+                        message=message,
+                        creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                        visible=visible
+                    )
+
+                return Pulse(
+                    message=message,
+                    creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                    visible=visible
+                )
+
+            if "creator" in kwargs:
+                if save:
+                    return Pulse.objects.create(
+                        message=message,
+                        creator=kwargs.pop("creator")
+                    )
+
+                return Pulse(
+                    message=message,
+                    creator=kwargs.pop("creator")
+                )
+            if save:
+                return Pulse.objects.create(
+                    message=message,
+                    creator=CreateTestProfileHelper.create_test_profile(**kwargs)
+                )
+
+            return Pulse(
+                message=message,
+                creator=CreateTestProfileHelper.create_test_profile(**kwargs)
+            )
+
+        else:
+            cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
+
+            if save:
+                return Pulse.objects.create(
+                    message=cls.TEST_MESSAGES[cls._test_message_index],
+                    creator=CreateTestProfileHelper.create_test_profile()
+                )
+
+            return Pulse(
+                message=cls.TEST_MESSAGES[cls._test_message_index],
+                creator=CreateTestProfileHelper.create_test_profile()
+            )
+
+    @classmethod
+    def create_test_reply(cls, save=True, **kwargs):
+        if kwargs:
+            if "message" not in kwargs:
+                cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
+                message = cls.TEST_MESSAGES[cls._test_message_index]
+            else:
+                message = kwargs.pop("message")
+
+            if "parent_object" in kwargs:
+                parent_object = kwargs.pop("parent_object")
+
+                if "visible" in kwargs:
+                    visible = kwargs.pop("visible")
+
+                    if "creator" in kwargs:
+                        if save:
+                            return Reply.objects.create(
+                                message=message,
+                                creator=kwargs.pop("creator"),
+                                visible=visible,
+                                parent_object=parent_object
+                            )
+
+                        return Reply(
+                            message=message,
+                            creator=kwargs.pop("creator"),
+                            visible=visible,
+                            parent_object=parent_object
+                        )
+                    if save:
+                        return Reply.objects.create(
+                            message=message,
+                            creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                            visible=visible,
+                            parent_object=parent_object
+                        )
+
+                    return Reply(
+                        message=message,
+                        creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                        visible=visible,
+                        parent_object=parent_object
+                    )
+
+                if "creator" in kwargs:
+                    if save:
+                        return Reply.objects.create(
+                            message=message,
+                            creator=kwargs.pop("creator"),
+                            parent_object=parent_object
+                        )
+
+                    return Reply(
+                        message=message,
+                        creator=kwargs.pop("creator"),
+                        parent_object=parent_object
+                    )
+                if save:
+                    return Reply.objects.create(
+                        message=message,
+                        creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                        parent_object=parent_object
+                    )
+
+                return Reply(
+                    message=message,
+                    creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                    parent_object=parent_object
+                )
+
+            if "visible" in kwargs:
+                visible = kwargs.pop("visible")
+
+                if "creator" in kwargs:
+                    if save:
+                        return Reply.objects.create(
+                            message=message,
+                            creator=kwargs.pop("creator"),
+                            parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                            visible=visible
+                        )
+
+                    return Reply(
+                        message=message,
+                        creator=kwargs.pop("creator"),
+                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        visible=visible
+                    )
+                if save:
+                    return Reply.objects.create(
+                        message=message,
+                        creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        visible=visible
+                    )
+
+                return Reply(
+                    message=message,
+                    creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                    visible=visible
+                )
+
+            if "creator" in kwargs:
+                if save:
+                    return Reply.objects.create(
+                        message=message,
+                        creator=kwargs.pop("creator"),
+                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    )
+
+                return Reply(
+                    message=message,
+                    creator=kwargs.pop("creator"),
+                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                )
+            if save:
+                return Reply.objects.create(
+                    message=message,
+                    creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                )
+
+            return Reply(
+                message=message,
+                creator=CreateTestProfileHelper.create_test_profile(**kwargs),
+                parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+            )
+
+        else:
+            cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
+
+            if save:
+                return Reply.objects.create(
+                    message=cls.TEST_MESSAGES[cls._test_message_index],
+                    creator=CreateTestProfileHelper.create_test_profile(),
+                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                )
+
+            return Reply(
+                message=cls.TEST_MESSAGES[cls._test_message_index],
+                creator=CreateTestProfileHelper.create_test_profile(),
+                parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+            )
+
+    @classmethod
+    def get_test_message(cls):
+        return cls.create_test_pulse(save=False).message
