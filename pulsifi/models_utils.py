@@ -20,7 +20,7 @@ def get_random_staff_member():
         if staff_QS.exists():
             return Profile.objects.filter(
                 id=random_choice(staff_QS.values_list("id", flat=True))
-            ).get().id  # Choose a random ID from the list of staff member IDs
+            ).get().id  # NOTE: Choose a random ID from the list of staff member IDs
 
         raise Profile.DoesNotExist("Random staff member cannot be chosen, because none exist in the database.")
 
@@ -33,7 +33,7 @@ class Custom_Base_Model(Model):
         use.
     """
 
-    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     def base_save(self, clean=True, *args, **kwargs):
@@ -47,21 +47,21 @@ class Custom_Base_Model(Model):
             database, which also updates any related fields on this object.
         """
 
-        super().refresh_from_db(using=using, fields=fields)  # Update all normal fields using the base refresh_from_db method
+        super().refresh_from_db(using=using, fields=fields)  # NOTE: Update all normal fields using the base refresh_from_db method
 
         if deep:
             if fields:
-                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]  # Limit the fields to be updated by the ones supplied in the "fields" argument with a valid field name (not a "+")
+                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]  # NOTE: Limit the fields to be updated by the ones supplied in the "fields" argument with a valid field name (not a "+")
             else:
-                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # Limit the fields to be updated by the ones with a valid field name (not a "+")
+                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # NOTE: Limit the fields to be updated by the ones with a valid field name (not a "+")
 
-            updated_model = self._meta.model.objects.get(id=self.id)  # Get the updated version of the object from the database (for related fields to be replaced from)
+            updated_model = self._meta.model.objects.get(id=self.id)  # NOTE: Get the updated version of the object from the database (for related fields to be replaced from)
 
             field: Field
             for field in update_fields:
-                if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation):  # Limit the fields to be updated by the ones that are not a queryset of related objects
+                if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation):  # NOTE: Limit the fields to be updated by the ones that are not a queryset of related objects
                     try:
-                        setattr(self, field.name, getattr(updated_model, field.name))  # Set the value of the field to be that of the corresponding field retrieved from the database
+                        setattr(self, field.name, getattr(updated_model, field.name))  # NOTE: Set the value of the field to be that of the corresponding field retrieved from the database
                     except (AttributeError, TypeError, ValueError) as e:
                         pass  # TODO: use logging to log the error
 
@@ -72,11 +72,11 @@ class Custom_Base_Model(Model):
             Queryset.bulk_update method).
         """
 
-        for key, value in kwargs.items():  # Update the values of the kwargs provided
+        for key, value in kwargs.items():  # NOTE: Update the values of the kwargs provided
             setattr(self, key, value)
 
-        if commit:  # Save the new object's state to the database as long as commit has been requested
-            if base_save:  # Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
+        if commit:  # NOTE: Save the new object's state to the database as long as commit has been requested
+            if base_save:  # NOTE: Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
                 self.base_save(clean)
             else:
-                self.save()  # Otherwise use the normal full save method of the model to save the object
+                self.save()  # NOTE: Otherwise use the normal full save method of the model to save the object

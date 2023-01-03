@@ -37,7 +37,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         object.
     """
 
-    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     @property
@@ -68,7 +68,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
 
         if self.visible:
             return string
-        return "".join(f"{char}\u0336" for char in string)  # Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
+        return "".join(f"{char}\u0336" for char in string)  # NOTE: Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
@@ -117,7 +117,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
 
         raise NotImplementedError
 
-    class Meta:  # This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     def __str__(self):
@@ -151,7 +151,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
 
     _base_user = models.OneToOneField(
         BaseUser, null=True, on_delete=models.SET_NULL
-    )  # Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
+    )  # NOTE: Field is set to null if the underlying User object is deleted, so that as much information & functionality is retained
     bio = models.TextField(
         "Bio",
         max_length=200,
@@ -164,21 +164,21 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
         symmetrical=False,
         related_name="followers",
         blank=True
-    )  # Provides a link to the set of other Profiles that this object is following (as well as an implied reverse set of followers)
+    )  # NOTE: Provides a link to the set of other Profiles that this object is following (as well as an implied reverse set of followers)
 
     @property
-    def base_user(self):  # Public getter for the private field _base_user
+    def base_user(self):  # NOTE: Public getter for the private field _base_user
         if self._base_user is not None:
             return self._base_user
         return self._Null_BaseUser(profile=self)
 
     @property
-    def username(self) -> str:  # Shortcut getter for the field base_user.username
+    def username(self) -> str:  # NOTE: Shortcut getter for the field base_user.username
         # noinspection PyTypeChecker
         return self.base_user.username
 
     @property
-    def email(self) -> str:  # Shortcut getter for the field base_user.email
+    def email(self) -> str:  # NOTE: Shortcut getter for the field base_user.email
         # noinspection PyTypeChecker
         return self.base_user.email
 
@@ -200,7 +200,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
     class Meta:
         verbose_name = "User"
 
-    # Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
+    # NOTE: Large class definition coming up, with lots of boilerplate (it may be helpful to collapse this class in your IDE)
     class _Null_BaseUser:
         USERNAME_FIELD: Final = BaseUser.USERNAME_FIELD
         EMAIL_FIELD: Final = BaseUser.EMAIL_FIELD
@@ -540,7 +540,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
         def _does_not_exist(cls):
             raise cls.DoesNotExist("No User object found for this Profile.")
 
-    def __str__(self):  # Returns the User's username if they are still visible, otherwise returns the crossed out username
+    def __str__(self):  # NOTE: Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
 
     @username.setter
@@ -568,7 +568,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
         return super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # Perform full model validation before saving the object
+        self.full_clean()  # NOTE: Perform full model validation before saving the object
         super().save(*args, **kwargs)
 
     @staticmethod
@@ -582,7 +582,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         on_delete=models.CASCADE,
         verbose_name="Creator",
         related_name="pulses"
-    )  # Provides a link to the Profile that created this Pulse
+    )  # NOTE: Provides a link to the Profile that created this Pulse
     liked_by = models.ManyToManyField(
         Profile,
         related_name="liked_pulses",
@@ -625,7 +625,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         on_delete=models.CASCADE,
         verbose_name="Creator",
         related_name="replies"
-    )  # Provides a link to the Profile that created this Reply
+    )  # NOTE: Provides a link to the Profile that created this Reply
     _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     _object_id = models.PositiveIntegerField()
     parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")

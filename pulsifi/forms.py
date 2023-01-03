@@ -11,7 +11,7 @@ from pulsifi.models import Profile, Pulse, Reply
 class SignupForm(BaseSignupForm):
     """ Form to customise the HTML & CSS generated for the signup form. """
 
-    template_name = "pulsifi/signup_form_snippet.html"  # Specify how the fields & labels of the form should be turned into HTML
+    template_name = "pulsifi/signup_form_snippet.html"  # NOTE: Specify how the fields & labels of the form should be turned into HTML
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,7 +46,7 @@ class SignupForm(BaseSignupForm):
             }
         )
 
-        self.label_suffix = ""  # Remove the colon from after the value, in the field label
+        self.label_suffix = ""  # NOTE: Remove the colon from after the value, in the field label
 
 
 class PulseForm(forms.ModelForm):

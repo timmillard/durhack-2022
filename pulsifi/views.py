@@ -128,7 +128,7 @@ class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
             queryset = Profile.objects.all()
         username = self.kwargs.get("url_username")
         try:
-            obj = queryset.filter(_base_user__username=username).get()  # Get the single item from the filtered queryset
+            obj = queryset.filter(_base_user__username=username).get()  # NOTE: Get the single item from the filtered queryset
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(
@@ -154,7 +154,7 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
-class Signup_View(BaseSignupView):  # make signup a modal on the home view
+class Signup_View(BaseSignupView):  # TODO: make signup a modal on the home view
     template_name = "pulsifi/signup.html"
 
 # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
