@@ -1,5 +1,5 @@
 """
-    Forms in pulsifi application.
+    Forms in pulsifi app.
 """
 
 from allauth.account.forms import SignupForm as BaseSignupForm

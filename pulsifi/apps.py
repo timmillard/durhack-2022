@@ -1,5 +1,5 @@
 """
-    App configurations in pulsifi application.
+    App configurations in pulsifi app.
 """
 
 from django.apps import AppConfig

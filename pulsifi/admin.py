@@ -1,5 +1,5 @@
 """
-    Admin configurations for models in Empire application.
+    Admin configurations for models in pulsifi app.
 """
 
 # from django.contrib import admin

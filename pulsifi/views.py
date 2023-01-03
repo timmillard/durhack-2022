@@ -1,5 +1,5 @@
 """
-    Views in pulsifi application.
+    Views in pulsifi app.
 """
 
 from allauth.account.views import SignupView as BaseSignupView

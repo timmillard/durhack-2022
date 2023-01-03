@@ -126,7 +126,7 @@ FOLLOWER_COUNT_SCALING_FUNCTION = env(
 # Secret key that is used for important secret stuff (keep the one used in production a secret!)
 SECRET_KEY = env("SECRET_KEY")
 
-# Application definitions
+# App definitions
 # noinspection SpellCheckingInspection
 INSTALLED_APPS = [
     "pulsifi.apps.PulsifiConfig",
