@@ -7,7 +7,7 @@ from django.db.models import BooleanField
 from django.test import TestCase
 
 from pulsifi.models import BaseUser, Profile
-from pulsifi.tests.utils import CreateTestProfileHelper, GetFieldsHelper
+from pulsifi.tests.utils import CreateTestProfileHelper, DeleteBaseUserHelper, GetFieldsHelper
 
 
 # TODO: tests docstrings
@@ -87,18 +87,33 @@ class Profile_Model_Tests(TestCase):
         self.assertNotEqual(profile.email, old_profile.email)
 
     def test_shortcut_email_setter_with_base_user_with_email_already_exists(self):
-        # noinspection SpellCheckingInspection
-        CreateTestProfileHelper.create_test_profile(email="testemail@example.com")
-        profile = CreateTestProfileHelper.create_test_profile()
+        profile1 = CreateTestProfileHelper.create_test_profile()
+        profile2 = CreateTestProfileHelper.create_test_profile()
 
         with self.assertRaises(ValueError):
-            profile.email = "testemail@example.com"
+            profile2.email = profile1.email
 
     def test_shortcut_visible_setter_with_base_user(self):
-        pass
+        profile = CreateTestProfileHelper.create_test_profile()
+
+        self.assertTrue(profile.visible)
+        self.assertTrue(profile.base_user.is_active)
+
+        profile.visible = False
+
+        self.assertFalse(profile.visible)
+        self.assertFalse(profile.base_user.is_active)
 
     def test_shortcut_visible_setter_without_base_user(self):
-        pass
+        profile = DeleteBaseUserHelper.delete_base_user(CreateTestProfileHelper.create_test_profile())
+
+        self.assertFalse(profile.visible)
+        self.assertFalse(profile.base_user.is_active)
+
+        profile.visible = True
+
+        self.assertFalse(profile.visible)
+        self.assertFalse(profile.base_user.is_active)
 
     def test_stringify_displays_in_correct_format(self):
         profile = CreateTestProfileHelper.create_test_profile()

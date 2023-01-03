@@ -6,7 +6,6 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Final, Iterable
 
-import unicodedata
 from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth.models import User as BaseUser, UserManager
@@ -482,10 +481,12 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
             self._does_not_exist()
 
         def get_username(self):
-            return self.username
+            # noinspection PyTypeChecker
+            return BaseUser.get_username(self)
 
         def natural_key(self):
-            return self.get_username(),
+            # noinspection PyTypeChecker
+            return BaseUser.natural_key(self)
 
         # noinspection PyUnusedLocal
         def set_password(self, raw_password: str):
@@ -516,20 +517,12 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
             self._does_not_exist()
 
         @classmethod
-        def get_email_field_name(cls):  # TODO: Just do a call to the base user class (passing this class as an argument)
-            try:
-                return cls.EMAIL_FIELD
-            except AttributeError:
-                return "email"
+        def get_email_field_name(cls):
+            return BaseUser.get_email_field_name()
 
-        # noinspection SpellCheckingInspection
         @classmethod
         def normalize_username(cls, username):
-            return (
-                unicodedata.normalize("NFKC", username)
-                if isinstance(username, str)
-                else username
-            )
+            return BaseUser.normalize_username(username)
 
         # noinspection PyUnusedLocal
         @classmethod
@@ -538,7 +531,7 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
 
         @classmethod
         def _does_not_exist(cls):
-            raise cls.DoesNotExist("No User object found for this Profile.")
+            raise BaseUser.DoesNotExist("No User object found for this Profile.")
 
     def __str__(self):  # NOTE: Returns the User's username if they are still visible, otherwise returns the crossed out username
         return self.string_when_visible(f"@{self.username}")
