@@ -576,10 +576,6 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
         self.full_clean()  # NOTE: Perform full model validation before saving the object
         super().save(*args, **kwargs)
 
-    @staticmethod
-    def get_similar_usernames(username: str):  # Todo: get similar usernames & prevent new accounts with similar usernames
-        return [username]
-
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     creator = models.ForeignKey(
@@ -615,11 +611,11 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         if Pulse.objects.filter(id=self.id).exists():
             if not self.visible and Pulse.objects.get(id=self.id).visible:
                 for reply in self.full_depth_replies:
-                    reply.update(base_save=True, clean=False, visible=False)
+                    reply.update(base_save=True, visible=False)
 
             elif self.visible and not Pulse.objects.get(id=self.id).visible:
                 for reply in self.full_depth_replies:
-                    reply.update(base_save=True, clean=False, visible=True)
+                    reply.update(base_save=True, visible=True)
 
         super().save(*args, **kwargs)
 
@@ -667,13 +663,12 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.parent_object})"
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-
         self._original_pulse = self.original_pulse
 
-        if not self.original_pulse.visible:  # TODO: make children invisible by recursion (make visible a private field with setter method)
+        if not self.original_pulse.visible:
             self.visible = False
 
+        self.full_clean()
         self.base_save(clean=False, *args, **kwargs)
 
     @staticmethod
