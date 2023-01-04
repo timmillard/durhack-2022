@@ -147,7 +147,7 @@ class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
             return HttpResponseBadRequest()
 
 
-# TODO: profile search view, leaderboard view
+# TODO: profile search view, leaderboard view, report views & moderator views
 
 
 class Create_Pulse_View(LoginRequiredMixin, CreateView):

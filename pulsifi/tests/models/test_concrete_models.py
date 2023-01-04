@@ -2,6 +2,7 @@
     Automated test suite for concrete models in pulsifi app.
 """
 import copy
+import logging
 
 from django.db.models import BooleanField
 from django.test import TestCase
@@ -110,7 +111,12 @@ class Profile_Model_Tests(TestCase):
         self.assertFalse(profile.visible)
         self.assertFalse(profile.base_user.is_active)
 
+        logger = logging.getLogger("pulsifi.models")
+        setattr(logger, "log_Profile_visible_shortcut_setter", False)
+
         profile.visible = True
+
+        setattr(logger, "log_Profile_visible_shortcut_setter", True)
 
         self.assertFalse(profile.visible)
         self.assertFalse(profile.base_user.is_active)

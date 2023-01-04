@@ -2,6 +2,7 @@
     Models in pulsifi app.
 """
 
+import logging
 from abc import abstractmethod
 from datetime import datetime
 from typing import Final, Iterable
@@ -15,6 +16,8 @@ from django.db import models
 from django.db.models.options import Options
 
 from .models_utils import Custom_Base_Model, get_random_staff_member
+
+logger = logging.getLogger(__name__)
 
 
 class _Visible_Reportable_Model(Custom_Base_Model):
@@ -534,7 +537,10 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
             raise BaseUser.DoesNotExist("No User object found for this Profile.")
 
     def __str__(self):  # NOTE: Returns the User's username if they are still visible, otherwise returns the crossed out username
-        return self.string_when_visible(f"@{self.username}")
+        if self.base_user:
+            return self.string_when_visible(f"@{self.username}")
+        else:
+            return "@???"
 
     @username.setter
     def username(self, value: str):
@@ -552,10 +558,16 @@ class Profile(_Visible_Reportable_Model):  # TODO: Custom Base user model, limit
 
     @visible.setter
     def visible(self, value: bool):
-        if self.base_user and self.base_user.is_active != value:  # TODO: Log warn attempted to be changed when no base_user
-            self.base_user.is_active = value
-            self.base_user.full_clean()
-            self.base_user.save()
+        if self.base_user:
+            if self.base_user.is_active != value:
+                self.base_user.is_active = value
+                self.base_user.full_clean()
+                self.base_user.save()
+        elif getattr(logger, "log_Profile_visible_shortcut_setter", True):
+            if logger.getEffectiveLevel() <= logging.DEBUG:
+                logger.warning(f"Visibility of Profile with no BaseUser attempted to be changed. Profile with no BaseUser must have visible=False")
+            else:
+                logger.warning("Visibility of Profile with no BaseUser attempted to be changed")
 
     def delete(self, *args, **kwargs):  # TODO: prevent deletion (just set base user active to false)
         return super().delete(*args, **kwargs)

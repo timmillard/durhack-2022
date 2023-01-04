@@ -1,12 +1,15 @@
 """
     Utility classes & functions provided for all models within this app.
 """
+import logging
 from random import choice as random_choice
 from typing import Iterable
 
 from django.apps import apps
 from django.contrib.contenttypes.fields import GenericRelation
-from django.db.models import Field, ManyToManyField, Model
+from django.db.models import Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
+
+logger = logging.getLogger(__name__)
 
 
 def get_random_staff_member():
@@ -55,15 +58,27 @@ class Custom_Base_Model(Model):
             else:
                 update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # NOTE: Limit the fields to be updated by the ones with a valid field name (not a "+")
 
-            updated_model = self._meta.model.objects.get(id=self.id)  # NOTE: Get the updated version of the object from the database (for related fields to be replaced from)
+            if not update_fields:
+                if logger.getEffectiveLevel() <= logging.DEBUG:
+                    logger.warning(f"""Model: {self}'s fields: {[field for field in self._meta.get_fields() if field.name != "+"]} do not overlap with refresh_from_db requested fields: {fields} """)
+                else:
+                    logger.warning(f"Model: {self}'s fields do not overlap with refresh_from_db requested fields")
 
-            field: Field
-            for field in update_fields:
-                if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation):  # NOTE: Limit the fields to be updated by the ones that are not a queryset of related objects
-                    try:
-                        setattr(self, field.name, getattr(updated_model, field.name))  # NOTE: Set the value of the field to be that of the corresponding field retrieved from the database
-                    except (AttributeError, TypeError, ValueError) as e:
-                        pass  # TODO: use logging to log the error
+            else:
+                updated_model = self._meta.model.objects.get(id=self.id)  # NOTE: Get the updated version of the object from the database (for related fields to be replaced from)
+
+                field: Field
+                for field in update_fields:
+                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: Limit the fields to be updated by the ones that are not a queryset of related objects
+                        try:  # NOTE: Set the value of the field to be that of the corresponding field retrieved from the database
+                            value = getattr(updated_model, field.name)
+                        except (AttributeError, TypeError, ValueError) as e:
+                            logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when getting field: <{type(field).__name__}: {field.name}>, from model: <{type(self).__name__}: {self}>")
+                        else:
+                            try:
+                                setattr(self, field.name, value)
+                            except (AttributeError, TypeError, ValueError) as e:
+                                logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when setting field: <{type(field).__name__}: {field.name}>, of model: <{type(self).__name__}: {self}> to value: {value}")
 
     def update(self, commit=True, base_save=False, clean=True, **kwargs):
         """
