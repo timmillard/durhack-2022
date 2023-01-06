@@ -10,9 +10,12 @@ from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
 # noinspection PyPackageRequirements
 from environ import Env
+from tldextract import tldextract
 
 # noinspection SpellCheckingInspection
 env = Env(
+    USERNAME_MIN_LENGTH=(int, 4),
+    ACCOUNT_EMAIL_VERIFICATION=(str, "mandatory"),
     ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS=(int, 1),
     AVATAR_GRAVATAR_DEFAULT=(str, "mp"),
     VERSION=(str, "0.1"),
@@ -21,27 +24,39 @@ env = Env(
     EMAIL_HOST_USER=(str, "no-reply@pulsifi.tech"),
     EMAIL_USE_SSL=(bool, True),
     MESSAGE_DISPLAY_LENGTH=(int, 15),
-    FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear")
+    FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear"),
+    PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES=(float, 0.627)
 )
 
 # Confirming that the supplied environment variable values for these settings are one of the valid choices
+if not env("USERNAME_MIN_LENGTH") > 1:
+    raise ImproperlyConfigured("USERNAME_MIN_LENGTH must be an integer greater than 1.")
+_ACCOUNT_EMAIL_VERIFICATION_choices = ("mandatory", "optional", "none")
+if env("ACCOUNT_EMAIL_VERIFICATION") not in _ACCOUNT_EMAIL_VERIFICATION_choices:
+    raise ImproperlyConfigured(f"ACCOUNT_EMAIL_VERIFICATION must be one of {_ACCOUNT_EMAIL_VERIFICATION_choices}.")
 if not env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS") > 0:
-    raise ImproperlyConfigured(f"ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS must be an integer greater than 0")
+    raise ImproperlyConfigured("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS must be an integer greater than 0.")
 # noinspection SpellCheckingInspection
 _AVATAR_GRAVATAR_DEFAULT_choices = ("404", "mp", "identicon", "monsterid", "wavatar", "retro", "robohash")
-if re_search(r"^\d*(?:\.\d*)+$", env("VERSION")) is None:
-    raise ImproperlyConfigured(f"VERSION must be in this format: <number>.<number>.<number>")
 if env("AVATAR_GRAVATAR_DEFAULT") not in _AVATAR_GRAVATAR_DEFAULT_choices:
-    raise ImproperlyConfigured(f"AVATAR_GRAVATAR_DEFAULT must be one of {_AVATAR_GRAVATAR_DEFAULT_choices}")
+    raise ImproperlyConfigured(f"AVATAR_GRAVATAR_DEFAULT must be one of {_AVATAR_GRAVATAR_DEFAULT_choices}.")
+if re_search(r"^\d*(?:\.\d*)+$", env("VERSION")) is None:
+    raise ImproperlyConfigured("VERSION must be in this format: \"<number>.<number>.<number>\".")
+if not tldextract.extract(env("EMAIL_HOST")).domain or not tldextract.extract(env("EMAIL_HOST")).suffix:
+    raise ImproperlyConfigured("EMAIL_HOST must be a a valid email host name with a valid domain name & suffix.")
 if not 0 < env("EMAIL_PORT") <= 65535:
-    raise ImproperlyConfigured(f"EMAIL_PORT must be a valid port number (an integer between 0 and 65536)")
-if "@" not in env("EMAIL_HOST_USER"):
-    raise ImproperlyConfigured(f"EMAIL_HOST_USER must be a valid email address")
+    raise ImproperlyConfigured("EMAIL_PORT must be a valid port number (an integer between 0 and 65536).")
+_EMAIL_HOST_USER_domain: str
+_, _EMAIL_HOST_USER_domain = env("EMAIL_HOST_USER").split("@")
+if env("EMAIL_HOST_USER").count("@") != 1 or (env("EMAIL_HOST_USER").count("@") == 1 and (not tldextract.extract(_EMAIL_HOST_USER_domain).domain or not tldextract.extract(_EMAIL_HOST_USER_domain).suffix)):
+    raise ImproperlyConfigured("EMAIL_HOST_USER must be a valid email address.")
 if not env("MESSAGE_DISPLAY_LENGTH") > 0:
-    raise ImproperlyConfigured(f"MESSAGE_DISPLAY_LENGTH must be an integer greater than 0")
+    raise ImproperlyConfigured("MESSAGE_DISPLAY_LENGTH must be an integer greater than 0.")
 _FOLLOWER_COUNT_SCALING_FUNCTION_choices = ("logarithmic", "linear", "quadratic", "linearithmic", "exponential", "factorial")
 if env("FOLLOWER_COUNT_SCALING_FUNCTION") not in _FOLLOWER_COUNT_SCALING_FUNCTION_choices:
-    raise ImproperlyConfigured(f"FOLLOWER_COUNT_SCALING_FUNCTION must be one of {_FOLLOWER_COUNT_SCALING_FUNCTION_choices}")
+    raise ImproperlyConfigured(f"FOLLOWER_COUNT_SCALING_FUNCTION must be one of {_FOLLOWER_COUNT_SCALING_FUNCTION_choices}.")
+if not 0.1 <= env("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES") <= 1.0:
+    raise ImproperlyConfigured("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES must be a float between 0.1 and 1.0.")
 
 # Build paths inside the project like this: BASE_DIR / "subdir"
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,8 +82,8 @@ ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_USER_DISPLAY = "pulsifi.models.User.__str__"
-ACCOUNT_USERNAME_MIN_LENGTH = 4
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_USERNAME_MIN_LENGTH = env("USERNAME_MIN_LENGTH")
+ACCOUNT_EMAIL_VERIFICATION = env("ACCOUNT_EMAIL_VERIFICATION")
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS")
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_FORMS = {"signup": "pulsifi.forms.SignupForm"}
@@ -208,7 +223,11 @@ AUTHENTICATION_BACKENDS = [
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "OPTIONS": {
+            "user_attributes": ("username", "email", "bio"),
+            "max_similarity": env("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES")
+        }
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"

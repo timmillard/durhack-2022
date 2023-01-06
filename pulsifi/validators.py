@@ -277,7 +277,8 @@ def validate_free_email(value: str):
     if value.count("@") != 1:
         return
 
-    local_part, domain = value.split("@")
+    domain: str
+    _, domain = value.split("@")
 
     if domain in FREE_EMAIL_ADDRESSES:
         raise ValidationError(FREE_EMAIL, code="invalid")
@@ -287,6 +288,8 @@ def validate_tld_email(value: str):
     if value.count("@") != 1:
         return
 
+    local: str
+    domain: str
     local, domain = value.split("@")
 
     if get_user_model().objects.exclude(email=value).filter(email__icontains=f"{local}@{tldextract.extract(domain).domain}").exists():
