@@ -6,6 +6,7 @@ from random import choice as random_choice
 from typing import Iterable
 
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db.models import Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
 
@@ -15,17 +16,15 @@ logger = logging.getLogger(__name__)
 def get_random_staff_member():
     """ Returns a random staff member's Profile. """
 
-    Profile = apps.get_model(app_label="pulsifi", model_name="Profile")
-
     if apps.get_model(app_label="pulsifi", model_name="Reply").objects.all().exists():
-        staff_QS = Profile.objects.filter(_base_user__is_staff=True)
+        staff_QS = get_user_model().objects.filter(is_staff=True)
 
         if staff_QS.exists():
-            return Profile.objects.filter(
+            return get_user_model().objects.filter(
                 id=random_choice(staff_QS.values_list("id", flat=True))
             ).get().id  # NOTE: Choose a random ID from the list of staff member IDs
 
-        raise Profile.DoesNotExist("Random staff member cannot be chosen, because none exist in the database.")
+        raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist in the database.")
 
     return None
 
@@ -80,7 +79,11 @@ class Custom_Base_Model(Model):
                             except (AttributeError, TypeError, ValueError) as e:
                                 logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when setting field: <{type(field).__name__}: {field.name}>, of model: <{type(self).__name__}: {self}> to value: {value}")
 
-    def update(self, commit=True, base_save=False, clean=True, **kwargs):
+    def save(self, *args, **kwargs):
+        self.full_clean()  # NOTE: Perform full model validation before saving the object
+        super().save(*args, **kwargs)
+
+    def update(self, commit=True, base_save=False, clean=True, using: str = None, **kwargs):
         """
             Changes an in-memory object's values & save that object to the
             database all in one operation (based on Django's
@@ -92,6 +95,6 @@ class Custom_Base_Model(Model):
 
         if commit:  # NOTE: Save the new object's state to the database as long as commit has been requested
             if base_save:  # NOTE: Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
-                self.base_save(clean)
+                self.base_save(clean, using)
             else:
-                self.save()  # NOTE: Otherwise use the normal full save method of the model to save the object
+                self.save(using)  # NOTE: Otherwise use the normal full save method of the model to save the object

@@ -110,7 +110,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
       <li>
         You now need to create a Python virtual environment by:
         <ol start="1" type="1">
-          <li>Opening/running the Windows Terminal and executing these commands: <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\scripts\activate</code></nobr> (make sure these commands are run within the directory containing your local copy of the repository)</li>
+          <li>Opening/running the Windows Terminal and executing these commands: <nobr><code>py -3 -m venv .venv</code></nobr> and <nobr><code>.venv\Scripts\activate</code></nobr> (make sure these commands are run within the directory containing your local copy of the repository)</li>
           <li>Updating the pip package with this command: <nobr><code>python -m pip install --upgrade pip</code></nobr></li>
           <li>Installing all the required packages for Pulsifi using this command: <nobr><code>pip install -r requirements.txt</code></nobr></li>
         </ol>

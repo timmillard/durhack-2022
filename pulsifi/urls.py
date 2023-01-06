@@ -27,12 +27,12 @@ urlpatterns = [
         name="home_redirect"
     ),
     path("feed/", views.Feed_View.as_view(), name="feed"),
-    # TODO: profile search url, leaderboard url
-    path("profile/", views.Self_Profile_View.as_view(), name="self_profile"),
+    # TODO: user search url, leaderboard url
+    path("user/", views.Self_Account_View.as_view(), name="self_account"),
     path(
-        "profile/@<str:url_username>",
-        views.Specific_Profile_View.as_view(),
-        name="username_profile"
+        "user/@<str:username>",
+        views.Specific_Account_View.as_view(),
+        name="specific_account"
     ),
     path("create-new-pulse", views.Create_Pulse_View.as_view(), name="create_pulse"),
     path("signup/", views.Signup_View.as_view(), name="signup")

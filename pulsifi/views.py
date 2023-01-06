@@ -4,6 +4,7 @@
 
 from allauth.account.views import SignupView as BaseSignupView
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.handlers.wsgi import WSGIRequest
@@ -15,7 +16,7 @@ from django.views.generic import CreateView, DetailView, ListView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from .forms import ReplyForm
-from .models import Profile, Pulse, Reply
+from .models import Pulse, Reply
 
 
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
@@ -89,11 +90,10 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
     model = Pulse
 
     def get_queryset(self):  # TODO: get queryset from models.py not views.py
+        # noinspection PyUnresolvedReferences
         queryset = Pulse.objects.filter(
-            creator__id__in=Profile.objects.get(
-                _base_user__id=self.request.user.id
-            ).following.exclude(
-                _base_user__is_active=False
+            creator__id__in=self.request.user.following.exclude(
+                is_active=False
             ).values_list("id", flat=True)
         ).order_by("_date_time_created")
 
@@ -108,27 +108,24 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
             return HttpResponseBadRequest()
 
 
-class Self_Profile_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
+class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
     query_string = True
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse(
-            "pulsifi:username_profile",
-            kwargs={"url_username": Profile.objects.get(
-                _base_user__id=self.request.user.id
-            ).username}
+            "pulsifi:specific_account",
+            kwargs={"username": self.request.user.username}
         )
 
 
-class Specific_Profile_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
-    template_name = "pulsifi/profile.html"
+class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
+    template_name = "pulsifi/account.html"
 
     def get_object(self, queryset=None):
         if queryset is None:
-            queryset = Profile.objects.all()
-        username = self.kwargs.get("url_username")
+            queryset = get_user_model().objects.all()
         try:
-            obj = queryset.filter(_base_user__username=username).get()  # NOTE: Get the single item from the filtered queryset
+            obj = queryset.filter(username=self.kwargs.get("username")).get()  # NOTE: Get the single item from the filtered queryset
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(

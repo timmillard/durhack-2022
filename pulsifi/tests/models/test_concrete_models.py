@@ -1,162 +1,75 @@
 """
     Automated test suite for concrete models in pulsifi app.
 """
-import copy
-import logging
 
+from django.contrib.auth import get_user_model
 from django.db.models import BooleanField
 from django.test import TestCase
 
-from pulsifi.models import BaseUser, Profile
-from pulsifi.tests.utils import CreateTestProfileHelper, DeleteBaseUserHelper, GetFieldsHelper
+from pulsifi.tests.utils import CreateTestUserHelper, GetFieldsHelper
 
 
 # TODO: tests docstrings
 
 
-class Profile_Model_Tests(TestCase):
+class User_Model_Tests(TestCase):
     def test_refresh_from_database_updates_non_relation_fields(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-        old_profile = Profile.objects.get(id=profile.id)
+        user = CreateTestUserHelper.create_test_user()
+        old_user = get_user_model().objects.get(id=user.id)
 
-        self.assertEqual(profile, old_profile)
+        self.assertEqual(user, old_user)
 
-        for field in GetFieldsHelper.get_non_relation_fields(profile, exclude=["id"]):
-            if field.name in CreateTestProfileHelper.TEST_PROFILES[0]:
+        for field in GetFieldsHelper.get_non_relation_fields(user, exclude=["id", "last_login", "date_joined"]):
+            if field.name in CreateTestUserHelper.TEST_USERS[0]:
                 setattr(
-                    profile,
+                    user,
                     field.name,
-                    CreateTestProfileHelper.get_test_unknown_field(field.name)
+                    CreateTestUserHelper.get_test_unknown_field(field.name)
                 )
             elif isinstance(field, BooleanField):
-                setattr(profile, field.name, not getattr(profile, field.name))
+                setattr(user, field.name, not getattr(user, field.name))
 
             self.assertNotEqual(
-                getattr(profile, field.name),
-                getattr(old_profile, field.name)
+                getattr(user, field.name),
+                getattr(old_user, field.name)
             )
 
-            profile.refresh_from_db()
+            user.refresh_from_db()
             self.assertEqual(
-                getattr(profile, field.name),
-                getattr(old_profile, field.name)
+                getattr(user, field.name),
+                getattr(old_user, field.name)
             )
 
-    def test_base_user_shortcut_and_delete_makes_Null_BaseUser_object(self):
-        profile = CreateTestProfileHelper.create_test_profile()
+    def test_delete_makes_not_active(self):
+        user = CreateTestUserHelper.create_test_user()
 
-        self.assertIsInstance(profile.base_user, BaseUser)
+        self.assertTrue(user.is_active)
 
-        profile.base_user.delete()
-        profile.refresh_from_db()
+        user.delete()
+        user.refresh_from_db()
 
-        self.assertIsInstance(profile.base_user, Profile._Null_BaseUser)
+        self.assertFalse(user.is_active)
 
-    def test_base_user_attribute_shortcuts(self):
-        profile = CreateTestProfileHelper.create_test_profile()
+    def test_visible_shortcut(self):
+        user = CreateTestUserHelper.create_test_user()
 
-        self.assertEqual(profile.username, profile.base_user.username)
-        self.assertEqual(profile.email, profile.base_user.email)
-        self.assertEqual(profile.date_joined, profile.base_user.date_joined)
-        self.assertEqual(profile.visible, profile.base_user.is_active)
-        self.assertEqual(
-            profile.emailaddress_set,
-            profile.base_user.emailaddress_set
-        )
-        self.assertEqual(profile.visible, profile.base_user.is_active)
+        self.assertEqual(user.visible, user.is_active)
 
-        profile.base_user.delete()
-        profile.refresh_from_db()
+        user.visible = False
 
-        if isinstance(profile.base_user, Profile._Null_BaseUser) and not profile.base_user:
-            self.assertEqual(profile.visible, profile.base_user.is_active)
-            self.assertFalse(profile.visible)
-
-    def test_shortcut_username_setter_with_base_user(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-        old_profile = copy.deepcopy(profile)
-        profile.username = CreateTestProfileHelper.get_test_unknown_field("username")
-
-        self.assertNotEqual(profile.username, old_profile.username)
-
-    def test_shortcut_email_setter_with_base_user(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-        old_profile = copy.deepcopy(profile)
-
-        profile.email = CreateTestProfileHelper.get_test_unknown_field("email")
-
-        self.assertNotEqual(profile.email, old_profile.email)
-
-    def test_shortcut_email_setter_with_base_user_with_email_already_exists(self):
-        profile1 = CreateTestProfileHelper.create_test_profile()
-        profile2 = CreateTestProfileHelper.create_test_profile()
-
-        with self.assertRaises(ValueError):
-            profile2.email = profile1.email
-
-    def test_shortcut_visible_setter_with_base_user(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-
-        self.assertTrue(profile.visible)
-        self.assertTrue(profile.base_user.is_active)
-
-        profile.visible = False
-
-        self.assertFalse(profile.visible)
-        self.assertFalse(profile.base_user.is_active)
-
-    def test_shortcut_visible_setter_without_base_user(self):
-        profile = DeleteBaseUserHelper.delete_base_user(CreateTestProfileHelper.create_test_profile())
-
-        self.assertFalse(profile.visible)
-        self.assertFalse(profile.base_user.is_active)
-
-        logger = logging.getLogger("pulsifi.models")
-        setattr(logger, "log_Profile_visible_shortcut_setter", False)
-
-        profile.visible = True
-
-        setattr(logger, "log_Profile_visible_shortcut_setter", True)
-
-        self.assertFalse(profile.visible)
-        self.assertFalse(profile.base_user.is_active)
+        self.assertEqual(user.visible, user.is_active)
 
     def test_stringify_displays_in_correct_format(self):
-        profile = CreateTestProfileHelper.create_test_profile()
+        user = CreateTestUserHelper.create_test_user()
 
-        self.assertEqual(str(profile), f"@{profile.base_user.username}")
+        self.assertEqual(str(user), f"@{user.username}")
 
-        profile.update(visible=False)
+        user.update(is_active=False)
 
         self.assertEqual(
-            str(profile),
-            "".join(letter + "\u0336" for letter in f"@{profile.base_user.username}")
+            str(user),
+            "".join(letter + "\u0336" for letter in f"@{user.username}")
         )
-
-    def test_nonactive_base_user_makes_profile_not_visible(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-
-        self.assertTrue(profile.base_user.is_active)
-        self.assertTrue(profile.visible)
-
-        profile.base_user.is_active = False
-        profile.base_user.save()
-
-        profile.save()
-
-        self.assertFalse(profile.base_user.is_active)
-        self.assertFalse(profile.visible)
-
-    def test_not_visible_profile_makes_base_user_nonactive(self):
-        profile = CreateTestProfileHelper.create_test_profile()
-
-        self.assertTrue(profile.visible)
-        self.assertTrue(profile.base_user.is_active)
-
-        profile.update(visible=False)
-
-        self.assertFalse(profile.visible)
-        self.assertFalse(profile.base_user.is_active)
 
 
 class _User_Generated_Content_Model(TestCase):

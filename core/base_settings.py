@@ -59,10 +59,14 @@ LOGIN_URL = reverse_lazy("pulsifi:home")
 LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
 
+# Auth model settings
+AUTH_USER_MODEL = "pulsifi.User"
+
 # Authentication configuration settings (mainly for allauth & its associated packages)
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_USER_DISPLAY = "pulsifi.models.User.__str__"
 ACCOUNT_USERNAME_MIN_LENGTH = 4
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS")
@@ -221,5 +225,4 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "en-gb"
 TIME_ZONE = "Europe/London"
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True

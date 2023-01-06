@@ -4,8 +4,9 @@
 
 from allauth.account.forms import SignupForm as BaseSignupForm
 from django import forms
+from django.contrib.auth import get_user_model
 
-from pulsifi.models import Profile, Pulse, Reply
+from pulsifi.models import Pulse, Reply
 
 
 class SignupForm(BaseSignupForm):
@@ -69,5 +70,5 @@ class BioForm(forms.ModelForm):
     """ Form for updating a user's bio. """
 
     class Meta:
-        model = Profile
+        model = get_user_model()
         fields = ("bio",)
