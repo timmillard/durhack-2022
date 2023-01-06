@@ -148,7 +148,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         self.disliked_by.remove(user)
 
 
-class User(_Visible_Reportable_Model, AbstractUser):  # TODO: limit characters allowed in password, prevent new accounts with similar usernames (especially verified accounts)
+class User(_Visible_Reportable_Model, AbstractUser):  # TODO: validate password at form level (https://docs.djangoproject.com/en/4.1/topics/auth/passwords/#module-django.contrib.auth.password_validation), prevent new accounts with similar usernames (especially verified accounts)
     first_name = None  # make blank in save method
     last_name = None
     get_full_name = None
@@ -185,7 +185,7 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: limit characters a
         error_messages={
             "unique": _(f"That Email Address is already in use by another user."),
         },
-    )  # TODO: Add email validators
+    )
     bio = models.TextField(
         "Bio",
         max_length=200,
