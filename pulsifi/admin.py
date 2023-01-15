@@ -4,6 +4,7 @@
 
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count
 
 from .admin_filters import GroupListFilter, StaffListFilter, VerifiedListFilter, VisibleListFilter
@@ -99,8 +100,9 @@ class Report_Admin(admin.ModelAdmin):
 
 
 @admin.register(get_user_model())
-class User_Admin(admin.ModelAdmin):
+class User_Admin(BaseUserAdmin):
     date_hierarchy = "date_joined"
+    filter_horizontal = ["user_permissions", ]
     fieldsets = [
         (None, {
             "fields": (("username", "email"), "bio", ("verified", "is_active"), "following")
@@ -114,7 +116,19 @@ class User_Admin(admin.ModelAdmin):
             "classes": ("collapse",)
         })
     ]
-    filter_horizontal = ["user_permissions", ]
+    add_fieldsets = [
+        (None, {
+            "fields": (("username", "email"), ("password1", "password2"))
+        }),
+        ("Extra", {
+            "fields": ("bio", ("verified", "is_active"), "following"),
+            "classes": ("collapse",)
+        }),
+        ("Permissions", {
+            "fields": ("groups", "user_permissions", "is_staff", "is_superuser"),
+            "classes": ("collapse",)
+        })
+    ]
     inlines = [
         EmailAddress_Inline,
         Avatar_Inline,
@@ -152,7 +166,7 @@ class User_Admin(admin.ModelAdmin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
         if not obj:
-            fieldsets = [fieldset for fieldset in fieldsets if not fieldset[0] == "Authentication"]
+            fieldsets = [fieldset for fieldset in fieldsets if fieldset[0] != "Authentication"]
         return fieldsets
 
     def get_form(self, *args, **kwargs):
@@ -167,12 +181,12 @@ class User_Admin(admin.ModelAdmin):
     def get_inlines(self, request, obj):
         inlines = super().get_inlines(request, obj)
 
+        if not obj:
+            inlines = [inline for inline in inlines if inline != EmailAddress_Inline]
+
         try:
             Report._meta.get_field("assigned_staff_member").default()
         except get_user_model().DoesNotExist:
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
 
         return inlines
-
-    def has_add_permission(self, *args, **kwargs):
-        return False
