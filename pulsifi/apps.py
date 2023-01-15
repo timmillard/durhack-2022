@@ -9,3 +9,7 @@ class PulsifiConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "pulsifi"
     verbose_name = "Pulsifi"
+
+    def ready(self):
+        from . import signals
+        signals.ready()

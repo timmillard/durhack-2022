@@ -2,7 +2,7 @@
 <html lang="en-GB">
     {% load static %}
 
-    <head>
+    <head>  <!--TODO: favicons-->
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Sign Up - Pulsifi</title>
@@ -10,27 +10,32 @@
     </head>
 
     <body>
-        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style ="background-color: #ba03fc;">   <!--TODO: load from navbar.html (only show links if logged in)-->
-            <a class="navbar-brand align-middle" href="{% url 'default' %}"><img height = 30px src = "{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar rounded-bottom navbar-light navbar-expand-lg pl-5 pr-5" style="background-color: #ba03fc;">   <!--TODO: load from navbar.html (only show links if logged in)-->
+            <a class="navbar-brand align-middle" href="{% url 'default' %}"><img height=30px src="{% static 'pulsifi/brand/Logo-White_Transparent.png' %}"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false"
+                    aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
-                <div class="navbar-nav">
-                    <a class="nav-link"><button type="button" class="btn btn-light" id="sign-up">Sign Up</button></a>
-                    <a class="nav-link"><button type="button" class="btn btn-light" id="sign-in">Sign In</button></a>
-                </div>
+            <div class="navbar-nav">
+            <a class="nav-link">
+                <button type="button" class="btn btn-light" id="sign-up">Sign Up</button>
+            </a>
+            <a class="nav-link">
+                <button type="button" class="btn btn-light" id="sign-in">Sign In</button>
+            </a>
+            </div>
             </div>
         </nav>
         <br>   <!--TODO: fix padding-->
         {% if form.errors %}
             <div id="form-error">
-                <p>The operation could not be performed because one or more error(s) occurred.<br />Please resubmit the form after making the following changes:</p>
-                <ul>
-                    {% for field in form %}
-                        <li>{{ field.errors|striptags }}</li>
-                    {% endfor %}
-                </ul>
+            <p>The operation could not be performed because one or more error(s) occurred.<br/>Please resubmit the form after making the following changes:</p>
+            <ul>
+                {% for field in form %}
+                    <li>{{ field.errors|striptags }}</li>
+                {% endfor %}
+            </ul>
             </div>
         {% endif %}
         <form id="signup_form" method="post" action="{% url 'pulsifi:signup' %}">  <!-- TODO: generate form from allauth form -->
@@ -42,4 +47,5 @@
             <button type="submit" class="btn text-white" style="background-color: #ba03fc;">Sign Up</button>
         </form>   <!--TODO: show errors in modal-->
     </body>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
+            crossorigin="anonymous"></script>

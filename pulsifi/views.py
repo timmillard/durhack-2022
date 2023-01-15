@@ -84,7 +84,7 @@ class Home_View(LoginView):  # TODO: toast for account deletion, show admin link
         return response
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply at top of page
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
     model = Pulse
@@ -108,7 +108,7 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: l
             return HttpResponseBadRequest()
 
 
-class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/profile picture
+class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/avatar
     query_string = True
 
     def get_redirect_url(self, *args, **kwargs):
@@ -125,12 +125,11 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
         if queryset is None:
             queryset = get_user_model().objects.all()
         try:
-            obj = queryset.filter(username=self.kwargs.get("username")).get()  # NOTE: Get the single item from the filtered queryset
+            obj = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))  # NOTE: Get the single item from the filtered queryset
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(
-                _("No %(verbose_name)s found matching the query.")
-                % {"verbose_name": queryset.model._meta.verbose_name}
+                _(f"That {queryset.model._meta.verbose_name} does not exist.")
             )
         return obj
 

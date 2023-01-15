@@ -8,16 +8,20 @@ from typing import Final
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractUser, Group
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
+from django.db.models import Manager, Q
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from .models_utils import Custom_Base_Model, get_random_staff_member
-from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_free_email, validate_tld_email
+from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_example_email, validate_free_email, validate_tld_email
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +33,12 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         to have reports made about them.
     """
 
-    reports = GenericRelation(
+    about_object_report_set = GenericRelation(
         "Report",
         content_type_field="_content_type",
         object_id_field="_object_id",
         related_query_name="reverse_parent_object",
-        verbose_name="Reports"
+        verbose_name="Reports About This Object"
     )
     """
         Provides a link to the set of all Report objects that link to this
@@ -80,72 +84,47 @@ class _Visible_Reportable_Model(Custom_Base_Model):
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
-    visible = models.BooleanField("Visibility", default=True)
-    message = models.TextField("Message")
-    replies = GenericRelation(
+    message = models.TextField("Message", blank=False, null=False)
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name="Creator",
+        related_name="created_%(class)s_set"
+    )  # NOTE: Provides a link to the Profile that created this User_Generated_Content
+    liked_by = models.ManyToManyField(  # TODO: prevent users from increasing the time by liking then unliking then reliking
+        settings.AUTH_USER_MODEL,
+        related_name="liked_%(class)s_set",
+        blank=True
+    )
+    disliked_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="disliked_%(class)s_set",
+        blank=True
+    )
+    reply_set = GenericRelation(
         "Reply",
         content_type_field="_content_type",
         object_id_field="_object_id",
         verbose_name="Replies"
     )
+    visible = models.BooleanField("Is visible?", default=True)
     _date_time_created = models.DateTimeField(
         "Creation Date & Time",
         auto_now=True
     )
 
     @property
-    def likes(self):
-        return self.liked_by.count()
-
-    @property
-    def dislikes(self):
-        return self.disliked_by.count()
-
-    @property
     def date_time_created(self):
         return self._date_time_created
-
-    @property
-    @abstractmethod
-    def liked_by(self) -> models.Manager:
-        """
-            Abstract declaration of field that MUST be implemented by child
-            classes.
-        """
-
-        raise NotImplementedError
-
-    @property
-    @abstractmethod
-    def disliked_by(self) -> models.Manager:
-        """
-            Abstract declaration of field that MUST be implemented by child
-            classes.
-        """
-
-        raise NotImplementedError
 
     class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
     def __str__(self):
-        return self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
-    def like(self, user: "User"):  # TODO: prevent users from increasing the time by liking then unliking then reliking
-        if self.disliked_by.filter(id=user.id).exists():
-            self.remove_dislike(user)
-        self.liked_by.add(user)
-
-    def dislike(self, user: "User"):
-        if self.liked_by.filter(id=user.id).exists():
-            self.remove_like(user)
-        self.disliked_by.add(user)
-
-    def remove_like(self, user: "User"):
-        self.liked_by.remove(user)
-
-    def remove_dislike(self, user: "User"):
-        self.disliked_by.remove(user)
+    def get_absolute_url(self):
+        return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
 
 
 class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accounts with similar usernames (especially verified accounts)
@@ -154,13 +133,29 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
     get_full_name = None
     get_short_name = None
 
+    staff_assigned_report_set: Manager
+    avatar_set: Manager
+    disliked_pulse_set: Manager
+    disliked_reply_set: Manager
+    # noinspection SpellCheckingInspection
+    emailaddress_set: Manager
+    liked_pulse_set: Manager
+    liked_reply_set: Manager
+    logentry_set: Manager
+    created_pulse_set: Manager
+    created_reply_set: Manager
+    submitted_report_set: Manager
+    # noinspection SpellCheckingInspection
+    socialaccount_set: Manager
+    # noinspection SpellCheckingInspection
+    staticdevice_set: Manager
+    # noinspection SpellCheckingInspection
+    totpdevice_set: Manager
+
     username = models.CharField(
         _("username"),
         max_length=30,
         unique=True,
-        help_text=_(
-            "Required. 30 characters or fewer. Letters, digits and ./_ only."
-        ),
         validators=[
             RegexValidator(
                 r"^[\w.-]+\Z",
@@ -180,7 +175,8 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
             HTML5EmailValidator,
             validate_free_email,
             validate_confusables_email,
-            validate_tld_email
+            validate_tld_email,
+            validate_example_email
         ],
         error_messages={
             "unique": _(f"That Email Address is already in use by another user."),
@@ -189,15 +185,46 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
     bio = models.TextField(
         "Bio",
         max_length=200,
-        blank=True,
-        null=True
+        blank=True
     )
-    verified = models.BooleanField("Verified", default=False)  # TODO: Add verification process
-    following = models.ManyToManyField(
+    verified = models.BooleanField("Is verified?", default=False)  # TODO: Add verification process
+    following = models.ManyToManyField(  # TODO: can't follow self
         "self",
         symmetrical=False,
         related_name="followers",
         blank=True
+    )
+    is_staff = models.BooleanField(
+        "Is a staff member?",
+        default=False,
+        help_text=_("Designates whether the user can log into this admin site."),
+    )
+    is_superuser = models.BooleanField(
+        "Is a superuser?",
+        default=False,
+        help_text=_(
+            "Designates that this user has all permissions without "
+            "explicitly assigning them."
+        ),
+    )
+    is_active = models.BooleanField(
+        "Is visible?",
+        default=True,
+        help_text=_(
+            "Designates whether this user is visible. "
+            "Unselect this instead of deleting accounts."
+        ),
+    )
+    date_joined = models.DateTimeField(
+        _("date joined"),
+        default=timezone.now,
+        editable=False
+    )
+    last_login = models.DateTimeField(
+        _("last login"),
+        blank=True,
+        null=True,
+        editable=False
     )
 
     @property
@@ -215,6 +242,12 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
         return self.string_when_visible(f"@{self.username}")
 
     def clean(self):
+        if self.is_superuser:
+            self.is_staff = self.is_superuser
+
+        if (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and "pulsifi" in self.username.lower():
+            raise ValidationError({"username": "That username is not allowed."}, code="invalid")
+
         if self.email.count("@") == 1:
             local: str
             domain: str
@@ -227,18 +260,29 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
             if domain == "googlemail.com":
                 domain = "gmail.com"
+            elif (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and domain == "pulsifi.tech":
+                raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
 
             self.email = local + "@" + domain
 
         if EmailAddress.objects.filter(email=self.email).exclude(user=self).exists():
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
 
+        if self.verified:
+            if self.id:
+                if not self.emailaddress_set.filter(verified=True).exists():
+                    raise ValidationError({"verified": "User cannot become verified without at least one verified email address."})
+            else:
+                raise ValidationError({"verified": "User cannot become verified without at least one verified email address."})
+
         super().clean()
 
     def save(self, *args, **kwargs):
+        new = not self.id
+
         super().save(*args, **kwargs)
 
-        if not EmailAddress.objects.filter(email=self.email, user=self).exists():
+        if not new and not EmailAddress.objects.filter(email=self.email, user=self).exists():
             current_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
             if current_primary_email_QS.exists():
                 old_primary = current_primary_email_QS.get()
@@ -247,44 +291,29 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
 
+    def get_absolute_url(self):
+        return reverse("pulsifi:specific_account", kwargs={"username": self.username})
+
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        verbose_name="Creator",
-        related_name="pulses"
-    )  # NOTE: Provides a link to the Profile that created this Pulse
-    liked_by = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="liked_pulses",
-        blank=True
-    )
-    disliked_by = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="disliked_pulses",
-        blank=True
-    )
-
     @property
     def full_depth_replies(self):
-        return Reply.objects.filter(_original_pulse=self)
+        return [reply for reply in Reply.objects.all() if reply.original_pulse == self]
 
     class Meta:
         verbose_name = "Pulse"
 
-    def __str__(self):
-        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
-
     def save(self, *args, **kwargs):
         self.full_clean()
 
-        if Pulse.objects.filter(id=self.id).exists():
-            if not self.visible and Pulse.objects.get(id=self.id).visible:
+        self_QS = Pulse.objects.filter(id=self.id)
+
+        if self_QS.exists():
+            if not self.visible and self_QS.get().visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=False)
 
-            elif self.visible and not Pulse.objects.get(id=self.id).visible:
+            elif self.visible and not self_QS.get().visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=True)
 
@@ -292,64 +321,57 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+    _content_type = models.ForeignKey(
+        ContentType,
         on_delete=models.CASCADE,
-        verbose_name="Creator",
-        related_name="replies"
-    )  # NOTE: Provides a link to the Profile that created this Reply
-    _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    _object_id = models.PositiveIntegerField()
-    parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
-    _original_pulse = models.ForeignKey(
-        Pulse,
-        on_delete=models.CASCADE,
-        blank=True,
-        verbose_name="Original Pulse",
-        related_name="+"
+        limit_choices_to={"app_label": "pulsifi", "model__in": ("pulse", "reply")},
+        verbose_name="Replied Content Type"
     )
-    liked_by = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="liked_replies",
-        blank=True
-    )
-    disliked_by = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="disliked_replies",
-        blank=True
-    )
+    _object_id = models.PositiveIntegerField(verbose_name="Replied Content ID")
+    replied_content = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
 
     @property
     def original_pulse(self):
-        try:
-            return self._original_pulse
-        except Pulse.DoesNotExist:
-            return self._find_original_pulse(self)
+        return self._find_original_pulse()
 
     class Meta:
         verbose_name = "Reply"
         verbose_name_plural = "Replies"
+        indexes = [
+            models.Index(fields=["_content_type", "_object_id"]),
+        ]
 
     def __str__(self):
-        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.parent_object})"
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.replied_content})"
+
+    def clean(self):
+        try:
+            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):
+                raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
+        except ContentType.DoesNotExist:
+            pass
+        else:
+            if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
+                raise ValidationError("Replied content must be valid object")
+
+        super().clean()
 
     def save(self, *args, **kwargs):
-        self._original_pulse = self.original_pulse
+        self.full_clean()
 
         if not self.original_pulse.visible:
             self.visible = False
 
-        self.full_clean()
         self.base_save(clean=False, *args, **kwargs)
 
-    @staticmethod
-    def _find_original_pulse(reply):
-        if isinstance(reply.parent_object, Pulse):
-            return reply.parent_object
-        return Reply._find_original_pulse(reply.parent_object)
+    def _find_original_pulse(self):
+        if isinstance(self.replied_content, Pulse):
+            return self.replied_content
+        # noinspection PyProtectedMember
+        return self.replied_content._find_original_pulse()
 
 
-class Report(Custom_Base_Model):  # TODO: create user privileges that can access reporting screens
+class Report(Custom_Base_Model):
     SPAM: Final = "SPM"
     SEXUAL: Final = "SEX"
     HATE: Final = "HAT"
@@ -381,21 +403,26 @@ class Report(Custom_Base_Model):  # TODO: create user privileges that can access
         (COMPLETED, "Completed")
     ]
 
-    _content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    _object_id = models.PositiveIntegerField()
-    parent_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+    _content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        limit_choices_to={"app_label": "pulsifi", "model__in": ("user", "pulse", "reply")},
+        verbose_name="Reported Object Type"
+    )
+    _object_id = models.PositiveIntegerField(verbose_name="Reported Object ID")
+    reported_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
     reporter = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Reporter",
-        related_name="reports"
+        related_name="submitted_report_set"
     )
-    assigned_staff = models.ForeignKey(
+    assigned_staff_member = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Assigned Staff Member",
-        related_name="assigned_reports",
-        limit_choices_to={"is_staff": True},
+        related_name="staff_assigned_report_set",
+        limit_choices_to={"groups__name": "Moderators"},
         default=get_random_staff_member
     )
     reason = models.TextField("Reason")
@@ -420,7 +447,10 @@ class Report(Custom_Base_Model):  # TODO: create user privileges that can access
         return self._date_time_created
 
     class Meta:
-        verbose_name = "Reply"
+        verbose_name = "Report"
+        indexes = [
+            models.Index(fields=["_content_type", "_object_id"]),
+        ]
 
     # noinspection PyFinal
     def __init__(self, *args, **kwargs):
@@ -441,8 +471,23 @@ class Report(Custom_Base_Model):  # TODO: create user privileges that can access
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (Assigned Staff Member - {self.assigned_staff})(For object - {self.parent_object})"
+        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (Assigned Staff Member - {self.assigned_staff_member})(For object - {self.reported_object})"
+
+    def clean(self):
+        try:
+            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
+                raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
+
+            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(id=self.reporter_id)).values_list("id", flat=True):
+                raise ValidationError({"_object_id": f"The Object ID: {self._object_id} refers to an admin. Admins cannot be reported."}, code="invalid")
+
+        except ContentType.DoesNotExist:
+            pass
+
+        super().clean()
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+        print(self.assigned_staff_member_id)

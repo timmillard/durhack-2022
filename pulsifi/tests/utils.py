@@ -279,8 +279,8 @@ class CreateTestUserGeneratedContentHelper:
             else:
                 message = kwargs.pop("message")
 
-            if "parent_object" in kwargs:
-                parent_object = kwargs.pop("parent_object")
+            if "replied_content" in kwargs:
+                replied_content = kwargs.pop("replied_content")
 
                 if "visible" in kwargs:
                     visible = kwargs.pop("visible")
@@ -291,28 +291,28 @@ class CreateTestUserGeneratedContentHelper:
                                 message=message,
                                 creator=kwargs.pop("creator"),
                                 visible=visible,
-                                parent_object=parent_object
+                                replied_content=replied_content
                             )
 
                         return Reply(
                             message=message,
                             creator=kwargs.pop("creator"),
                             visible=visible,
-                            parent_object=parent_object
+                            replied_content=replied_content
                         )
                     if save:
                         return Reply.objects.create(
                             message=message,
                             creator=CreateTestUserHelper.create_test_user(**kwargs),
                             visible=visible,
-                            parent_object=parent_object
+                            replied_content=replied_content
                         )
 
                     return Reply(
                         message=message,
                         creator=CreateTestUserHelper.create_test_user(**kwargs),
                         visible=visible,
-                        parent_object=parent_object
+                        replied_content=replied_content
                     )
 
                 if "creator" in kwargs:
@@ -320,25 +320,25 @@ class CreateTestUserGeneratedContentHelper:
                         return Reply.objects.create(
                             message=message,
                             creator=kwargs.pop("creator"),
-                            parent_object=parent_object
+                            replied_content=replied_content
                         )
 
                     return Reply(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        parent_object=parent_object
+                        replied_content=replied_content
                     )
                 if save:
                     return Reply.objects.create(
                         message=message,
                         creator=CreateTestUserHelper.create_test_user(**kwargs),
-                        parent_object=parent_object
+                        replied_content=replied_content
                     )
 
                 return Reply(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    parent_object=parent_object
+                    replied_content=replied_content
                 )
 
             if "visible" in kwargs:
@@ -349,28 +349,28 @@ class CreateTestUserGeneratedContentHelper:
                         return Reply.objects.create(
                             message=message,
                             creator=kwargs.pop("creator"),
-                            parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                            replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
                             visible=visible
                         )
 
                     return Reply(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
                         visible=visible
                     )
                 if save:
                     return Reply.objects.create(
                         message=message,
                         creator=CreateTestUserHelper.create_test_user(**kwargs),
-                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
                         visible=visible
                     )
 
                 return Reply(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
                     visible=visible
                 )
 
@@ -379,25 +379,25 @@ class CreateTestUserGeneratedContentHelper:
                     return Reply.objects.create(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
                     )
 
                 return Reply(
                     message=message,
                     creator=kwargs.pop("creator"),
-                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
                 )
             if save:
                 return Reply.objects.create(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
                 )
 
             return Reply(
                 message=message,
                 creator=CreateTestUserHelper.create_test_user(**kwargs),
-                parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
             )
 
         else:
@@ -407,13 +407,13 @@ class CreateTestUserGeneratedContentHelper:
                 return Reply.objects.create(
                     message=cls.TEST_MESSAGES[cls._test_message_index],
                     creator=CreateTestUserHelper.create_test_user(),
-                    parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
                 )
 
             return Reply(
                 message=cls.TEST_MESSAGES[cls._test_message_index],
                 creator=CreateTestUserHelper.create_test_user(),
-                parent_object=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
             )
 
     @classmethod

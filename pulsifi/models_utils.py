@@ -5,9 +5,9 @@ import logging
 from random import choice as random_choice
 from typing import Iterable
 
-from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
 
 logger = logging.getLogger(__name__)
@@ -16,17 +16,25 @@ logger = logging.getLogger(__name__)
 def get_random_staff_member():
     """ Returns a random staff member's Profile. """
 
-    if apps.get_model(app_label="pulsifi", model_name="Reply").objects.all().exists():
-        staff_QS = get_user_model().objects.filter(is_staff=True)
+    ret = True
+    for model in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
+        if model.model == "user":
+            if model.model_class().objects.exclude(groups__name="Admins").exists():
+                ret = False
+        else:
+            if model.model_class().objects.all().exists():
+                ret = False
+    if ret:
+        return
 
-        if staff_QS.exists():
-            return get_user_model().objects.filter(
-                id=random_choice(staff_QS.values_list("id", flat=True))
-            ).get().id  # NOTE: Choose a random ID from the list of staff member IDs
+    staff_QS = get_user_model().objects.filter(groups__name="Moderators")
 
-        raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist in the database.")
+    if staff_QS.exists():
+        return get_user_model().objects.filter(
+            id=random_choice(staff_QS.values_list("id", flat=True))
+        ).get().id  # NOTE: Choose a random ID from the list of staff member IDs
 
-    return None
+    raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist in the database.")
 
 
 class Custom_Base_Model(Model):

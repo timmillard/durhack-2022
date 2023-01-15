@@ -23,6 +23,7 @@ env = Env(
     EMAIL_PORT=(int, 465),
     EMAIL_HOST_USER=(str, "no-reply@pulsifi.tech"),
     EMAIL_USE_SSL=(bool, True),
+    PULSIFI_ADMIN_COUNT=(int, 1),
     MESSAGE_DISPLAY_LENGTH=(int, 15),
     FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear"),
     PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES=(float, 0.627)
@@ -50,6 +51,8 @@ _EMAIL_HOST_USER_domain: str
 _, _EMAIL_HOST_USER_domain = env("EMAIL_HOST_USER").split("@")
 if env("EMAIL_HOST_USER").count("@") != 1 or (env("EMAIL_HOST_USER").count("@") == 1 and (not tldextract.extract(_EMAIL_HOST_USER_domain).domain or not tldextract.extract(_EMAIL_HOST_USER_domain).suffix)):
     raise ImproperlyConfigured("EMAIL_HOST_USER must be a valid email address.")
+if not env("PULSIFI_ADMIN_COUNT") > 0:
+    raise ImproperlyConfigured("PULSIFI_ADMIN_COUNT must be an integer greater than 0.")
 if not env("MESSAGE_DISPLAY_LENGTH") > 0:
     raise ImproperlyConfigured("MESSAGE_DISPLAY_LENGTH must be an integer greater than 0.")
 _FOLLOWER_COUNT_SCALING_FUNCTION_choices = ("logarithmic", "linear", "quadratic", "linearithmic", "exponential", "factorial")
@@ -57,6 +60,11 @@ if env("FOLLOWER_COUNT_SCALING_FUNCTION") not in _FOLLOWER_COUNT_SCALING_FUNCTIO
     raise ImproperlyConfigured(f"FOLLOWER_COUNT_SCALING_FUNCTION must be one of {_FOLLOWER_COUNT_SCALING_FUNCTION_choices}.")
 if not 0.1 <= env("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES") <= 1.0:
     raise ImproperlyConfigured("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES must be a float between 0.1 and 1.0.")
+
+
+def _display_user(user):
+    return str(user)
+
 
 # Build paths inside the project like this: BASE_DIR / "subdir"
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -81,7 +89,7 @@ AUTH_USER_MODEL = "pulsifi.User"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
-ACCOUNT_USER_DISPLAY = "pulsifi.models.User.__str__"
+ACCOUNT_USER_DISPLAY = _display_user
 ACCOUNT_USERNAME_MIN_LENGTH = env("USERNAME_MIN_LENGTH")
 ACCOUNT_EMAIL_VERIFICATION = env("ACCOUNT_EMAIL_VERIFICATION")
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = env("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS")
@@ -137,6 +145,7 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_SSL = env("EMAIL_USE_SSL")
 
 # Custom settings values (used to control functionality of the app)
+PULSIFI_ADMIN_COUNT = env("PULSIFI_ADMIN_COUNT")
 MESSAGE_DISPLAY_LENGTH = env("MESSAGE_DISPLAY_LENGTH")
 FOLLOWER_COUNT_SCALING_FUNCTION = env(
     "FOLLOWER_COUNT_SCALING_FUNCTION"
@@ -213,6 +222,9 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3"
     }
 }
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

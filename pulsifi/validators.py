@@ -17,6 +17,10 @@ FREE_EMAIL = _(
     "Registration using free email addresses is prohibited. "
     "Please supply a different email address."
 )
+EXAMPLE_EMAIL = _(
+    "Registration using unresolvable example email addresses is prohibited. "
+    "Please supply a different email address."
+)
 RESERVED_NAME = _("This name is reserved and cannot be registered.")
 
 # WHATWG HTML5 spec, section 4.10.5.1.5.
@@ -26,6 +30,8 @@ HTML5_EMAIL_RE = (
     r"[a-zA-Z0-9])?(?:\.[a-zA-Z0-9]"
     r"(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
 )
+
+EXAMPLE_EMAIL_DOMAINS = ["example", "test"]
 
 FREE_EMAIL_ADDRESSES = [
     "decabg.eu",
@@ -205,7 +211,6 @@ OTHER_SENSITIVE_NAMES = [
     "privacy",
     "profile",
     "puls",
-    "pulsifi",
     "register",
     "reply",
     "report",
@@ -282,6 +287,17 @@ def validate_free_email(value: str):
 
     if domain in FREE_EMAIL_ADDRESSES:
         raise ValidationError(FREE_EMAIL, code="invalid")
+
+
+def validate_example_email(value: str):
+    if value.count("@") != 1:
+        return
+
+    domain: str
+    _, domain = value.split("@")
+
+    if tldextract.extract(domain).domain in EXAMPLE_EMAIL_DOMAINS:
+        raise ValidationError(EXAMPLE_EMAIL, code="invalid")
 
 
 def validate_tld_email(value: str):
