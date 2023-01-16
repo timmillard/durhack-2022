@@ -8,7 +8,7 @@ from typing import Iterable
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
+from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
 
 logger = logging.getLogger(__name__)
 
@@ -106,3 +106,17 @@ class Custom_Base_Model(Model):
                 self.base_save(clean, using)
             else:
                 self.save(using)  # NOTE: Otherwise use the normal full save method of the model to save the object
+
+
+class Date_Time_Created_Base_Model(Model):
+    _date_time_created = DateTimeField(
+        "Creation Date & Time",
+        auto_now=True
+    )
+
+    @property
+    def date_time_created(self):
+        return self._date_time_created
+
+    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+        abstract = True

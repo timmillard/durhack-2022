@@ -22,7 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
-from .models_utils import Custom_Base_Model, get_random_staff_member
+from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_staff_member
 from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_example_email, validate_free_email, validate_tld_email
 
 logger = logging.getLogger(__name__)
@@ -85,8 +85,8 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         return "".join(f"{char}\u0336" for char in string)  # NOTE: Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
 
 
-class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calculate time remaining based on engagement & creator follower count
-    message = models.TextField("Message", blank=False, null=False)
+class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement & creator follower count
+    message = models.TextField("Message")
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -110,14 +110,6 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model):  # TODO: calcula
         verbose_name="Replies"
     )
     visible = models.BooleanField("Is visible?", default=True)
-    _date_time_created = models.DateTimeField(
-        "Creation Date & Time",
-        auto_now=True
-    )
-
-    @property
-    def date_time_created(self):
-        return self._date_time_created
 
     class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
@@ -351,17 +343,21 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         ]
 
     def __str__(self):
-        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self.replied_content})"
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {type(self.replied_content).__name__.upper()[0]} | {self.replied_content})"[:100]
 
     def clean(self):
         try:
             if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
-        except ContentType.DoesNotExist:
-            pass
-        else:
+
+            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id == self.id:
+                raise ValidationError({"_object_id": "Replied content cannot be self"}, code="invalid")
+
             if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
                 raise ValidationError("Replied content must be valid object")
+
+        except ContentType.DoesNotExist:
+            pass
 
         super().clean()
 
@@ -380,7 +376,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return self.replied_content._find_original_pulse()
 
 
-class Report(Custom_Base_Model):
+class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
     SPAM: Final = "SPM"
     SEXUAL: Final = "SEX"
     HATE: Final = "HAT"
@@ -446,14 +442,6 @@ class Report(Custom_Base_Model):
         choices=status_choices,
         default=IN_PROGRESS
     )
-    _date_time_created = models.DateTimeField(
-        "Creation Date & Time",
-        auto_now=True
-    )
-
-    @property
-    def date_time_created(self):
-        return self._date_time_created
 
     class Meta:
         verbose_name = "Report"
@@ -480,15 +468,22 @@ class Report(Custom_Base_Model):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.reporter}, {self.get_category_display()}, {self.get_status_display()} (Assigned Staff Member - {self.assigned_staff_member})(For object - {self.reported_object})"
+        return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Staff Member - {self.assigned_staff_member})"
 
     def clean(self):
         try:
             if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
-            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(id=self.reporter_id)).values_list("id", flat=True):
-                raise ValidationError({"_object_id": f"The Object ID: {self._object_id} refers to an admin. Admins cannot be reported."}, code="invalid")
+            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
+                if self._object_id == self.reporter_id:
+                    raise ValidationError({"_object_id": f"The reporter cannot create a report about themself"}, code="invalid")
+
+                elif self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
+                    raise ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+
+            if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
+                raise ValidationError("Reported object must be valid object")
 
         except ContentType.DoesNotExist:
             pass
@@ -498,5 +493,3 @@ class Report(Custom_Base_Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-
-        print(self.assigned_staff_member_id)

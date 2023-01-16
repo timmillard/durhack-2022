@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.db.models import Count
 
-from .admin_filters import GroupListFilter, StaffListFilter, VerifiedListFilter, VisibleListFilter
+from .admin_filters import AssignedStaffListFilter, CategoryListFilter, GroupListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, VerifiedListFilter, VisibleListFilter
 from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Staff_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
 from .models import Pulse, Reply, Report, User
 
@@ -17,15 +17,15 @@ admin.site.index_title = "Whole Site Overview"
 admin.site.empty_value_display = "- - - - -"
 
 
-# TODO: Number of pulses range filter for user, number of replies range filter for user, reported filter for user, number of likes & dislikes range filter & ordering for pulses & replies
+# TODO: Number of pulses range filter for user, number of replies range filter for user, reported filter for user, number of likes & dislikes range filter
 # TODO: add better inheritance to remove duplicated code
 
 
 @admin.register(Pulse)
 class Pulse_Admin(admin.ModelAdmin):
     date_hierarchy = "_date_time_created"
-    fields = ["creator", "message", ("display_likes", "display_dislikes"), ("liked_by", "disliked_by"), "visible"]
-    readonly_fields = ["display_likes", "display_dislikes"]
+    fields = ["creator", "message", ("display_likes", "display_dislikes"), ("liked_by", "disliked_by"), "visible", "display_date_time_created"]
+    readonly_fields = ["display_likes", "display_dislikes", "display_date_time_created"]
     autocomplete_fields = ["liked_by", "disliked_by"]
     list_display = ["creator", "message", "display_likes", "display_dislikes", "visible"]
     list_display_links = ["creator", "message"]
@@ -43,6 +43,10 @@ class Pulse_Admin(admin.ModelAdmin):
         )
         return queryset
 
+    @admin.display(description="Date created", ordering="_date_time_created")
+    def display_date_time_created(self, obj: Report):
+        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
+
     @admin.display(description="Number of likes", ordering="_likes")  # TODO: admin range filter on likes & dislikes field
     def display_likes(self, obj: Pulse):
         # noinspection PyUnresolvedReferences, PyProtectedMember
@@ -55,8 +59,11 @@ class Pulse_Admin(admin.ModelAdmin):
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
-        if not obj and ("display_likes", "display_dislikes") in fields:
-            fields.remove(("display_likes", "display_dislikes"))
+        if not obj:
+            if ("display_likes", "display_dislikes") in fields:
+                fields.remove(("display_likes", "display_dislikes"))
+            if "display_date_time_created" in fields:
+                fields.remove("display_date_time_created")
         return fields
 
     def get_inlines(self, request, obj):
@@ -69,26 +76,75 @@ class Pulse_Admin(admin.ModelAdmin):
 
         return inlines
 
+    def delete_queryset(self, request, queryset):
+        pulse: Pulse
+        for pulse in queryset:
+            pulse.delete()
+
 
 @admin.register(Reply)
 class Reply_Admin(admin.ModelAdmin):
     date_hierarchy = "_date_time_created"
     inlines = [Direct_Reply_Inline]
-    readonly_fields = ["original_pulse"]
+    readonly_fields = ["original_pulse", "display_date_time_created"]
+
+    @admin.display(description="Date created", ordering="_date_time_created")
+    def display_date_time_created(self, obj: Report):
+        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
         if not obj:
-            fields.remove("original_pulse")
+            if "original_pulse" in fields:
+                fields.remove("original_pulse")
+            if "display_date_time_created" in fields:
+                fields.remove("display_date_time_created")
         return fields
+
+    def delete_queryset(self, request, queryset):
+        reply: Reply
+        for reply in queryset:
+            reply.delete()
 
 
 @admin.register(Report)
 class Report_Admin(admin.ModelAdmin):
+    date_hierarchy = "_date_time_created"
+    fields = [
+        "reporter",
+        ("_content_type", "_object_id"),
+        "reason",
+        "category",
+        ("assigned_staff_member", "status"),
+        "display_date_time_created"
+    ]
+    list_display = ["display_report", "reporter", "_content_type", "_object_id", "category", "status"]
+    list_display_links = ["display_report"]
+    list_editable = ["reporter", "_content_type", "_object_id", "category", "status"]
+    list_filter = [ReportedObjectTypeListFilter, AssignedStaffListFilter, CategoryListFilter, StatusListFilter, VisibleListFilter]
+    readonly_fields = ["display_report", "display_date_time_created"]
+    search_fields = ["reporter", "_content_type", "reason", "category", "assigned_staff_member", "status"]
+    search_help_text = "Search for a reporter, reported object type, reason, category, assigned staff member or status"
+
+    @admin.display(description="Report", ordering=["_content_type", "_object_id"])
+    def display_report(self, obj: Report):
+        return str(obj)[:18]
+
+    @admin.display(description="Date created", ordering="_date_time_created")
+    def display_date_time_created(self, obj: Report):
+        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
+
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
         if not obj:
-            fields.remove("assigned_staff_member")
+            if ("assigned_staff_member", "status") in fields:
+                fields.remove(("assigned_staff_member", "status"))
+                fields.append("status")
+            if "display_date_time_created" in fields:
+                fields.remove("display_date_time_created")
+        elif obj and "status" in fields:
+            fields.remove("status")
+            fields.append(("assigned_staff_member", "status"))
         return fields
 
     def has_add_permission(self, request):
@@ -97,6 +153,11 @@ class Report_Admin(admin.ModelAdmin):
         except get_user_model().DoesNotExist:
             return False
         return True
+
+    def delete_queryset(self, request, queryset):
+        report: Report
+        for report in queryset:
+            report.delete()
 
 
 @admin.register(get_user_model())
@@ -190,3 +251,8 @@ class User_Admin(BaseUserAdmin):
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
 
         return inlines
+
+    def delete_queryset(self, request, queryset):
+        user: User
+        for user in queryset:
+            user.delete()

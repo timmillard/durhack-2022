@@ -70,7 +70,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
             return False
 
 
-class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal)
+class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal), prevent users with >3 in progress reports or >0 completed reports from logging in (with reason page)
     template_name = "pulsifi/home.html"
     redirect_authenticated_user = True
 
@@ -118,7 +118,7 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
         )
 
 
-class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation
+class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
 
     def get_object(self, queryset=None):
