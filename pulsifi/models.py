@@ -351,10 +351,10 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
 
             if self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id == self.id:
-                raise ValidationError({"_object_id": "Replied content cannot be self"}, code="invalid")
+                raise ValidationError({"_object_id": "Replied content cannot be this Reply."}, code="invalid")
 
             if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
-                raise ValidationError("Replied content must be valid object")
+                raise ValidationError("Replied content must be valid object.")
 
         except ContentType.DoesNotExist:
             pass
@@ -427,7 +427,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         on_delete=models.CASCADE,
         verbose_name="Assigned Staff Member",
         related_name="staff_assigned_report_set",
-        limit_choices_to={"groups__name": "Moderators"},
+        limit_choices_to={"groups__name": "Moderators", "is_active": True},
         default=get_random_staff_member
     )
     reason = models.TextField("Reason")
@@ -475,15 +475,25 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
             if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
-            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
+            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
+                if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
+                    raise ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
+
+            elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
                 if self._object_id == self.reporter_id:
-                    raise ValidationError({"_object_id": f"The reporter cannot create a report about themself"}, code="invalid")
+                    raise ValidationError({"_object_id": f"The reporter cannot create a report about themself."}, code="invalid")  # TODO: Better error message
 
                 elif self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
                     raise ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
 
+                if self.assigned_staff_member_id == self._object_id:
+                    try:
+                        self.assigned_staff_member = get_random_staff_member([self._object_id])
+                    except get_user_model().DoesNotExist:
+                        raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid")
+
             if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
-                raise ValidationError("Reported object must be valid object")
+                raise ValidationError("Reported object must be valid object.")
 
         except ContentType.DoesNotExist:
             pass

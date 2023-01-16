@@ -4,9 +4,12 @@
 from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
 from django.test import TestCase
 
+from pulsifi.models import Report
 from pulsifi.tests.utils import CreateTestUserGeneratedContentHelper, CreateTestUserHelper, GetFieldsHelper
 
 
@@ -208,7 +211,7 @@ class User_Model_Tests(TestCase):
         self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
 
 
-class _User_Generated_Content_Model(TestCase):  # TODO: test validation errors from clean method
+class _User_Generated_Content_Model_Tests(TestCase):  # TODO: test validation errors from clean method
     def test_liked_pulse_becoming_disliked_removes_like(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
@@ -268,3 +271,61 @@ class _User_Generated_Content_Model(TestCase):  # TODO: test validation errors f
 
         self.assertTrue(reply.liked_by.filter(id=user2.id).exists())
         self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
+
+
+class Report_Model_Tests(TestCase):
+    def test_assigned_staff_is_not_reported_object(self):
+        user1 = CreateTestUserHelper.create_test_user()
+        user2 = CreateTestUserHelper.create_test_user()
+        moderator_group = Group.objects.create(name="Moderators")
+        user2.groups.add(moderator_group)
+
+        with self.assertRaises(ValidationError) as e:
+            Report.objects.create(
+                reporter=user1,
+                _content_type=ContentType.objects.get_for_model(type(user2)),
+                _object_id=user2.id,
+                reason="test reason message",
+                category=Report.SPAM
+            )
+        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+
+    def test_pulse_created_by_admin_cannot_be_reported(self):
+        user1 = CreateTestUserHelper.create_test_user()
+        user2 = CreateTestUserHelper.create_test_user(is_superuser=True)
+        user3 = CreateTestUserHelper.create_test_user()
+        admin_group = Group.objects.create(name="Admins")
+        moderator_group = Group.objects.create(name="Moderators")
+        user2.groups.add(admin_group)
+        user3.groups.add(moderator_group)
+        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user2)
+
+        with self.assertRaises(ValidationError) as e:
+            Report.objects.create(
+                reporter=user1,
+                _content_type=ContentType.objects.get_for_model(type(pulse)),
+                _object_id=pulse.id,
+                reason="test reason message",
+                category=Report.SPAM
+            )
+        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+
+    def test_reply_created_by_admin_cannot_be_reported(self):
+        user1 = CreateTestUserHelper.create_test_user()
+        user2 = CreateTestUserHelper.create_test_user(is_superuser=True)
+        user3 = CreateTestUserHelper.create_test_user()
+        admin_group = Group.objects.create(name="Admins")
+        moderator_group = Group.objects.create(name="Moderators")
+        user2.groups.add(admin_group)
+        user3.groups.add(moderator_group)
+        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user2)
+
+        with self.assertRaises(ValidationError) as e:
+            Report.objects.create(
+                reporter=user1,
+                _content_type=ContentType.objects.get_for_model(type(reply)),
+                _object_id=reply.id,
+                reason="test reason message",
+                category=Report.SPAM
+            )
+        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")

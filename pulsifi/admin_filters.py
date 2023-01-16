@@ -3,7 +3,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 
-from pulsifi.models import Report
+from pulsifi.models import Reply, Report
+
+
+# TODO: Add more advanced filters with https://github.com/modlinltd/django-advanced-filters
 
 
 class VerifiedListFilter(admin.SimpleListFilter):
@@ -20,7 +23,7 @@ class VerifiedListFilter(admin.SimpleListFilter):
             return queryset.filter(verified=False)
 
 
-class VisibleListFilter(admin.SimpleListFilter):
+class UserVisibleListFilter(admin.SimpleListFilter):
     title = "Visibility"
     parameter_name = "visible"
 
@@ -53,7 +56,7 @@ class StaffListFilter(admin.SimpleListFilter):
     parameter_name = "is_staff"
 
     def lookups(self, request, model_admin):
-        return ("1", "Is Staff Member"), ("0", "Not Staff Member")
+        return ("1", "Is Staff Member"), ("0", "Is Not Staff Member")
 
     def queryset(self, request, queryset):
         if self.value() == "1":
@@ -64,17 +67,22 @@ class StaffListFilter(admin.SimpleListFilter):
 
 class ReportedObjectTypeListFilter(admin.SimpleListFilter):
     title = "Reported Object Type"
-    parameter_name = "content_type"
+    parameter_name = "reported_object_type"
 
     def lookups(self, request, model_admin):
         # noinspection PyProtectedMember
-        return [(content_type.id, str(content_type).split(" ")[-1]) for content_type in ContentType.objects.filter(**Report._meta.get_field("_content_type")._limit_choices_to)]
+        return [(str(content_type).split(" ")[-1].lower(), str(content_type).split(" ")[-1]) for content_type in ContentType.objects.filter(**Report._meta.get_field("_content_type")._limit_choices_to)]
 
     def queryset(self, request, queryset):
-        if self.value() == "1":
-            return queryset.filter(is_staff=True)
-        if self.value() == "0":
-            return queryset.filter(is_staff=False)
+        content_type_name = self.value()
+        if content_type_name:
+            # noinspection PyProtectedMember
+            return queryset.filter(
+                _content_type=ContentType.objects.filter(
+                    **Report._meta.get_field("_content_type")._limit_choices_to
+                ).filter(model=content_type_name).first()
+            )
+        return queryset
 
 
 class AssignedStaffListFilter(admin.SimpleListFilter):
@@ -86,10 +94,10 @@ class AssignedStaffListFilter(admin.SimpleListFilter):
         return [(user.id, str(user)) for user in get_user_model().objects.filter(**Report._meta.get_field("assigned_staff_member")._limit_choices_to)]
 
     def queryset(self, request, queryset):
-        if self.value() == "1":
-            return queryset.filter(is_staff=True)
-        if self.value() == "0":
-            return queryset.filter(is_staff=False)
+        user_id = self.value()
+        if user_id:
+            return queryset.filter(assigned_staff_member_id=user_id)
+        return queryset
 
 
 class CategoryListFilter(admin.SimpleListFilter):
@@ -100,10 +108,10 @@ class CategoryListFilter(admin.SimpleListFilter):
         return [category_choice for category_choice in Report.category_choices]
 
     def queryset(self, request, queryset):
-        if self.value() == "1":
-            return queryset.filter(is_staff=True)
-        if self.value() == "0":
-            return queryset.filter(is_staff=False)
+        category_choice = self.value()
+        if category_choice:
+            return queryset.filter(category=category_choice)
+        return queryset
 
 
 class StatusListFilter(admin.SimpleListFilter):
@@ -114,7 +122,41 @@ class StatusListFilter(admin.SimpleListFilter):
         return [status_choice for status_choice in Report.status_choices]
 
     def queryset(self, request, queryset):
+        status_choice = self.value()
+        if status_choice:
+            return queryset.filter(status=status_choice)
+        return queryset
+
+
+class UserContentVisibleListFilter(admin.SimpleListFilter):
+    title = "Visibility"
+    parameter_name = "visible"
+
+    def lookups(self, request, model_admin):
+        return ("1", "Visible"), ("0", "Not Visible")
+
+    def queryset(self, request, queryset):
         if self.value() == "1":
-            return queryset.filter(is_staff=True)
+            return queryset.filter(visible=True)
         if self.value() == "0":
-            return queryset.filter(is_staff=False)
+            return queryset.filter(visible=False)
+
+
+class RepliedObjectTypeListFilter(admin.SimpleListFilter):
+    title = "Replied Object Type"
+    parameter_name = "replied_object_type"
+
+    def lookups(self, request, model_admin):
+        # noinspection PyProtectedMember
+        return [(str(content_type).split(" ")[-1].lower(), str(content_type).split(" ")[-1]) for content_type in ContentType.objects.filter(**Reply._meta.get_field("_content_type")._limit_choices_to)]
+
+    def queryset(self, request, queryset):
+        content_type_name = self.value()
+        if content_type_name:
+            # noinspection PyProtectedMember
+            return queryset.filter(
+                _content_type=ContentType.objects.filter(
+                    **Report._meta.get_field("_content_type")._limit_choices_to
+                ).filter(model=content_type_name).first()
+            )
+        return queryset
