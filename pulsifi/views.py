@@ -156,3 +156,5 @@ class Signup_View(BaseSignupView):  # TODO: make signup a modal on the home view
 # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
 
 # TODO: 2fa stuff!
+
+# TODO: 404 error page, 403 forbidden page when reports cannot be created, other nicer error pages (look up all possible http errors)

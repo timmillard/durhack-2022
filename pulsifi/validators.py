@@ -1,12 +1,12 @@
 import re
 
-import tldextract
 from confusable_homoglyphs import confusables
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator, RegexValidator
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import gettext_lazy as _
+from tldextract import tldextract
 
 CONFUSABLE = _("This name cannot be registered. " "Please choose a different name.")
 CONFUSABLE_EMAIL = _(
@@ -283,7 +283,7 @@ def validate_free_email(value: str):
         return
 
     domain: str
-    _, domain = value.split("@")
+    _, domain = value.split("@", maxsplit=1)
 
     if domain in FREE_EMAIL_ADDRESSES:
         raise ValidationError(FREE_EMAIL, code="invalid")
@@ -294,7 +294,7 @@ def validate_example_email(value: str):
         return
 
     domain: str
-    _, domain = value.split("@")
+    _, domain = value.split("@", maxsplit=1)
 
     if tldextract.extract(domain).domain in EXAMPLE_EMAIL_DOMAINS:
         raise ValidationError(EXAMPLE_EMAIL, code="invalid")
@@ -306,7 +306,7 @@ def validate_tld_email(value: str):
 
     local: str
     domain: str
-    local, domain = value.split("@")
+    local, domain = value.split("@", maxsplit=1)
 
     if get_user_model().objects.exclude(email=value).filter(email__icontains=f"{local}@{tldextract.extract(domain).domain}").exists():
         raise ValidationError(f"The Email Address: {value} is already in use by another user.", code="unique")
@@ -371,7 +371,7 @@ def validate_confusables_email(value: str):
     if value.count("@") != 1:
         return
 
-    local_part, domain = value.split("@")
+    local_part, domain = value.split("@", maxsplit=1)
 
     if confusables.is_dangerous(local_part) or confusables.is_dangerous(domain):
         raise ValidationError(CONFUSABLE_EMAIL, code="invalid")

@@ -36,5 +36,5 @@ class Custom_Base_Model_Tests(TestCase):
 
 
 class Visible_Reportable_Model_Tests(TestCase):
-    def test_string_when_visible(self):
-        pass
+    def test_string_when_visible(self):  # TODO: implement test_string_when_visible
+        raise NotImplementedError

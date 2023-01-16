@@ -19,6 +19,8 @@ from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from tldextract import tldextract
+from tldextract.tldextract import ExtractResult
 
 from .models_utils import Custom_Base_Model, get_random_staff_member
 from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_example_email, validate_free_email, validate_tld_email
@@ -188,7 +190,7 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
         blank=True
     )
     verified = models.BooleanField("Is verified?", default=False)  # TODO: Add verification process
-    following = models.ManyToManyField(  # TODO: can't follow self
+    following = models.ManyToManyField(  # TODO: prevent follow self
         "self",
         symmetrical=False,
         related_name="followers",
@@ -250,20 +252,23 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
         if self.email.count("@") == 1:
             local: str
-            domain: str
-            local, domain = self.email.split("@", maxsplit=1)
+            whole_domain: str
+            local, whole_domain = self.email.split("@", maxsplit=1)
+
+            extracted_domain = tldextract.extract(whole_domain)
 
             local = local.replace(".", "")
 
             if "+" in local:
                 local = local.split("+", maxsplit=1)[0]
 
-            if domain == "googlemail.com":
-                domain = "gmail.com"
-            elif (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and domain == "pulsifi.tech":
+            if extracted_domain.domain == "googlemail":
+                extracted_domain = ExtractResult(subdomain=extracted_domain.subdomain, domain="gmail", suffix=extracted_domain.suffix)
+
+            elif (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and extracted_domain.domain == "pulsifi":
                 raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
 
-            self.email = local + "@" + domain
+            self.email = "@".join([local, extracted_domain.fqdn])
 
         if EmailAddress.objects.filter(email=self.email).exclude(user=self).exists():
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
@@ -282,12 +287,16 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
         super().save(*args, **kwargs)
 
+        if self.is_superuser:  # BUG: When User objects are saved on the admin page their groups will be reset to only the groups shown & added to the admin form. (This code will not correctly put superusers into the admin group) (Fix with m2m_changed signal that is sent here for normal saving & pinged when changed in admin)
+            admin_group = Group.objects.filter(name="Admins").first()
+            if admin_group and admin_group not in self.groups.all():
+                self.groups.add(admin_group)
+
         if not new and not EmailAddress.objects.filter(email=self.email, user=self).exists():
-            current_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
-            if current_primary_email_QS.exists():
-                old_primary = current_primary_email_QS.get()
-                old_primary.primary = False
-                old_primary.save()
+            old_primary_email = EmailAddress.objects.filter(user=self, primary=True).first()
+            if old_primary_email:
+                old_primary_email.primary = False
+                old_primary_email.save()
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
 
