@@ -148,7 +148,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     def _full_depth_replies(self):
         replies = []
-        for reply in self.reply_set:
+        for reply in self.reply_set.all():
+            replies.append(reply)
             # noinspection PyProtectedMember
             replies.extend(reply._full_depth_replies())
         return replies

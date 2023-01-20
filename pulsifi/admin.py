@@ -36,7 +36,15 @@ class _Display_Date_Time_Created_Admin(_Custom_Base_Admin):
 
 
 class _User_Content_Admin(_Display_Date_Time_Created_Admin):
-    list_display = ["creator", "message", "display_likes", "display_dislikes", "visible"]
+    list_display = [
+        "creator",
+        "message",
+        "display_likes",
+        "display_dislikes",
+        "display_direct_replies_count",
+        "display_full_depth_replies_count",
+        "visible"
+    ]
     search_fields = ["creator", "message", "liked_by", "disliked_by"]
     autocomplete_fields = ["liked_by", "disliked_by"]
     list_filter = [UserContentVisibleListFilter]
@@ -51,6 +59,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
             _dislikes=Count("disliked_by", distinct=True),
+            _direct_replies=Count("reply_set", distinct=True)
         )
 
         return queryset
@@ -65,6 +74,15 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         # noinspection PyUnresolvedReferences, PyProtectedMember
         return obj._dislikes
 
+    @admin.display(description="Number of direct replies")
+    def display_direct_replies_count(self, obj: Pulse | Reply):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._direct_replies
+
+    @admin.display(description="Number of full depth replies")
+    def display_full_depth_replies_count(self, obj: Pulse | Reply):
+        return len(obj.full_depth_replies)
+
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = [readonly_field for readonly_field in super().get_readonly_fields(request, obj)]
 
@@ -72,6 +90,10 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
             readonly_fields.append("display_likes")
         if "display_dislikes" not in readonly_fields:
             readonly_fields.append("display_dislikes")
+        if "display_direct_replies_count" not in readonly_fields:
+            readonly_fields.append("display_direct_replies_count")
+        if "display_full_depth_replies_count" not in readonly_fields:
+            readonly_fields.append("display_full_depth_replies_count")
 
         return readonly_fields
 
@@ -93,9 +115,12 @@ class Pulse_Admin(_User_Content_Admin):
         (None, {
             "fields": ["creator", "message"]
         }),
-        ("Likes", {
+        ("Likes & Dislikes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
             "classes": ["collapse"]
+        }),
+        ("Replies", {
+            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
         }),
         (None, {
             "fields": ["visible", "display_date_time_created"]
@@ -139,6 +164,9 @@ class Reply_Admin(_User_Content_Admin):
         ("Likes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
             "classes": ["collapse"]
+        }),
+        ("Replies", {
+            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
         }),
         (None, {
             "fields": ["visible", "display_date_time_created"]

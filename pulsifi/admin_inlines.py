@@ -17,8 +17,8 @@ class _Base_GenericInline(GenericTabularInline):
     ct_fk_field = "_object_id"
 
 
-class _Base_Display_Likes_Dislikes_Inline_Config(_Base_Inline_Config):
-    readonly_fields = ["display_likes", "display_dislikes"]
+class _Base_User_Content_Inline_Config(_Base_Inline_Config):
+    readonly_fields = ["display_likes", "display_dislikes", "display_direct_replies_count", "display_full_depth_replies_count"]
 
     @admin.display(description="Number of likes", ordering="_likes")
     def display_likes(self, obj: Pulse | Reply):
@@ -30,8 +30,17 @@ class _Base_Display_Likes_Dislikes_Inline_Config(_Base_Inline_Config):
         # noinspection PyUnresolvedReferences, PyProtectedMember
         return obj._dislikes
 
+    @admin.display(description="Number of direct replies")
+    def display_direct_replies_count(self, obj: Pulse | Reply):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._direct_replies
 
-class _Created_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline_Config, admin.StackedInline):
+    @admin.display(description="Number of full depth replies")
+    def display_full_depth_replies_count(self, obj: Pulse | Reply):
+        return len(obj.full_depth_replies)
+
+
+class _Created_User_Content_Inline(_Base_User_Content_Inline_Config, admin.StackedInline):
     fk_name = "creator"
     autocomplete_fields = ["liked_by", "disliked_by"]
 
@@ -41,12 +50,13 @@ class _Created_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
             _dislikes=Count("disliked_by", distinct=True),
+            _direct_replies=Count("reply_set", distinct=True)
         )
 
         return queryset
 
 
-class _Related_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline_Config, admin.TabularInline):
+class _Related_User_Content_Inline(_Base_User_Content_Inline_Config, admin.TabularInline):
     def _get_queryset(self, request, model: str):
         if model not in ("pulse", "reply"):
             raise ValueError(f"The argument: model must be on of pulse, reply. {model} is not a valid option.")
@@ -56,6 +66,7 @@ class _Related_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline
         queryset = queryset.annotate(
             _likes=Count(f"{model}__liked_by", distinct=True),
             _dislikes=Count(f"{model}__disliked_by", distinct=True),
+            _direct_replies=Count(f"{model}__reply_set", distinct=True)
         )
 
         return queryset
@@ -64,7 +75,7 @@ class _Related_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline
         return False
 
 
-class _Related_Pulse_Display_Likes_Dislikes_Inline(_Related_Display_Likes_Dislikes_Inline):
+class _Related_Pulse_Inline(_Related_User_Content_Inline):
     @admin.display(description="Date created", ordering="_date_time_created")
     def display_date_time_created(self, obj: Pulse.liked_by.through | Pulse.disliked_by.through):
         return obj.reply.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
@@ -81,7 +92,7 @@ class _Related_Pulse_Display_Likes_Dislikes_Inline(_Related_Display_Likes_Dislik
         return fields
 
 
-class _Related_Reply_Display_Likes_Dislikes_Inline(_Related_Display_Likes_Dislikes_Inline):
+class _Related_Reply_Inline(_Related_User_Content_Inline):
     @admin.display(description="Date created", ordering="_date_time_created")
     def display_date_time_created(self, obj: Reply.liked_by.through | Reply.disliked_by.through):
         return obj.reply.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
@@ -119,7 +130,7 @@ class Avatar_Inline(_Base_Inline_Config, admin.TabularInline):
     fields = ["avatar", "primary", "date_uploaded"]
 
 
-class Created_Pulse_Inline(_Base_Pulse_Inline_Config, _Created_Display_Likes_Dislikes_Inline):
+class Created_Pulse_Inline(_Base_Pulse_Inline_Config, _Created_User_Content_Inline):
     verbose_name = "Created Pulse"
     fieldsets = [
         (None, {
@@ -127,7 +138,10 @@ class Created_Pulse_Inline(_Base_Pulse_Inline_Config, _Created_Display_Likes_Dis
         }),
         ("Likes & Dislikes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")]
-        })
+        }),
+        ("Replies", {
+            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
+        }),
     ]
 
     @admin.display(description="Date created", ordering="_date_time_created")
@@ -143,17 +157,17 @@ class Created_Pulse_Inline(_Base_Pulse_Inline_Config, _Created_Display_Likes_Dis
         return readonly_fields
 
 
-class Liked_Pulse_Inline(_Related_Pulse_Display_Likes_Dislikes_Inline):
+class Liked_Pulse_Inline(_Related_Pulse_Inline):
     model = Pulse.liked_by.through
     verbose_name = "Liked Pulse"
 
 
-class Disliked_Pulse_Inline(_Related_Pulse_Display_Likes_Dislikes_Inline):
+class Disliked_Pulse_Inline(_Related_Pulse_Inline):
     model = Pulse.disliked_by.through
     verbose_name = "Disliked Pulse"
 
 
-class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_Display_Likes_Dislikes_Inline):
+class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_User_Content_Inline):
     verbose_name = "Created Reply"
     verbose_name_plural = "Created Replies"
     fieldsets = [
@@ -166,7 +180,10 @@ class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_Display_Likes_Dis
         ("Likes & Dislikes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
             "classes": ["collapse"]
-        })
+        }),
+        ("Replies", {
+            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
+        }),
     ]
 
     @admin.display(description="Date created", ordering="_date_time_created")
@@ -185,13 +202,13 @@ class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_Display_Likes_Dis
         return readonly_fields
 
 
-class Liked_Reply_Inline(_Related_Reply_Display_Likes_Dislikes_Inline):
+class Liked_Reply_Inline(_Related_Reply_Inline):
     model = Reply.liked_by.through
     verbose_name = "Liked Reply"
     verbose_name_plural = "Liked Replies"
 
 
-class Disliked_Reply_Inline(_Related_Reply_Display_Likes_Dislikes_Inline):
+class Disliked_Reply_Inline(_Related_Reply_Inline):
     model = Reply.disliked_by.through
     verbose_name = "Disliked Reply"
     verbose_name_plural = "Disliked Replies"
@@ -221,11 +238,22 @@ class Staff_Assigned_Report_Inline(_Base_Report_Inline_Config, admin.TabularInli
         return False
 
 
-class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_Display_Likes_Dislikes_Inline_Config, _Base_GenericInline):
+class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_User_Content_Inline_Config, _Base_GenericInline):
     fk_name = "reply_set"
     verbose_name = "Direct Reply"
     verbose_name_plural = "Direct Replies"
-    fields = ["creator", "message", "liked_by", "disliked_by", "display_likes", "display_dislikes", "display_original_pulse", "visible"]
+    fields = [
+        "creator",
+        "message",
+        "liked_by",
+        "disliked_by",
+        "display_likes",
+        "display_dislikes",
+        "display_direct_replies_count",
+        "display_full_depth_replies_count",
+        "display_original_pulse",
+        "visible"
+    ]
     autocomplete_fields = ["liked_by", "disliked_by"]
 
     def get_queryset(self, request):
@@ -234,6 +262,7 @@ class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_Display_Likes_Dislike
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
             _dislikes=Count("disliked_by", distinct=True),
+            _direct_replies=Count("reply_set", distinct=True)
         )
 
         return queryset
