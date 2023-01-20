@@ -125,7 +125,7 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
         if queryset is None:
             queryset = get_user_model().objects.all()
         try:
-            obj = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))  # NOTE: Get the single item from the filtered queryset
+            obj = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(

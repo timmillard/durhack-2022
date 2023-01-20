@@ -1,6 +1,7 @@
 """
     Utility classes & functions provided for all models within this app.
 """
+
 import logging
 from random import choice as random_choice
 from typing import Iterable
@@ -37,7 +38,7 @@ def get_random_staff_member(excluded_staff_id_list: list[int] = None):
     if staff_QS.exists():
         return get_user_model().objects.filter(
             id=random_choice(staff_QS.values_list("id", flat=True))
-        ).get().id  # NOTE: Choose a random ID from the list of staff member IDs
+        ).get().id
 
     raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist.")
 
@@ -46,9 +47,13 @@ class Custom_Base_Model(Model):
     """
         Base model that provides extra utility methods for all other models to
         use.
+
+        This class is abstract so should not be instantiated or have a table
+        made for it in the database (see
+        https://docs.djangoproject.com/en/4.1/topics/db/models/#abstract-base-classes).
     """
 
-    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:
         abstract = True
 
     def base_save(self, clean=True, *args, **kwargs):
@@ -59,16 +64,19 @@ class Custom_Base_Model(Model):
     def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True):
         """
             Custom implementation of refreshing in-memory objects from the
-            database, which also updates any related fields on this object.
+            database, which also updates any related fields on this object. The
+            fields to update can be limited with the "fields" argument, and
+            whether to update related objects or not can be specified with the
+            "deep" argument.
         """
 
-        super().refresh_from_db(using=using, fields=fields)  # NOTE: Update all normal fields using the base refresh_from_db method
+        super().refresh_from_db(using=using, fields=fields)
 
         if deep:
             if fields:
-                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]  # NOTE: Limit the fields to be updated by the ones supplied in the "fields" argument with a valid field name (not a "+")
+                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]
             else:
-                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]  # NOTE: Limit the fields to be updated by the ones with a valid field name (not a "+")
+                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]
 
             if not update_fields:
                 if logger.getEffectiveLevel() <= logging.DEBUG:
@@ -77,12 +85,17 @@ class Custom_Base_Model(Model):
                     logger.warning(f"Model: {self}'s fields do not overlap with refresh_from_db requested fields")
 
             else:
-                updated_model = self._meta.model.objects.get(id=self.id)  # NOTE: Get the updated version of the object from the database (for related fields to be replaced from)
+                updated_model = self._meta.model.objects.get(id=self.id)
 
                 field: Field
                 for field in update_fields:
-                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: Limit the fields to be updated by the ones that are not a queryset of related objects
-                        try:  # NOTE: Set the value of the field to be that of the corresponding field retrieved from the database
+                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):
+                        """
+                            It is only possible to refresh related objects from
+                            one of these hard-coded field types.
+                        """
+
+                        try:
                             value = getattr(updated_model, field.name)
                         except (AttributeError, TypeError, ValueError) as e:
                             logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when getting field: <{type(field).__name__}: {field.name}>, from model: <{type(self).__name__}: {self}>")
@@ -93,7 +106,7 @@ class Custom_Base_Model(Model):
                                 logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when setting field: <{type(field).__name__}: {field.name}>, of model: <{type(self).__name__}: {self}> to value: {value}")
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # NOTE: Perform full model validation before saving the object
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def update(self, commit=True, base_save=False, clean=True, using: str = None, **kwargs):
@@ -103,17 +116,30 @@ class Custom_Base_Model(Model):
             Queryset.bulk_update method).
         """
 
-        for key, value in kwargs.items():  # NOTE: Update the values of the kwargs provided
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
-        if commit:  # NOTE: Save the new object's state to the database as long as commit has been requested
-            if base_save:  # NOTE: Use the base_save method of the model to save the object (if specified), only cleaning the object if specified
+        if commit:
+            if base_save:
+                """
+                    Use the base_save method of the object (to skip additional
+                    save functionality) and only clean the object if specified.
+                """
                 self.base_save(clean, using)
             else:
-                self.save(using)  # NOTE: Otherwise use the normal full save method of the model to save the object
+                """ Otherwise use the normal full save method of the object. """
+                self.save(using)
 
 
 class Date_Time_Created_Base_Model(Model):
+    """
+
+
+        This class is abstract so should not be instantiated or have a table
+        made for it in the database (see
+        https://docs.djangoproject.com/en/4.1/topics/db/models/#abstract-base-classes).
+    """
+
     _date_time_created = DateTimeField(
         "Creation Date & Time",
         auto_now=True
@@ -123,5 +149,5 @@ class Date_Time_Created_Base_Model(Model):
     def date_time_created(self):
         return self._date_time_created
 
-    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:
         abstract = True

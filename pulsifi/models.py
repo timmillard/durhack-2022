@@ -33,6 +33,10 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
         to have reports made about them.
+
+        This class is abstract so should not be instantiated or have a table
+        made for it in the database (see
+        https://docs.djangoproject.com/en/4.1/topics/db/models/#abstract-base-classes).
     """
 
     about_object_report_set = GenericRelation(
@@ -47,7 +51,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         object.
     """
 
-    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:
         abstract = True
 
     @property
@@ -78,21 +82,36 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         """
             Returns the given string, or the given string but crossed out if
             this object is not visible.
+
+            (string gets crossed out by adding the unicode strikethrough
+            character between every character in the string).
         """
 
         if self.visible:
             return string
-        return "".join(f"{char}\u0336" for char in string)  # NOTE: Adds the unicode strikethrough character between every character in the given string, to "cross out" the given string
+        return "".join(f"{char}\u0336" for char in string)
 
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement & creator follower count
+    """
+
+
+        This class is abstract so should not be instantiated or have a table
+        made for it in the database (see
+        https://docs.djangoproject.com/en/4.1/topics/db/models/#abstract-base-classes).
+    """
+
     message = models.TextField("Message")
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Creator",
         related_name="created_%(class)s_set"
-    )  # NOTE: Provides a link to the Profile that created this User_Generated_Content
+    )
+    """
+        Provides a link to the Profile that created this User_Generated_Content.
+    """
+
     liked_by = models.ManyToManyField(  # TODO: prevent users from increasing the time by liking then unliking then reliking
         settings.AUTH_USER_MODEL,
         related_name="liked_%(class)s_set",
@@ -118,7 +137,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
         return self._full_depth_replies()
 
-    class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
+    class Meta:
         abstract = True
 
     def __str__(self):
@@ -246,7 +265,12 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
     class Meta:
         verbose_name = "User"
 
-    def __str__(self):  # NOTE: Returns the User's username if they are still visible, otherwise returns the crossed out username
+    def __str__(self):
+        """
+            Returns the User's username if they are still visible, otherwise
+            returns the crossed out username.
+        """
+
         return self.string_when_visible(f"@{self.username}")
 
     def clean(self):
