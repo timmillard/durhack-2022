@@ -111,6 +111,13 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     )
     visible = models.BooleanField("Is visible?", default=True)
 
+    @property
+    def full_depth_replies(self):
+        if type(self) == Pulse:
+            return [reply for reply in Reply.objects.all() if reply.original_pulse == self]
+
+        return self._full_depth_replies()
+
     class Meta:  # NOTE: This class is abstract (only used for inheritance) so should not be able to be instantiated or have a table made for it in the database
         abstract = True
 
@@ -119,6 +126,13 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     def get_absolute_url(self):
         return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
+
+    def _full_depth_replies(self):
+        replies = []
+        for reply in self.reply_set:
+            # noinspection PyProtectedMember
+            replies.extend(reply._full_depth_replies())
+        return replies
 
 
 class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accounts with similar usernames (especially verified accounts)
@@ -297,10 +311,6 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
-    @property
-    def full_depth_replies(self):
-        return [reply for reply in Reply.objects.all() if reply.original_pulse == self]
-
     class Meta:
         verbose_name = "Pulse"
 

@@ -20,7 +20,7 @@ class _Base_GenericInline(GenericTabularInline):
 class _Base_Display_Likes_Dislikes_Inline_Config(_Base_Inline_Config):
     readonly_fields = ["display_likes", "display_dislikes"]
 
-    @admin.display(description="Number of likes", ordering="_likes")  # TODO: admin range filter on likes & dislikes field
+    @admin.display(description="Number of likes", ordering="_likes")
     def display_likes(self, obj: Pulse | Reply):
         # noinspection PyUnresolvedReferences, PyProtectedMember
         return obj._likes
@@ -37,10 +37,12 @@ class _Created_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline
 
     def get_queryset(self, request):
         queryset: QuerySet = super().get_queryset(request)
+
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
             _dislikes=Count("disliked_by", distinct=True),
         )
+
         return queryset
 
 
@@ -48,11 +50,14 @@ class _Related_Display_Likes_Dislikes_Inline(_Base_Display_Likes_Dislikes_Inline
     def _get_queryset(self, request, model: str):
         if model not in ("pulse", "reply"):
             raise ValueError(f"The argument: model must be on of pulse, reply. {model} is not a valid option.")
+
         queryset: QuerySet = super().get_queryset(request)
+
         queryset = queryset.annotate(
             _likes=Count(f"{model}__liked_by", distinct=True),
             _dislikes=Count(f"{model}__disliked_by", distinct=True),
         )
+
         return queryset
 
     def has_add_permission(self, request, obj):
@@ -67,11 +72,23 @@ class _Related_Pulse_Display_Likes_Dislikes_Inline(_Related_Display_Likes_Dislik
     def get_queryset(self, request):
         return super()._get_queryset(request, "pulse")
 
+    def get_fields(self, request, obj=None):
+        fields: list[str] = super().get_fields(request, obj)
+
+        if "display_original_pulse" in fields:
+            fields.remove("display_original_pulse")
+
+        return fields
+
 
 class _Related_Reply_Display_Likes_Dislikes_Inline(_Related_Display_Likes_Dislikes_Inline):
     @admin.display(description="Date created", ordering="_date_time_created")
     def display_date_time_created(self, obj: Reply.liked_by.through | Reply.disliked_by.through):
         return obj.reply.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
+
+    @admin.display(description="Original Pulse")
+    def display_original_pulse(self, obj: Reply.liked_by.through | Reply.disliked_by.through):
+        return obj.reply.original_pulse
 
     def get_queryset(self, request):
         return super()._get_queryset(request, "reply")
@@ -84,12 +101,16 @@ class _Base_Pulse_Inline_Config(_Base_Inline_Config):
 class _Base_Reply_Inline_Config(_Base_Inline_Config):
     model = Reply
 
+    @admin.display(description="Original Pulse")
+    def display_original_pulse(self, obj: Reply):
+        return obj.original_pulse
+
 
 class _Base_Report_Inline_Config(_Base_Inline_Config):
     model = Report
 
 
-class EmailAddress_Inline(_Base_Inline_Config, admin.TabularInline):  # TODO: fix Email_Address_Inline_Admin formatting
+class EmailAddress_Inline(_Base_Inline_Config, admin.TabularInline):
     model = EmailAddress
 
 
@@ -114,9 +135,11 @@ class Created_Pulse_Inline(_Base_Pulse_Inline_Config, _Created_Display_Likes_Dis
         return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
 
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields: list = super().get_readonly_fields(request, obj)
+        readonly_fields: list[str] = super().get_readonly_fields(request, obj)
+
         if "display_date_time_created" not in readonly_fields:
             readonly_fields.append("display_date_time_created")
+
         return readonly_fields
 
 
@@ -138,7 +161,7 @@ class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_Display_Likes_Dis
             "fields": ["message", ("visible", "display_date_time_created")]
         }),
         ("Replied Content", {
-            "fields": [("_content_type", "_object_id")]
+            "fields": [("_content_type", "_object_id"), "display_original_pulse"]
         }),
         ("Likes & Dislikes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
@@ -151,9 +174,14 @@ class Created_Reply_Inline(_Base_Reply_Inline_Config, _Created_Display_Likes_Dis
         return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
 
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields: list = super().get_readonly_fields(request, obj)
+        readonly_fields: list[str] = super().get_readonly_fields(request, obj)
+
         if "display_date_time_created" not in readonly_fields:
             readonly_fields.append("display_date_time_created")
+
+        if "display_original_pulse" not in readonly_fields:
+            readonly_fields.append("display_original_pulse")
+
         return readonly_fields
 
 
@@ -186,8 +214,10 @@ class Staff_Assigned_Report_Inline(_Base_Report_Inline_Config, admin.TabularInli
 
     def has_add_permission(self, request, obj):
         user: User = request.user
+
         if user.is_superuser and super().has_add_permission(request, obj):
             return True
+
         return False
 
 
@@ -195,18 +225,23 @@ class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_Display_Likes_Dislike
     fk_name = "reply_set"
     verbose_name = "Direct Reply"
     verbose_name_plural = "Direct Replies"
-    fields = ["creator", "message", "liked_by", "disliked_by", "display_likes", "display_dislikes", "original_pulse", "visible"]
+    fields = ["creator", "message", "liked_by", "disliked_by", "display_likes", "display_dislikes", "display_original_pulse", "visible"]
+    autocomplete_fields = ["liked_by", "disliked_by"]
 
     def get_queryset(self, request):
         queryset: QuerySet = super().get_queryset(request)
+
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
             _dislikes=Count("disliked_by", distinct=True),
         )
+
         return queryset
 
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields: list = super().get_readonly_fields(request, obj)
-        if "original_pulse" not in readonly_fields:
-            readonly_fields.append("original_pulse")
+        readonly_fields: list[str] = super().get_readonly_fields(request, obj)
+
+        if "display_original_pulse" not in readonly_fields:
+            readonly_fields.append("display_original_pulse")
+
         return readonly_fields

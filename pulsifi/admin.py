@@ -18,12 +18,77 @@ admin.site.empty_value_display = "- - - - -"
 
 
 # TODO: Number of pulses range filter for user, number of replies range filter for user, reported filter for user, number of likes & dislikes range filter
-# TODO: add better inheritance to remove duplicated code
+
+class _Custom_Base_Admin(admin.ModelAdmin):
+    def delete_queryset(self, request, queryset):
+        obj: Pulse | Reply | Report | User
+        for obj in queryset:
+            obj.delete()
+
+
+class _Display_Date_Time_Created_Admin(_Custom_Base_Admin):
+    date_hierarchy = "_date_time_created"
+    readonly_fields = ["display_date_time_created"]
+
+    @admin.display(description="Date created", ordering="_date_time_created")
+    def display_date_time_created(self, obj: Pulse | Reply | Report):
+        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
+
+
+class _User_Content_Admin(_Display_Date_Time_Created_Admin):
+    list_display = ["creator", "message", "display_likes", "display_dislikes", "visible"]
+    search_fields = ["creator", "message", "liked_by", "disliked_by"]
+    autocomplete_fields = ["liked_by", "disliked_by"]
+    list_filter = [UserContentVisibleListFilter]
+    search_help_text = "Search for a creator, message content or liked/disliked by user"
+    list_editable = ["visible"]
+    inlines = [Direct_Reply_Inline, About_Object_Report_Inline]
+    list_display_links = ["creator", "message"]
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+
+        queryset = queryset.annotate(
+            _likes=Count("liked_by", distinct=True),
+            _dislikes=Count("disliked_by", distinct=True),
+        )
+
+        return queryset
+
+    @admin.display(description="Number of likes", ordering="_likes")
+    def display_likes(self, obj: Pulse | Reply):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._likes
+
+    @admin.display(description="Number of dislikes", ordering="_dislikes")
+    def display_dislikes(self, obj: Pulse | Reply):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._dislikes
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = [readonly_field for readonly_field in super().get_readonly_fields(request, obj)]
+
+        if "display_likes" not in readonly_fields:
+            readonly_fields.append("display_likes")
+        if "display_dislikes" not in readonly_fields:
+            readonly_fields.append("display_dislikes")
+
+        return readonly_fields
+
+    def get_inlines(self, request, obj):
+        inlines = super().get_inlines(request, obj)
+
+        try:
+            Report._meta.get_field("assigned_staff_member").default()
+
+        except get_user_model().DoesNotExist:
+            inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
+
+        return inlines
 
 
 @admin.register(Pulse)
-class Pulse_Admin(admin.ModelAdmin):
-    date_hierarchy = "_date_time_created"
+class Pulse_Admin(_User_Content_Admin):
     fieldsets = [
         (None, {
             "fields": ["creator", "message"]
@@ -36,40 +101,18 @@ class Pulse_Admin(admin.ModelAdmin):
             "fields": ["visible", "display_date_time_created"]
         })
     ]
-    readonly_fields = ["display_likes", "display_dislikes", "display_date_time_created"]
-    autocomplete_fields = ["liked_by", "disliked_by"]
-    list_display = ["creator", "message", "display_likes", "display_dislikes", "visible"]
-    list_display_links = ["creator", "message"]
-    list_editable = ["visible"]
-    list_filter = [UserContentVisibleListFilter]
-    search_fields = ["creator", "message", "liked_by", "disliked_by"]
-    search_help_text = "Search for a creator, message content or liked/disliked by user"
-    inlines = [Direct_Reply_Inline, About_Object_Report_Inline]
 
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        queryset = queryset.annotate(
-            _likes=Count("liked_by", distinct=True),
-            _dislikes=Count("disliked_by", distinct=True),
-        )
-        return queryset
+    def get_list_display(self, request):
+        list_display: list[str] = super().get_list_display(request)
 
-    @admin.display(description="Date created", ordering="_date_time_created")
-    def display_date_time_created(self, obj: Report):
-        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
+        if "display_original_pulse" in list_display:
+            list_display.remove("display_original_pulse")
 
-    @admin.display(description="Number of likes", ordering="_likes")  # TODO: admin range filter on likes & dislikes field
-    def display_likes(self, obj: Pulse):
-        # noinspection PyUnresolvedReferences, PyProtectedMember
-        return obj._likes
-
-    @admin.display(description="Number of dislikes", ordering="_dislikes")
-    def display_dislikes(self, obj: Pulse):
-        # noinspection PyUnresolvedReferences, PyProtectedMember
-        return obj._dislikes
+        return list_display
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
+
         if not obj:
             if "display_date_time_created" in fieldsets[2][1]["fields"]:
                 fieldsets[2][1]["fields"].remove("display_date_time_created")
@@ -80,33 +123,18 @@ class Pulse_Admin(admin.ModelAdmin):
                 fieldsets[1][1]["fields"][fieldsets[1][1]["fields"].index(("liked_by", "display_likes"))] = "liked_by"
             elif ("disliked_by", "display_dislikes") in fieldsets[1][1]["fields"]:
                 fieldsets[1][1]["fields"][fieldsets[1][1]["fields"].index(("disliked_by", "display_dislikes"))] = "disliked_by"
+
         return fieldsets
-
-    def get_inlines(self, request, obj):
-        inlines = super().get_inlines(request, obj)
-
-        try:
-            Report._meta.get_field("assigned_staff_member").default()
-        except get_user_model().DoesNotExist:
-            inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
-
-        return inlines
-
-    def delete_queryset(self, request, queryset):
-        pulse: Pulse
-        for pulse in queryset:
-            pulse.delete()
 
 
 @admin.register(Reply)
-class Reply_Admin(admin.ModelAdmin):
-    date_hierarchy = "_date_time_created"
+class Reply_Admin(_User_Content_Admin):
     fieldsets = [
         (None, {
             "fields": ["creator", "message"]
         }),
         ("Replied Content", {
-            "fields": [("_content_type", "_object_id"), "original_pulse"]
+            "fields": [("_content_type", "_object_id"), "display_original_pulse"]
         }),
         ("Likes", {
             "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
@@ -116,43 +144,17 @@ class Reply_Admin(admin.ModelAdmin):
             "fields": ["visible", "display_date_time_created"]
         })
     ]
-    inlines = [Direct_Reply_Inline, About_Object_Report_Inline]
-    readonly_fields = ["original_pulse", "display_likes", "display_dislikes", "display_date_time_created"]
-    autocomplete_fields = ["liked_by", "disliked_by"]
-    list_display = ["creator", "message", "display_likes", "display_dislikes", "original_pulse", "visible"]
-    list_display_links = ["creator", "message"]
-    list_editable = ["visible"]
-    list_filter = [UserContentVisibleListFilter, RepliedObjectTypeListFilter]
-    search_fields = ["creator", "message"]
-    search_help_text = "Search for a creator, message content or liked/disliked by user"
 
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        queryset = queryset.annotate(
-            _likes=Count("liked_by", distinct=True),
-            _dislikes=Count("disliked_by", distinct=True),
-        )
-        return queryset
-
-    @admin.display(description="Date created", ordering="_date_time_created")
-    def display_date_time_created(self, obj: Report):
-        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
-
-    @admin.display(description="Number of likes", ordering="_likes")  # TODO: admin range filter on likes & dislikes field
-    def display_likes(self, obj: Reply):
-        # noinspection PyUnresolvedReferences, PyProtectedMember
-        return obj._likes
-
-    @admin.display(description="Number of dislikes", ordering="_dislikes")
-    def display_dislikes(self, obj: Reply):
-        # noinspection PyUnresolvedReferences, PyProtectedMember
-        return obj._dislikes
+    @admin.display(description="Original Pulse")
+    def display_original_pulse(self, obj: Reply):
+        return obj.original_pulse
 
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
+
         if not obj:
-            if "original_pulse" in fieldsets[1][1]["fields"]:
-                fieldsets[1][1]["fields"].remove("original_pulse")
+            if "display_original_pulse" in fieldsets[1][1]["fields"]:
+                fieldsets[1][1]["fields"].remove("display_original_pulse")
 
             if "display_date_time_created" in fieldsets[3][1]["fields"]:
                 fieldsets[3][1]["fields"].remove("display_date_time_created")
@@ -163,27 +165,39 @@ class Reply_Admin(admin.ModelAdmin):
                 fieldsets[2][1]["fields"][fieldsets[2][1]["fields"].index(("liked_by", "display_likes"))] = "liked_by"
             elif ("disliked_by", "display_dislikes") in fieldsets[2][1]["fields"]:
                 fieldsets[2][1]["fields"][fieldsets[2][1]["fields"].index(("disliked_by", "display_dislikes"))] = "disliked_by"
+
+        elif ("liked_by", "display_likes") not in fieldsets[2][1]["fields"] and ("disliked_by", "display_dislikes") not in fieldsets[2][1]["fields"]:
+            fieldsets[2][1]["fields"] = [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")]
+
         return fieldsets
 
-    def get_inlines(self, request, obj):
-        inlines = super().get_inlines(request, obj)
+    def get_list_display(self, request):
+        list_display: list[str] = super().get_list_display(request)
 
-        try:
-            Report._meta.get_field("assigned_staff_member").default()
-        except get_user_model().DoesNotExist:
-            inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
+        if "display_original_pulse" not in list_display:
+            list_display.insert(4, "display_original_pulse")
 
-        return inlines
+        return list_display
 
-    def delete_queryset(self, request, queryset):
-        reply: Reply
-        for reply in queryset:
-            reply.delete()
+    def get_list_filter(self, request):
+        list_filter: list = super().get_list_filter(request)
+
+        if RepliedObjectTypeListFilter not in list_filter:
+            list_filter.append(RepliedObjectTypeListFilter)
+
+        return list_filter
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields: list[str] = super().get_readonly_fields(request, obj)
+
+        if "display_original_pulse" not in readonly_fields:
+            readonly_fields.append("display_original_pulse")
+
+        return readonly_fields
 
 
 @admin.register(Report)
-class Report_Admin(admin.ModelAdmin):
-    date_hierarchy = "_date_time_created"
+class Report_Admin(_Display_Date_Time_Created_Admin):
     fields = [
         "reporter",
         ("_content_type", "_object_id"),
@@ -204,10 +218,6 @@ class Report_Admin(admin.ModelAdmin):
     def display_report(self, obj: Report):
         return str(obj)[:18]
 
-    @admin.display(description="Date created", ordering="_date_time_created")
-    def display_date_time_created(self, obj: Report):
-        return obj.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
-
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
         if not obj:
@@ -224,11 +234,6 @@ class Report_Admin(admin.ModelAdmin):
         except get_user_model().DoesNotExist:
             return False
         return True
-
-    def delete_queryset(self, request, queryset):
-        report: Report
-        for report in queryset:
-            report.delete()
 
 
 @admin.register(get_user_model())
@@ -316,8 +321,3 @@ class User_Admin(BaseUserAdmin):
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
 
         return inlines
-
-    def delete_queryset(self, request, queryset):
-        user: User
-        for user in queryset:
-            user.delete()
