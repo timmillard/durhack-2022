@@ -2,24 +2,24 @@
     Automated test suite for concrete models in pulsifi app.
 """
 from allauth.account.models import EmailAddress
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
-from django.test import TestCase
 
-from pulsifi.models import Report
-from pulsifi.tests.utils import CreateTestUserGeneratedContentHelper, CreateTestUserHelper, GetFieldsHelper
+from pulsifi.models import Report, User
+from pulsifi.tests.utils import Base_TestCase, CreateTestUserGeneratedContentHelper, CreateTestUserHelper, GetFieldsHelper
 
 
 # TODO: tests docstrings
 
 
-class User_Model_Tests(TestCase):
+class User_Model_Tests(Base_TestCase):
     def test_refresh_from_database_updates_non_relation_fields(self):  # TODO: test validators & validation errors from clean method
         user = CreateTestUserHelper.create_test_user()
-        old_user = get_user_model().objects.get(id=user.id)
+        old_user: User = get_user_model().objects.get(id=user.id)
 
         self.assertEqual(user, old_user)
 
@@ -54,13 +54,24 @@ class User_Model_Tests(TestCase):
 
         self.assertFalse(user.is_active)
 
-    def test_visible_shortcut(self):
+    def test_visible_shortcut_in_memory(self):
         user = CreateTestUserHelper.create_test_user()
 
         self.assertTrue(user.visible)
         self.assertTrue(user.is_active)
 
         user.visible = False
+
+        self.assertFalse(user.visible)
+        self.assertFalse(user.is_active)
+
+    def test_visible_shortcut_in_database(self):
+        user = CreateTestUserHelper.create_test_user()
+
+        self.assertTrue(user.visible)
+        self.assertTrue(user.is_active)
+
+        user.update(visible=False)
 
         self.assertFalse(user.visible)
         self.assertFalse(user.is_active)
@@ -77,15 +88,59 @@ class User_Model_Tests(TestCase):
             "".join(letter + "\u0336" for letter in f"@{user.username}")
         )
 
-    def test_super_user_added_to_admin_group(self):
+    def test_user_becomes_superuser_put_in_admin_group(self):
         user = CreateTestUserHelper.create_test_user()
-        admin_group = Group.objects.create(name="Admins")
+        admin_group = Group.objects.get(name="Admins")
 
         self.assertNotIn(admin_group, user.groups.all())
 
         user.update(is_superuser=True)
 
         self.assertIn(admin_group, user.groups.all())
+
+    def test_superuser_has_groups_changed_kept_in_admin_group(self):
+        user = CreateTestUserHelper.create_test_user(is_superuser=True)
+        admin_group = Group.objects.get(name="Admins")
+
+        self.assertIn(admin_group, user.groups.all())
+
+        user.groups.remove(admin_group)
+
+        self.assertIn(admin_group, user.groups.all())
+
+        user.groups.set(Group.objects.none())
+
+        self.assertIn(admin_group, user.groups.all())
+
+        user.groups.set([])
+
+        self.assertIn(admin_group, user.groups.all())
+
+        user.groups.clear()
+
+        self.assertIn(admin_group, user.groups.all())
+
+    def test_admin_group_has_users_changed_superusers_kept_in_admin_group(self):
+        user = CreateTestUserHelper.create_test_user(is_superuser=True)
+        admin_group = Group.objects.get(name="Admins")
+
+        self.assertIn(user, admin_group.user_set.all())
+
+        admin_group.user_set.remove(user)
+
+        self.assertIn(user, admin_group.user_set.all())
+
+        admin_group.user_set.set(get_user_model().objects.none())
+
+        self.assertIn(user, admin_group.user_set.all())
+
+        admin_group.user_set.set([])
+
+        self.assertIn(user, admin_group.user_set.all())
+
+        admin_group.user_set.clear()
+
+        self.assertIn(user, admin_group.user_set.all())
 
     def test_super_user_made_staff(self):
         user = CreateTestUserHelper.create_test_user()
@@ -96,9 +151,9 @@ class User_Model_Tests(TestCase):
 
         self.assertTrue(user.is_staff)
 
-    def test_user_added_to_moderators_group_made_staff(self):
+    def test_user_added_to_moderator_group_made_staff(self):
         user = CreateTestUserHelper.create_test_user()
-        moderator_group = Group.objects.create(name="Moderators")
+        moderator_group = Group.objects.get(name="Moderators")
 
         self.assertFalse(user.is_staff)
 
@@ -108,9 +163,9 @@ class User_Model_Tests(TestCase):
 
         self.assertTrue(user.is_staff)
 
-    def test_moderators_group_has_user_added_made_staff(self):
+    def test_moderator_group_has_user_added_made_staff(self):
         user = CreateTestUserHelper.create_test_user()
-        moderator_group = Group.objects.create(name="Moderators")
+        moderator_group = Group.objects.get(name="Moderators")
 
         self.assertFalse(user.is_staff)
 
@@ -150,135 +205,118 @@ class User_Model_Tests(TestCase):
 
         self.assertTrue(EmailAddress.objects.filter(user=user, email=user.email).exists())
 
-    def test_reverse_liked_pulse_becoming_disliked_removes_like(self):
+    def test_reverse_liked_content_becoming_disliked_removes_like(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
-        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user1)
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
 
-        user2.liked_pulse_set.add(pulse)
+            if model == "pulse":
+                user2.liked_pulse_set.add(content)
+            elif model == "reply":
+                user2.liked_reply_set.add(content)
 
-        self.assertTrue(pulse.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.disliked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.liked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.disliked_by.filter(id=user2.id).exists())
 
-        user2.disliked_pulse_set.add(pulse)
+            if model == "pulse":
+                user2.disliked_pulse_set.add(content)
+            elif model == "reply":
+                user2.disliked_reply_set.add(content)
 
-        self.assertTrue(pulse.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.liked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.disliked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.liked_by.filter(id=user2.id).exists())
 
-    def test_reverse_disliked_pulse_becoming_liked_removes_dislike(self):
+    def test_reverse_disliked_content_becoming_liked_removes_dislike(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
-        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user1)
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
 
-        user2.disliked_pulse_set.add(pulse)
+            if model == "pulse":
+                user2.disliked_pulse_set.add(content)
+            elif model == "reply":
+                user2.disliked_reply_set.add(content)
 
-        self.assertTrue(pulse.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.liked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.disliked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.liked_by.filter(id=user2.id).exists())
 
-        user2.liked_pulse_set.add(pulse)
+            if model == "pulse":
+                user2.liked_pulse_set.add(content)
+            elif model == "reply":
+                user2.liked_reply_set.add(content)
 
-        self.assertTrue(pulse.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.disliked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.liked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.disliked_by.filter(id=user2.id).exists())
 
-    def test_reverse_liked_reply_becoming_disliked_removes_like(self):
+
+class _User_Generated_Content_Model_Tests(Base_TestCase):  # TODO: test validation errors from clean method
+    def test_liked_content_becoming_disliked_removes_like(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
-        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user1)
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
 
-        user2.liked_reply_set.add(reply)
+            content.liked_by.add(user2)
 
-        self.assertTrue(reply.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.liked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.disliked_by.filter(id=user2.id).exists())
 
-        user2.disliked_reply_set.add(reply)
+            content.disliked_by.add(user2)
 
-        self.assertTrue(reply.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.liked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.disliked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.liked_by.filter(id=user2.id).exists())
 
-    def test_reverse_disliked_reply_becoming_liked_removes_dislike(self):
+    def test_disliked_content_becoming_liked_removes_dislike(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
-        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user1)
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
 
-        user2.disliked_reply_set.add(reply)
+            content.disliked_by.add(user2)
 
-        self.assertTrue(reply.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.liked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.disliked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.liked_by.filter(id=user2.id).exists())
 
-        user2.liked_reply_set.add(reply)
+            content.liked_by.add(user2)
 
-        self.assertTrue(reply.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
+            self.assertTrue(content.liked_by.filter(id=user2.id).exists())
+            self.assertFalse(content.disliked_by.filter(id=user2.id).exists())
 
+    def test_stringify_displays_in_correct_format(self):
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model)
 
-class _User_Generated_Content_Model_Tests(TestCase):  # TODO: test validation errors from clean method
-    def test_liked_pulse_becoming_disliked_removes_like(self):
-        user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user()
-        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user1)
+            if model == "pulse":
+                self.assertEqual(
+                    str(content),
+                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
+                )
+            if model == "reply":
+                self.assertEqual(
+                    str(content),
+                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {type(content.replied_content).__name__.upper()[0]} | {content.replied_content})"[:100]
+                )
 
-        pulse.liked_by.add(user2)
+            content.update(visible=False)
 
-        self.assertTrue(pulse.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.disliked_by.filter(id=user2.id).exists())
-
-        pulse.disliked_by.add(user2)
-
-        self.assertTrue(pulse.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.liked_by.filter(id=user2.id).exists())
-
-    def test_disliked_pulse_becoming_liked_removes_dislike(self):
-        user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user()
-        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user1)
-
-        pulse.disliked_by.add(user2)
-
-        self.assertTrue(pulse.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.liked_by.filter(id=user2.id).exists())
-
-        pulse.liked_by.add(user2)
-
-        self.assertTrue(pulse.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(pulse.disliked_by.filter(id=user2.id).exists())
-
-    def test_liked_reply_becoming_disliked_removes_like(self):
-        user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user()
-        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user1)
-
-        reply.liked_by.add(user2)
-
-        self.assertTrue(reply.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
-
-        reply.disliked_by.add(user2)
-
-        self.assertTrue(reply.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.liked_by.filter(id=user2.id).exists())
-
-    def test_disliked_reply_becoming_liked_removes_dislike(self):
-        user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user()
-        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user1)
-
-        reply.disliked_by.add(user2)
-
-        self.assertTrue(reply.disliked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.liked_by.filter(id=user2.id).exists())
-
-        reply.liked_by.add(user2)
-
-        self.assertTrue(reply.liked_by.filter(id=user2.id).exists())
-        self.assertFalse(reply.disliked_by.filter(id=user2.id).exists())
+            if model == "pulse":
+                self.assertEqual(
+                    str(content),
+                    f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH])
+                )
+            if model == "reply":
+                self.assertEqual(
+                    str(content),
+                    (f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {type(content.replied_content).__name__.upper()[0]} | {content.replied_content})")[:100]
+                )
 
 
-class Report_Model_Tests(TestCase):
+class Report_Model_Tests(Base_TestCase):
     def test_assigned_staff_is_not_reported_object(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
-        moderator_group = Group.objects.create(name="Moderators")
-        user2.groups.add(moderator_group)
+        user2.groups.add(Group.objects.get(name="Moderators"))
 
         with self.assertRaises(ValidationError) as e:
             Report.objects.create(
@@ -292,40 +330,19 @@ class Report_Model_Tests(TestCase):
 
     def test_pulse_created_by_admin_cannot_be_reported(self):
         user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user(is_superuser=True)
+        user2 = CreateTestUserHelper.create_test_user()
         user3 = CreateTestUserHelper.create_test_user()
-        admin_group = Group.objects.create(name="Admins")
-        moderator_group = Group.objects.create(name="Moderators")
-        user2.groups.add(admin_group)
-        user3.groups.add(moderator_group)
-        pulse = CreateTestUserGeneratedContentHelper.create_test_pulse(creator=user2)
+        user2.groups.add(Group.objects.get(name="Admins"))
+        user3.groups.add(Group.objects.get(name="Moderators"))
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user2)
 
-        with self.assertRaises(ValidationError) as e:
-            Report.objects.create(
-                reporter=user1,
-                _content_type=ContentType.objects.get_for_model(type(pulse)),
-                _object_id=pulse.id,
-                reason="test reason message",
-                category=Report.SPAM
-            )
-        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
-
-    def test_reply_created_by_admin_cannot_be_reported(self):
-        user1 = CreateTestUserHelper.create_test_user()
-        user2 = CreateTestUserHelper.create_test_user(is_superuser=True)
-        user3 = CreateTestUserHelper.create_test_user()
-        admin_group = Group.objects.create(name="Admins")
-        moderator_group = Group.objects.create(name="Moderators")
-        user2.groups.add(admin_group)
-        user3.groups.add(moderator_group)
-        reply = CreateTestUserGeneratedContentHelper.create_test_reply(creator=user2)
-
-        with self.assertRaises(ValidationError) as e:
-            Report.objects.create(
-                reporter=user1,
-                _content_type=ContentType.objects.get_for_model(type(reply)),
-                _object_id=reply.id,
-                reason="test reason message",
-                category=Report.SPAM
-            )
-        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+            with self.assertRaises(ValidationError) as e:
+                Report.objects.create(
+                    reporter=user1,
+                    _content_type=ContentType.objects.get_for_model(type(content)),
+                    _object_id=content.id,
+                    reason="test reason message",
+                    category=Report.SPAM
+                )
+            self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")

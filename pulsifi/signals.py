@@ -1,10 +1,13 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.db.models import Model
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 
-from .models import _User_Generated_Content_Model
+from .models import Pulse, Reply, User, _User_Generated_Content_Model
+
+logger = logging.getLogger(__name__)
 
 
 def ready():
@@ -14,7 +17,7 @@ def ready():
 # noinspection PyUnusedLocal
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.liked_by.through)
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.disliked_by.through)
-def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance, action: str, reverse: bool, model: type(Model), pk_set: list[int], **kwargs):
+def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: list[int], **kwargs):
     if isinstance(instance, _User_Generated_Content_Model) and not reverse:
         for user in model.objects.filter(id__in=pk_set):
             if action == "pre_add":
@@ -62,15 +65,34 @@ def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance,
 
 # noinspection PyUnusedLocal
 @receiver(m2m_changed, sender=get_user_model().groups.through)
-def user_in_moderators_group_made_staff(sender, instance, action: str, reverse: bool, model: type(Model), pk_set: list[int], **kwargs):
+def user_in_moderator_group_made_staff(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: list[int], **kwargs):
     if action == "post_add":
         if isinstance(instance, get_user_model()) and not reverse:
-            moderator_group = Group.objects.filter(name="Moderators").first()
-            if moderator_group and moderator_group in instance.groups.all():
-                instance.update(is_staff=True)
+            instance.ensure_user_in_moderator_group_is_staff()
 
         elif isinstance(instance, Group) and reverse:
-            moderator_group = Group.objects.filter(name="Moderators").first()
-            if moderator_group and instance == moderator_group:
-                for user in get_user_model().objects.filter(id__in=pk_set):
-                    user.update(is_staff=True)
+            moderator_group_QS = Group.objects.filter(name="Moderators")
+            if moderator_group_QS.exists():
+                moderator_group = moderator_group_QS.get()
+                if instance == moderator_group:
+                    user: User
+                    for user in model.objects.filter(id__in=pk_set):
+                        user.ensure_user_in_moderator_group_is_staff()
+
+    if action == "post_remove" or action == "post_clear":
+        if isinstance(instance, get_user_model()) and not reverse:
+            instance.ensure_superuser_in_admin_group()
+
+        elif isinstance(instance, Group) and reverse:
+            admin_group_QS = Group.objects.filter(name="Admins")
+            if admin_group_QS.exists():
+                admin_group = admin_group_QS.get()
+                if instance == admin_group:
+                    if pk_set:
+                        check_admin_users = model.objects.filter(id__in=pk_set, is_superuser=True)
+                    else:
+                        check_admin_users = model.objects.filter(is_superuser=True)
+
+                    user: User
+                    for user in check_admin_users:
+                        user.ensure_superuser_in_admin_group()

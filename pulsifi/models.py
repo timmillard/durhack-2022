@@ -22,7 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
-from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_staff_member
+from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_staff_member_id
 from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_example_email, validate_free_email, validate_tld_email
 
 logger = logging.getLogger(__name__)
@@ -305,31 +305,50 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
 
         if self.verified:
-            if self.id:
+            NO_EMAIL_ERROR = ValidationError({"verified": "User cannot become verified without at least one verified email address."})
+            if get_user_model().objects.filter(id=self.id).exists():
                 if not self.emailaddress_set.filter(verified=True).exists():
-                    raise ValidationError({"verified": "User cannot become verified without at least one verified email address."})
+                    raise NO_EMAIL_ERROR
             else:
-                raise ValidationError({"verified": "User cannot become verified without at least one verified email address."})
+                raise NO_EMAIL_ERROR
 
         super().clean()
 
     def save(self, *args, **kwargs):
-        new = not self.id
+        self_already_exists: bool = get_user_model().objects.filter(id=self.id).exists()
 
         super().save(*args, **kwargs)
 
-        if self.is_superuser:  # BUG: When User objects are saved on the admin page their groups will be reset to only the groups shown & added to the admin form. (This code will not correctly put superusers into the admin group) (Fix with m2m_changed signal that is sent here for normal saving & pinged when changed in admin)
-            admin_group = Group.objects.filter(name="Admins").first()
-            if admin_group and admin_group not in self.groups.all():
-                self.groups.add(admin_group)
+        self.ensure_superuser_in_admin_group()
+        self.ensure_user_in_moderator_group_is_staff()
 
-        if not new and not EmailAddress.objects.filter(email=self.email, user=self).exists():
-            old_primary_email = EmailAddress.objects.filter(user=self, primary=True).first()
-            if old_primary_email:
+        if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():
+            old_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
+            if old_primary_email_QS.exists():
+                old_primary_email = old_primary_email_QS.get()
                 old_primary_email.primary = False
                 old_primary_email.save()
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
+
+    def ensure_user_in_moderator_group_is_staff(self):
+        moderator_group_QS = Group.objects.filter(name="Moderators")
+        if moderator_group_QS.exists():
+            moderator_group = moderator_group_QS.get()
+            if moderator_group in self.groups.all() and not self.is_staff:
+                self.update(is_staff=True)
+        else:
+            logger.error(f"""Could not check whether User: {self} is in "Moderators" group because it does not exist.""")
+
+    def ensure_superuser_in_admin_group(self):
+        if self.is_superuser:
+            admin_group_QS = Group.objects.filter(name="Admins")
+            if admin_group_QS.exists():
+                admin_group = admin_group_QS.get()
+                if admin_group not in self.groups.all():
+                    self.groups.add(admin_group)
+            else:
+                logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
 
     def get_absolute_url(self):
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
@@ -345,11 +364,12 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         self_QS = Pulse.objects.filter(id=self.id)
 
         if self_QS.exists():
-            if not self.visible and self_QS.get().visible:
+            old_visible = self_QS.get().visible
+            if not self.visible and old_visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=False)
 
-            elif self.visible and not self_QS.get().visible:
+            elif self.visible and not old_visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=True)
 
@@ -392,7 +412,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
                 raise ValidationError("Replied content must be valid object.")
 
         except ContentType.DoesNotExist:
-            pass
+            logger.warning("Replied object could not be correctly verified because content types for Pulses or Replies do not exist.")
 
         super().clean()
 
@@ -463,7 +483,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         verbose_name="Assigned Staff Member",
         related_name="staff_assigned_report_set",
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
-        default=get_random_staff_member
+        default=get_random_staff_member_id
     )
     reason = models.TextField("Reason")
     category = models.CharField(
@@ -511,19 +531,27 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
             if self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
-                if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
-                    raise ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
+                REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
+                if Group.objects.filter(name="Admins").exists():
+                    if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
+                        raise REPORT_ADMIN_CONTENT_ERROR
+                elif self.reported_object.creator in get_user_model().objects.filter(is_superuser=True):
+                    raise REPORT_ADMIN_CONTENT_ERROR
 
             elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
                 if self._object_id == self.reporter_id:
                     raise ValidationError({"_object_id": f"The reporter cannot create a report about themself."}, code="invalid")  # TODO: Better error message
-
-                elif self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
-                    raise ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+                else:
+                    REPORT_ADMIN_ERROR = ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+                    if Group.objects.filter(name="Admins").exists():
+                        if self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
+                            raise REPORT_ADMIN_ERROR
+                    elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
+                        raise REPORT_ADMIN_ERROR
 
                 if self.assigned_staff_member_id == self._object_id:
                     try:
-                        self.assigned_staff_member = get_random_staff_member([self._object_id])
+                        self.assigned_staff_member_id = get_random_staff_member_id([self._object_id])
                     except get_user_model().DoesNotExist:
                         raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid")
 
@@ -531,10 +559,6 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                 raise ValidationError("Reported object must be valid object.")
 
         except ContentType.DoesNotExist:
-            pass
+            logger.warning("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.")
 
         super().clean()
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)

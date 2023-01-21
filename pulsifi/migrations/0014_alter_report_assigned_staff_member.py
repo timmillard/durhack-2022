@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='report',
             name='assigned_staff_member',
-            field=models.ForeignKey(default=pulsifi.models_utils.get_random_staff_member, limit_choices_to={'groups__name': 'Moderators', 'is_active': True}, on_delete=django.db.models.deletion.CASCADE, related_name='staff_assigned_report_set', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Staff Member'),
+            field=models.ForeignKey(default=pulsifi.models_utils.get_random_staff_member_id, limit_choices_to={'groups__name': 'Moderators', 'is_active': True}, on_delete=django.db.models.deletion.CASCADE, related_name='staff_assigned_report_set', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Staff Member'),
         ),
     ]

@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.db.models import Count, QuerySet
 
-from pulsifi.models import Pulse, Reply, Report, User
+from pulsifi.models import Pulse, Reply, Report
 
 
 class _Base_Inline_Config:
@@ -228,14 +228,6 @@ class Submitted_Report_Inline(_Base_Report_Inline_Config, admin.TabularInline):
 class Staff_Assigned_Report_Inline(_Base_Report_Inline_Config, admin.TabularInline):
     fk_name = "assigned_staff_member"
     verbose_name = "Staff Assigned Report"
-
-    def has_add_permission(self, request, obj):
-        user: User = request.user
-
-        if user.is_superuser and super().has_add_permission(request, obj):
-            return True
-
-        return False
 
 
 class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_User_Content_Inline_Config, _Base_GenericInline):

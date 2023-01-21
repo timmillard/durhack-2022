@@ -46,7 +46,7 @@ class GroupListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         group_id = self.value()
-        if group_id:
+        if group_id is not None:
             return queryset.filter(groups=group_id)
         return queryset
 
@@ -75,7 +75,7 @@ class ReportedObjectTypeListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         content_type_name = self.value()
-        if content_type_name:
+        if content_type_name is not None:
             # noinspection PyProtectedMember
             return queryset.filter(
                 _content_type=ContentType.objects.filter(
@@ -95,7 +95,7 @@ class AssignedStaffListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         user_id = self.value()
-        if user_id:
+        if user_id is not None:
             return queryset.filter(assigned_staff_member_id=user_id)
         return queryset
 
@@ -109,7 +109,7 @@ class CategoryListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         category_choice = self.value()
-        if category_choice:
+        if category_choice is not None:
             return queryset.filter(category=category_choice)
         return queryset
 
@@ -123,7 +123,7 @@ class StatusListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         status_choice = self.value()
-        if status_choice:
+        if status_choice is not None:
             return queryset.filter(status=status_choice)
         return queryset
 
@@ -152,7 +152,7 @@ class RepliedObjectTypeListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         content_type_name = self.value()
-        if content_type_name:
+        if content_type_name is not None:
             # noinspection PyProtectedMember
             return queryset.filter(
                 _content_type=ContentType.objects.filter(

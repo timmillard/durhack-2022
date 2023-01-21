@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.handlers.wsgi import WSGIRequest
+from django.db.models import QuerySet
 from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -16,7 +17,7 @@ from django.views.generic import CreateView, DetailView, ListView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 
 from .forms import ReplyForm
-from .models import Pulse, Reply
+from .models import Pulse, Reply, User
 
 
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
@@ -60,7 +61,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
             return redirect(self.request.path_info)
         elif reply := self.check_reply_in_post_request():
             if isinstance(reply, Reply):
-                return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.parent_object.id}""")
+                return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.replied_content.id}""")
             elif isinstance(reply, ReplyForm):
                 return self.render_to_response(self.get_context_data(form=reply))
         # TODO: what to do if a post is reported
@@ -121,11 +122,11 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
 class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
 
-    def get_object(self, queryset=None):
+    def get_object(self, queryset: QuerySet[User] = None):
         if queryset is None:
             queryset = get_user_model().objects.all()
         try:
-            obj = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
+            obj: User = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
             raise Http404(

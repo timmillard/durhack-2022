@@ -10,35 +10,34 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model
+from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model, QuerySet
 
 logger = logging.getLogger(__name__)
 
 
-def get_random_staff_member(excluded_staff_id_list: list[int] = None):
-    """ Returns a random staff member's Profile. """
+def get_random_staff_member_id(excluded_staff_id_list: list[int] = None) -> int | None:
+    """ Returns a random staff member's ID. """
 
     ret = True
-    for model in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
-        if model.model == "user":
-            if model.model_class().objects.exclude(groups__name="Admins").exists():
+    for content_type in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
+        if content_type.model == "user":
+            if content_type.model_class().objects.exclude(groups__name="Admins").exists():
                 ret = False
-        else:
-            if model.model_class().objects.all().exists():
-                ret = False
+        elif content_type.model_class().objects.all().exists():
+            ret = False
     if ret:
         return
     if excluded_staff_id_list:
         # noinspection PyProtectedMember
-        staff_QS = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to).exclude(id__in=excluded_staff_id_list)
+        staff_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to).exclude(id__in=excluded_staff_id_list)
     else:
         # noinspection PyProtectedMember
-        staff_QS = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to)
+        staff_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to)
 
     if staff_QS.exists():
-        return get_user_model().objects.filter(
+        return get_user_model().objects.get(
             id=random_choice(staff_QS.values_list("id", flat=True))
-        ).get().id
+        ).id
 
     raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist.")
 
@@ -125,10 +124,16 @@ class Custom_Base_Model(Model):
                     Use the base_save method of the object (to skip additional
                     save functionality) and only clean the object if specified.
                 """
-                self.base_save(clean, using)
+                if using is not None:
+                    self.base_save(clean, using)
+                else:
+                    self.base_save(clean)
             else:
                 """ Otherwise use the normal full save method of the object. """
-                self.save(using)
+                if using is not None:
+                    self.save(using)
+                else:
+                    self.save()
 
 
 class Date_Time_Created_Base_Model(Model):

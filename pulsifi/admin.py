@@ -138,7 +138,7 @@ class Pulse_Admin(_User_Content_Admin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        if not obj:
+        if obj is None:
             if "display_date_time_created" in fieldsets[2][1]["fields"]:
                 fieldsets[2][1]["fields"].remove("display_date_time_created")
 
@@ -180,7 +180,7 @@ class Reply_Admin(_User_Content_Admin):
     def get_fieldsets(self, request, obj=None):
         fieldsets = super().get_fieldsets(request, obj)
 
-        if not obj:
+        if obj is None:
             if "display_original_pulse" in fieldsets[1][1]["fields"]:
                 fieldsets[1][1]["fields"].remove("display_original_pulse")
 
@@ -248,7 +248,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
-        if not obj:
+        if obj is None:
             if ("assigned_staff_member", "status") in fields:
                 fields[fields.index(("assigned_staff_member", "status"))] = "status"
 
@@ -340,7 +340,7 @@ class User_Admin(BaseUserAdmin):
     def get_inlines(self, request, obj):
         inlines = super().get_inlines(request, obj)
 
-        if not obj:
+        if obj is None:
             inlines = [inline for inline in inlines if inline != EmailAddress_Inline]
 
         try:

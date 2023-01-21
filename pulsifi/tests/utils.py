@@ -4,13 +4,22 @@
 from typing import Iterable
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db.models import ManyToManyField, Model
+from django.test import TestCase
 
-from pulsifi.models import Pulse, Reply
+from pulsifi.models import Pulse, Reply, User
+
+
+class Base_TestCase(TestCase):
+    def setUp(self):
+        Group.objects.create(name="Admins")
+        Group.objects.create(name="Moderators")
 
 
 class CreateTestUserHelper:
+    GENERATABLE_OBJECTS = ["user"]
     # noinspection SpellCheckingInspection
     TEST_USERS = [
         {"username": "padgriffin", "password": "#2@cqt", "email": "padgriffin@gmail.com", "bio": "TV maven. Evil thinker. Infuriatingly humble gamer. Communicator. Pop culture advocate."},
@@ -37,7 +46,7 @@ class CreateTestUserHelper:
     _test_users_index = -1
 
     @classmethod
-    def create_test_user(cls, save=True, **kwargs):
+    def create_test_user(cls, save=True, **kwargs) -> User:
         if kwargs:
             if "username" not in kwargs or "password" not in kwargs or "email" not in kwargs or "bio" not in kwargs:
                 cls._test_users_index = (cls._test_users_index + 1) % len(cls.TEST_USERS)
@@ -172,6 +181,7 @@ class GetFieldsHelper:
 
 
 class CreateTestUserGeneratedContentHelper:
+    GENERATABLE_OBJECTS = ["pulse", "reply"]
     TEST_MESSAGES = [
         "This Vodka says, everything will be okay. At least for a few hours.",
         "Can anyone tell me the name of that romance movie? You know, the one where she plays the quirky girl who ultimately finds love in the end?",
@@ -197,7 +207,17 @@ class CreateTestUserGeneratedContentHelper:
     _test_message_index = -1
 
     @classmethod
-    def create_test_pulse(cls, save=True, **kwargs):
+    def create_test_user_generated_content(cls, model: str, save=True, **kwargs):
+        if model not in ("pulse", "reply"):
+            raise ValueError(f"""{model} is not a valid choice for parameter "model", choose one of: "pulse", "reply".""")
+
+        if model == "pulse":
+            return cls._create_test_pulse(save, **kwargs)
+        elif model == "reply":
+            return cls._create_test_reply(save, **kwargs)
+
+    @classmethod
+    def _create_test_pulse(cls, save=True, **kwargs):
         if kwargs:
             if "message" not in kwargs:
                 cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
@@ -271,7 +291,7 @@ class CreateTestUserGeneratedContentHelper:
             )
 
     @classmethod
-    def create_test_reply(cls, save=True, **kwargs):
+    def _create_test_reply(cls, save=True, **kwargs):
         if kwargs:
             if "message" not in kwargs:
                 cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
@@ -349,28 +369,28 @@ class CreateTestUserGeneratedContentHelper:
                         return Reply.objects.create(
                             message=message,
                             creator=kwargs.pop("creator"),
-                            replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                            replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
                             visible=visible
                         )
 
                     return Reply(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
                         visible=visible
                     )
                 if save:
                     return Reply.objects.create(
                         message=message,
                         creator=CreateTestUserHelper.create_test_user(**kwargs),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
                         visible=visible
                     )
 
                 return Reply(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse(),
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
                     visible=visible
                 )
 
@@ -379,25 +399,25 @@ class CreateTestUserGeneratedContentHelper:
                     return Reply.objects.create(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
                     )
 
                 return Reply(
                     message=message,
                     creator=kwargs.pop("creator"),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
                 )
             if save:
                 return Reply.objects.create(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
                 )
 
             return Reply(
                 message=message,
                 creator=CreateTestUserHelper.create_test_user(**kwargs),
-                replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
             )
 
         else:
@@ -407,15 +427,15 @@ class CreateTestUserGeneratedContentHelper:
                 return Reply.objects.create(
                     message=cls.TEST_MESSAGES[cls._test_message_index],
                     creator=CreateTestUserHelper.create_test_user(),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
                 )
 
             return Reply(
                 message=cls.TEST_MESSAGES[cls._test_message_index],
                 creator=CreateTestUserHelper.create_test_user(),
-                replied_content=CreateTestUserGeneratedContentHelper.create_test_pulse()
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
             )
 
     @classmethod
     def get_test_message(cls):
-        return cls.create_test_pulse(save=False).message
+        return cls.create_test_user_generated_content(model="pulse", save=False).message

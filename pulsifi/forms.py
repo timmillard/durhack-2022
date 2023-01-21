@@ -12,7 +12,11 @@ from pulsifi.models import Pulse, Reply
 class SignupForm(BaseSignupForm):
     """ Form to customise the HTML & CSS generated for the signup form. """
 
-    template_name = "pulsifi/signup_form_snippet.html"  # NOTE: Specify how the fields & labels of the form should be turned into HTML
+    template_name = "pulsifi/signup_form_snippet.html"
+    """
+        Link to a HTML snippet, which describes how the form should be rendered
+        (see https://docs.djangoproject.com/en/4.1/topics/forms/#reusable-form-templates).
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,7 +51,7 @@ class SignupForm(BaseSignupForm):
             }
         )
 
-        self.label_suffix = ""  # NOTE: Remove the colon from after the value, in the field label
+        self.label_suffix = ""
 
 
 class PulseForm(forms.ModelForm):
