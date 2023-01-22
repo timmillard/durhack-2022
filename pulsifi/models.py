@@ -155,6 +155,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
 
 class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accounts with similar usernames (especially verified accounts)
+    STAFF_GROUP_NAMES = ["Moderators", "Admins"]
+
     first_name = None  # make blank in save method
     last_name = None
     get_full_name = None
@@ -313,7 +315,7 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
         super().save(*args, **kwargs)
 
         self.ensure_superuser_in_admin_group()
-        self.ensure_user_in_moderator_group_is_staff()
+        self.ensure_user_in_moderator_or_admin_group_is_staff()
 
         if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():
             old_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
@@ -324,14 +326,17 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
 
-    def ensure_user_in_moderator_group_is_staff(self):
-        moderator_group_QS = Group.objects.filter(name="Moderators")
-        if moderator_group_QS.exists():
-            moderator_group = moderator_group_QS.get()
-            if moderator_group in self.groups.all() and not self.is_staff:
-                self.update(is_staff=True)
-        else:
-            logger.error(f"""Could not check whether User: {self} is in "Moderators" group because it does not exist.""")
+    def ensure_user_in_moderator_or_admin_group_is_staff(self):
+        index = 0
+        while not self.is_staff and index < len(self.STAFF_GROUP_NAMES):
+            group_QS = Group.objects.filter(name=self.STAFF_GROUP_NAMES[index])
+            if group_QS.exists():
+                group = group_QS.get()
+                if group in self.groups.all():
+                    self.update(is_staff=True)
+            else:
+                logger.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
+            index += 1
 
     def ensure_superuser_in_admin_group(self):
         if self.is_superuser:
@@ -523,7 +528,10 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
             if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
-            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
+            elif (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
+                raise ValidationError("Reported object must be valid object.")
+
+            elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
                 REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
                 if Group.objects.filter(name="Admins").exists():
                     if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
@@ -548,10 +556,15 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                     except get_user_model().DoesNotExist:
                         raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid")
 
-            if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
-                raise ValidationError("Reported object must be valid object.")
-
         except ContentType.DoesNotExist:
             logger.warning("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.")
+
+        print(type([self.reporter_id]))
+        if self.assigned_staff_member == self.reporter:
+            try:
+                # noinspection PyTypeChecker
+                self.assigned_staff_member_id = get_random_staff_member_id([self.reporter_id])
+            except get_user_model().DoesNotExist:
+                raise ValidationError({"reporter": "This user cannot be the reporter because they are the only moderator available to be assigned to this report"}, code="invalid")
 
         super().clean()

@@ -14,8 +14,9 @@ from pulsifi.models import Pulse, Reply, User
 
 class Base_TestCase(TestCase):
     def setUp(self):
-        Group.objects.create(name="Admins")
-        Group.objects.create(name="Moderators")
+        staff_group_name: str
+        for staff_group_name in get_user_model().STAFF_GROUP_NAMES:
+            Group.objects.create(name=staff_group_name)
 
 
 class CreateTestUserHelper:

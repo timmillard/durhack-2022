@@ -44,6 +44,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         "display_full_depth_replies_count",
         "visible"
     ]
+    actions = None
     search_fields = ["creator", "message", "liked_by", "disliked_by"]
     autocomplete_fields = ["liked_by", "disliked_by"]
     search_help_text = "Search for a creator, message content or liked/disliked by user"
@@ -298,11 +299,18 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
     def get_fields(self, request, obj: Report = None):
         fields = super().get_fields(request, obj)
         if obj is None:
-            if ("assigned_staff_member", "status") in fields:
+            if ("assigned_staff_member", "status") in fields and "status" not in fields:
                 fields[fields.index(("assigned_staff_member", "status"))] = "status"
 
             if "display_date_time_created" in fields:
                 fields.remove("display_date_time_created")
+
+        else:
+            if ("assigned_staff_member", "status") not in fields and "status" in fields:
+                fields[fields.index("status")] = ("assigned_staff_member", "status")
+
+            if "display_date_time_created" not in fields:
+                fields.append("display_date_time_created")
         return fields
 
     def get_list_filter(self, request) -> list:
@@ -333,6 +341,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
 class User_Admin(BaseUserAdmin):
     date_hierarchy = "date_joined"
     filter_horizontal = ["user_permissions"]
+    actions = None
     fieldsets = [
         (None, {
             "fields": [

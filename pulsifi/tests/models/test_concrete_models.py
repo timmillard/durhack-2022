@@ -151,29 +151,33 @@ class User_Model_Tests(Base_TestCase):
 
         self.assertTrue(user.is_staff)
 
-    def test_user_added_to_moderator_group_made_staff(self):
-        user = CreateTestUserHelper.create_test_user()
-        moderator_group = Group.objects.get(name="Moderators")
+    def test_user_added_to_staff_group_made_staff(self):
+        staff_group_name: str
+        for staff_group_name in get_user_model().STAFF_GROUP_NAMES:
+            user = CreateTestUserHelper.create_test_user()
+            group = Group.objects.get(name=staff_group_name)
 
-        self.assertFalse(user.is_staff)
+            self.assertFalse(user.is_staff)
 
-        user.groups.add(moderator_group)
+            user.groups.add(group)
 
-        user.refresh_from_db()
+            user.refresh_from_db()
 
-        self.assertTrue(user.is_staff)
+            self.assertTrue(user.is_staff)
 
     def test_moderator_group_has_user_added_made_staff(self):
-        user = CreateTestUserHelper.create_test_user()
-        moderator_group = Group.objects.get(name="Moderators")
+        staff_group_name: str
+        for staff_group_name in get_user_model().STAFF_GROUP_NAMES:
+            user = CreateTestUserHelper.create_test_user()
+            group = Group.objects.get(name=staff_group_name)
 
-        self.assertFalse(user.is_staff)
+            self.assertFalse(user.is_staff)
 
-        moderator_group.user_set.add(user)
+            group.user_set.add(user)
 
-        user.refresh_from_db()
+            user.refresh_from_db()
 
-        self.assertTrue(user.is_staff)
+            self.assertTrue(user.is_staff)
 
     def test_dots_removed_from_local_part_of_email(self):
         local_email = "test.local.email"
@@ -328,7 +332,7 @@ class Report_Model_Tests(Base_TestCase):
             )
         self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
 
-    def test_pulse_created_by_admin_cannot_be_reported(self):
+    def test_content_created_by_admin_cannot_be_reported(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
         user3 = CreateTestUserHelper.create_test_user()
@@ -346,3 +350,35 @@ class Report_Model_Tests(Base_TestCase):
                     category=Report.SPAM
                 )
             self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+
+    def test_reported_user_is_not_the_only_moderator(self):
+        user1 = CreateTestUserHelper.create_test_user()
+        user2 = CreateTestUserHelper.create_test_user()
+        user2.groups.add(Group.objects.get(name="Moderators"))
+
+        with self.assertRaises(ValidationError) as e:
+            Report.objects.create(
+                reporter=user1,
+                _content_type=ContentType.objects.get_for_model(get_user_model()),
+                _object_id=user2.id,
+                reason="test reason message",
+                category=Report.SPAM
+            )
+        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+
+    def test_reporter_is_not_the_only_moderator(self):
+        user1 = CreateTestUserHelper.create_test_user()
+        user2 = CreateTestUserHelper.create_test_user()
+        user2.groups.add(Group.objects.get(name="Moderators"))
+        for model in ["pulse", "reply"]:
+            content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
+
+            with self.assertRaises(ValidationError) as e:
+                Report.objects.create(
+                    reporter=user2,
+                    _content_type=ContentType.objects.get_for_model(type(content)),
+                    _object_id=content.id,
+                    reason="test reason message",
+                    category=Report.SPAM
+                )
+            self.assertEqual(list(e.exception.error_dict.keys())[0], "reporter")
