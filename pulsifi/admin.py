@@ -5,9 +5,10 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.db.models import Count
+from django.db.models import Count, QuerySet
+from rangefilter.filters import DateTimeRangeFilter
 
-from .admin_filters import AssignedStaffListFilter, CategoryListFilter, GroupListFilter, RepliedObjectTypeListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, UserContentVisibleListFilter, UserVisibleListFilter, VerifiedListFilter
+from .admin_filters import AssignedStaffListFilter, CategoryListFilter, CreatedPulsesListFilter, CreatedRepliesListFilter, DirectRepliesListFilter, DislikesListFilter, GroupListFilter, HasReportAboutObjectListFilter, LikesListFilter, RepliedObjectTypeListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, UserContentVisibleListFilter, UserVerifiedListFilter, UserVisibleListFilter
 from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Staff_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
 from .models import Pulse, Reply, Report, User
 
@@ -17,11 +18,8 @@ admin.site.index_title = "Whole Site Overview"
 admin.site.empty_value_display = "- - - - -"
 
 
-# TODO: Number of pulses range filter for user, number of replies range filter for user, reported filter for user, number of likes & dislikes range filter
-
 class _Custom_Base_Admin(admin.ModelAdmin):
-    def delete_queryset(self, request, queryset):
-        obj: Pulse | Reply | Report | User
+    def delete_queryset(self, request, queryset: QuerySet[Pulse | Reply | Report]):
         for obj in queryset:
             obj.delete()
 
@@ -29,6 +27,7 @@ class _Custom_Base_Admin(admin.ModelAdmin):
 class _Display_Date_Time_Created_Admin(_Custom_Base_Admin):
     date_hierarchy = "_date_time_created"
     readonly_fields = ["display_date_time_created"]
+    list_filter = [("_date_time_created", DateTimeRangeFilter)]
 
     @admin.display(description="Date created", ordering="_date_time_created")
     def display_date_time_created(self, obj: Pulse | Reply | Report):
@@ -47,14 +46,13 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
     ]
     search_fields = ["creator", "message", "liked_by", "disliked_by"]
     autocomplete_fields = ["liked_by", "disliked_by"]
-    list_filter = [UserContentVisibleListFilter]
     search_help_text = "Search for a creator, message content or liked/disliked by user"
     list_editable = ["visible"]
     inlines = [Direct_Reply_Inline, About_Object_Report_Inline]
     list_display_links = ["creator", "message"]
 
     def get_queryset(self, request):
-        queryset = super().get_queryset(request)
+        queryset: QuerySet[Pulse | Reply] = super().get_queryset(request)
 
         queryset = queryset.annotate(
             _likes=Count("liked_by", distinct=True),
@@ -74,7 +72,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         # noinspection PyUnresolvedReferences, PyProtectedMember
         return obj._dislikes
 
-    @admin.display(description="Number of direct replies")
+    @admin.display(description="Number of direct replies", ordering="_direct_replies")
     def display_direct_replies_count(self, obj: Pulse | Reply):
         # noinspection PyUnresolvedReferences, PyProtectedMember
         return obj._direct_replies
@@ -83,7 +81,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
     def display_full_depth_replies_count(self, obj: Pulse | Reply):
         return len(obj.full_depth_replies)
 
-    def get_readonly_fields(self, request, obj=None):
+    def get_readonly_fields(self, request, obj: Pulse | Reply = None):
         readonly_fields = [readonly_field for readonly_field in super().get_readonly_fields(request, obj)]
 
         if "display_likes" not in readonly_fields:
@@ -97,8 +95,26 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
 
         return readonly_fields
 
-    def get_inlines(self, request, obj):
-        inlines = super().get_inlines(request, obj)
+    def get_list_filter(self, request) -> list:
+        old_list_filter: list = super().get_list_filter(request)
+        new_list_filter = []
+
+        if UserContentVisibleListFilter not in old_list_filter:
+            new_list_filter.append(UserContentVisibleListFilter)
+        if HasReportAboutObjectListFilter not in old_list_filter:
+            new_list_filter.append(HasReportAboutObjectListFilter)
+        if LikesListFilter not in old_list_filter:
+            new_list_filter.append(LikesListFilter)
+        if DislikesListFilter not in old_list_filter:
+            new_list_filter.append(DislikesListFilter)
+        if DirectRepliesListFilter not in old_list_filter:
+            new_list_filter.append(DirectRepliesListFilter)
+
+        new_list_filter.extend(old_list_filter)
+        return new_list_filter
+
+    def get_inlines(self, request, obj: Pulse | Reply):
+        inlines = list(super().get_inlines(request, obj))
 
         try:
             Report._meta.get_field("assigned_staff_member").default()
@@ -116,11 +132,17 @@ class Pulse_Admin(_User_Content_Admin):
             "fields": ["creator", "message"]
         }),
         ("Likes & Dislikes", {
-            "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
+            "fields": [
+                ("liked_by", "display_likes"),
+                ("disliked_by", "display_dislikes")
+            ],
             "classes": ["collapse"]
         }),
         ("Replies", {
-            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
+            "fields": [
+                ("display_direct_replies_count",
+                 "display_full_depth_replies_count")
+            ]
         }),
         (None, {
             "fields": ["visible", "display_date_time_created"]
@@ -135,7 +157,7 @@ class Pulse_Admin(_User_Content_Admin):
 
         return list_display
 
-    def get_fieldsets(self, request, obj=None):
+    def get_fieldsets(self, request, obj: Pulse = None):
         fieldsets = super().get_fieldsets(request, obj)
 
         if obj is None:
@@ -149,6 +171,11 @@ class Pulse_Admin(_User_Content_Admin):
             elif ("disliked_by", "display_dislikes") in fieldsets[1][1]["fields"]:
                 fieldsets[1][1]["fields"][fieldsets[1][1]["fields"].index(("disliked_by", "display_dislikes"))] = "disliked_by"
 
+            if ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]}) in fieldsets:
+                fieldsets.remove(
+                    ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]})
+                )
+
         return fieldsets
 
 
@@ -159,14 +186,23 @@ class Reply_Admin(_User_Content_Admin):
             "fields": ["creator", "message"]
         }),
         ("Replied Content", {
-            "fields": [("_content_type", "_object_id"), "display_original_pulse"]
+            "fields": [
+                ("_content_type", "_object_id"),
+                "display_original_pulse"
+            ]
         }),
         ("Likes", {
-            "fields": [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")],
+            "fields": [
+                ("liked_by", "display_likes"),
+                ("disliked_by", "display_dislikes")
+            ],
             "classes": ["collapse"]
         }),
         ("Replies", {
-            "fields": [("display_direct_replies_count", "display_full_depth_replies_count")]
+            "fields": [(
+                "display_direct_replies_count",
+                "display_full_depth_replies_count"
+            )]
         }),
         (None, {
             "fields": ["visible", "display_date_time_created"]
@@ -177,7 +213,7 @@ class Reply_Admin(_User_Content_Admin):
     def display_original_pulse(self, obj: Reply):
         return obj.original_pulse
 
-    def get_fieldsets(self, request, obj=None):
+    def get_fieldsets(self, request, obj: Reply = None):
         fieldsets = super().get_fieldsets(request, obj)
 
         if obj is None:
@@ -194,6 +230,11 @@ class Reply_Admin(_User_Content_Admin):
             elif ("disliked_by", "display_dislikes") in fieldsets[2][1]["fields"]:
                 fieldsets[2][1]["fields"][fieldsets[2][1]["fields"].index(("disliked_by", "display_dislikes"))] = "disliked_by"
 
+            if ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]}) in fieldsets:
+                fieldsets.remove(
+                    ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]})
+                )
+
         elif ("liked_by", "display_likes") not in fieldsets[2][1]["fields"] and ("disliked_by", "display_dislikes") not in fieldsets[2][1]["fields"]:
             fieldsets[2][1]["fields"] = [("liked_by", "display_likes"), ("disliked_by", "display_dislikes")]
 
@@ -208,14 +249,16 @@ class Reply_Admin(_User_Content_Admin):
         return list_display
 
     def get_list_filter(self, request):
-        list_filter: list = super().get_list_filter(request)
+        old_list_filter = super().get_list_filter(request)
+        new_list_filter = []
 
-        if RepliedObjectTypeListFilter not in list_filter:
-            list_filter.append(RepliedObjectTypeListFilter)
+        if RepliedObjectTypeListFilter not in old_list_filter:
+            new_list_filter.append(RepliedObjectTypeListFilter)
 
-        return list_filter
+        new_list_filter.extend(old_list_filter)
+        return new_list_filter
 
-    def get_readonly_fields(self, request, obj=None):
+    def get_readonly_fields(self, request, obj: Reply = None):
         readonly_fields: list[str] = super().get_readonly_fields(request, obj)
 
         if "display_original_pulse" not in readonly_fields:
@@ -237,16 +280,22 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
     list_display = ["display_report", "reporter", "category", "status"]
     list_display_links = ["display_report"]
     list_editable = ["reporter", "category", "status"]
-    list_filter = [ReportedObjectTypeListFilter, AssignedStaffListFilter, CategoryListFilter, StatusListFilter]
     readonly_fields = ["display_report", "display_date_time_created"]
-    search_fields = ["reporter", "_content_type", "reason", "category", "assigned_staff_member", "status"]
+    search_fields = [
+        "reporter",
+        "_content_type",
+        "reason",
+        "category",
+        "assigned_staff_member",
+        "status"
+    ]
     search_help_text = "Search for a reporter, reported object type, reason, category, assigned staff member or status"
 
     @admin.display(description="Report", ordering=["_content_type", "_object_id"])
     def display_report(self, obj: Report):
         return str(obj)[:18]
 
-    def get_fields(self, request, obj=None):
+    def get_fields(self, request, obj: Report = None):
         fields = super().get_fields(request, obj)
         if obj is None:
             if ("assigned_staff_member", "status") in fields:
@@ -255,6 +304,22 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
             if "display_date_time_created" in fields:
                 fields.remove("display_date_time_created")
         return fields
+
+    def get_list_filter(self, request) -> list:
+        old_list_filter: list = super().get_list_filter(request)
+        new_list_filter = []
+
+        if ReportedObjectTypeListFilter not in old_list_filter:
+            new_list_filter.append(ReportedObjectTypeListFilter)
+        if AssignedStaffListFilter not in old_list_filter:
+            new_list_filter.append(AssignedStaffListFilter)
+        if CategoryListFilter not in old_list_filter:
+            new_list_filter.append(CategoryListFilter)
+        if StatusListFilter not in old_list_filter:
+            new_list_filter.append(StatusListFilter)
+
+        new_list_filter.extend(old_list_filter)
+        return new_list_filter
 
     def has_add_permission(self, request):
         try:
@@ -270,14 +335,28 @@ class User_Admin(BaseUserAdmin):
     filter_horizontal = ["user_permissions"]
     fieldsets = [
         (None, {
-            "fields": [("username", "email"), "bio", ("verified", "is_active"), "following"]
+            "fields": [
+                ("username", "email"),
+                "bio",
+                ("verified", "is_active"),
+                "following"
+            ]
         }),
         ("Authentication", {
-            "fields": ["display_date_joined", "display_last_login", "password"],
+            "fields": [
+                "display_date_joined",
+                "display_last_login",
+                "password"
+            ],
             "classes": ["collapse"]
         }),
         ("Permissions", {
-            "fields": ["groups", "user_permissions", "is_staff", "is_superuser"],
+            "fields": [
+                "groups",
+                "user_permissions",
+                "is_staff",
+                "is_superuser"
+            ],
             "classes": ["collapse"]
         })
     ]
@@ -290,7 +369,12 @@ class User_Admin(BaseUserAdmin):
             "classes": ["collapse"]
         }),
         ("Permissions", {
-            "fields": ["groups", "user_permissions", "is_staff", "is_superuser"],
+            "fields": [
+                "groups",
+                "user_permissions",
+                "is_staff",
+                "is_superuser"
+            ],
             "classes": ["collapse"]
         })
     ]
@@ -307,14 +391,67 @@ class User_Admin(BaseUserAdmin):
         Submitted_Report_Inline,
         Staff_Assigned_Report_Inline
     ]
-    list_display = ["display_username", "email", "verified", "is_staff", "is_active"]
+    list_display = [
+        "display_username",
+        "email",
+        "verified",
+        "is_staff",
+        "is_active",
+        "display_pulses",
+        "display_replies"
+    ]
     list_display_links = ["display_username"]
     list_editable = ["email", "verified", "is_staff", "is_active"]
-    list_filter = [VerifiedListFilter, StaffListFilter, GroupListFilter, UserVisibleListFilter, ("bio", admin.EmptyFieldListFilter)]
-    autocomplete_fields = ["following", "groups", "liked_pulse_set", "disliked_pulse_set", "liked_reply_set", "disliked_reply_set"]
-    readonly_fields = ["display_username", "password", "display_date_joined", "display_last_login"]
+    list_filter = [
+        UserVerifiedListFilter,
+        StaffListFilter,
+        GroupListFilter,
+        HasReportAboutObjectListFilter,
+        UserVisibleListFilter,
+        ("bio", admin.EmptyFieldListFilter),
+        CreatedPulsesListFilter,
+        CreatedRepliesListFilter,
+        ("date_joined", DateTimeRangeFilter),
+        ("last_login", DateTimeRangeFilter)
+    ]
+    autocomplete_fields = [
+        "following",
+        "groups",
+        "liked_pulse_set",
+        "disliked_pulse_set",
+        "liked_reply_set",
+        "disliked_reply_set"
+    ]
+    readonly_fields = [
+        "display_username",
+        "password",
+        "display_date_joined",
+        "display_last_login",
+        "display_pulses",
+        "display_replies"
+    ]
     search_fields = ["username", "email", "bio"]
     search_help_text = "Search for a username, email address or bio"
+
+    def get_queryset(self, request):
+        queryset: QuerySet[User] = super().get_queryset(request)
+
+        queryset = queryset.annotate(
+            _pulses=Count("created_pulse_set", distinct=True),
+            _replies=Count("created_reply_set", distinct=True)
+        )
+
+        return queryset
+
+    @admin.display(description="Number of created Pulses", ordering="_pulses")
+    def display_pulses(self, obj: User):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._pulses
+
+    @admin.display(description="Number of created Replies", ordering="_replies")
+    def display_replies(self, obj: User):
+        # noinspection PyUnresolvedReferences, PyProtectedMember
+        return obj._replies
 
     @admin.display(description="Username", ordering="username")
     def display_username(self, obj: User):
@@ -337,7 +474,7 @@ class User_Admin(BaseUserAdmin):
         )
         return super().get_form(*args, **kwargs)
 
-    def get_inlines(self, request, obj):
+    def get_inlines(self, request, obj: User):
         inlines = super().get_inlines(request, obj)
 
         if obj is None:
@@ -349,3 +486,7 @@ class User_Admin(BaseUserAdmin):
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
 
         return inlines
+
+    def delete_queryset(self, request, queryset: QuerySet[User]):
+        for obj in queryset:
+            obj.delete()

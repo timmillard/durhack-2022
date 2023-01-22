@@ -18,7 +18,6 @@ from django.db import models
 from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
@@ -181,23 +180,23 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
     totpdevice_set: Manager
 
     username = models.CharField(
-        _("username"),
+        "Username",
         max_length=30,
         unique=True,
         validators=[
             RegexValidator(
                 r"^[\w.-]+\Z",
-                _("Enter a valid username. This value may contain only letters, digits and ./_ characters.")
+                "Enter a valid username. This value may contain only letters, digits and ./_ characters."
             ),
             ReservedNameValidator,
             validate_confusables
         ],
         error_messages={
-            "unique": _("A user with that username already exists."),
-        },
+            "unique": "A user with that username already exists."
+        }
     )
     email = models.EmailField(
-        _("email address"),
+        "Email Address",
         unique=True,
         validators=[
             HTML5EmailValidator,
@@ -207,8 +206,8 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
             validate_example_email
         ],
         error_messages={
-            "unique": _(f"That Email Address is already in use by another user."),
-        },
+            "unique": f"That Email Address is already in use by another user."
+        }
     )
     bio = models.TextField(
         "Bio",
@@ -225,31 +224,25 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
     is_staff = models.BooleanField(
         "Is a staff member?",
         default=False,
-        help_text=_("Designates whether the user can log into this admin site."),
+        help_text="Designates whether the user can log into this admin site."
     )
     is_superuser = models.BooleanField(
         "Is a superuser?",
         default=False,
-        help_text=_(
-            "Designates that this user has all permissions without "
-            "explicitly assigning them."
-        ),
+        help_text="Designates that this user has all permissions without explicitly assigning them."
     )
     is_active = models.BooleanField(
         "Is visible?",
         default=True,
-        help_text=_(
-            "Designates whether this user is visible. "
-            "Unselect this instead of deleting accounts."
-        ),
+        help_text="Designates whether this user is visible. Unselect this instead of deleting accounts.",
     )
     date_joined = models.DateTimeField(
-        _("date joined"),
+        "Date Joined",
         default=timezone.now,
         editable=False
     )
     last_login = models.DateTimeField(
-        _("last login"),
+        "Last Login",
         blank=True,
         null=True,
         editable=False
