@@ -8,6 +8,7 @@ from django.urls import include, path
 from django.views.generic.base import RedirectView
 
 urlpatterns = [
+    path('avatar/', include("avatar.urls")),
     path(
         "admin/password-reset/",
         auth_views.PasswordResetView.as_view(),

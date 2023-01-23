@@ -26,7 +26,8 @@ env = Env(
     PULSIFI_ADMIN_COUNT=(int, 1),
     MESSAGE_DISPLAY_LENGTH=(int, 15),
     FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear"),
-    PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES=(float, 0.627)
+    PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES=(float, 0.627),
+    USERNAME_SIMILARITY_PERCENTAGE=(int, 87)
 )
 
 # Confirming that the supplied environment variable values for these settings are one of the valid choices
@@ -60,6 +61,8 @@ if env("FOLLOWER_COUNT_SCALING_FUNCTION") not in _FOLLOWER_COUNT_SCALING_FUNCTIO
     raise ImproperlyConfigured(f"FOLLOWER_COUNT_SCALING_FUNCTION must be one of {_FOLLOWER_COUNT_SCALING_FUNCTION_choices}.")
 if not 0.1 <= env("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES") <= 1.0:
     raise ImproperlyConfigured("PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES must be a float between 0.1 and 1.0.")
+if not 20 <= env("USERNAME_SIMILARITY_PERCENTAGE") <= 100:
+    raise ImproperlyConfigured("USERNAME_SIMILARITY_PERCENTAGE must be an integer between 20 and 100.")
 
 
 def _display_user(user):
@@ -147,6 +150,7 @@ EMAIL_USE_SSL = env("EMAIL_USE_SSL")
 # Custom settings values (used to control functionality of the app)
 PULSIFI_ADMIN_COUNT = env("PULSIFI_ADMIN_COUNT")
 MESSAGE_DISPLAY_LENGTH = env("MESSAGE_DISPLAY_LENGTH")
+USERNAME_SIMILARITY_PERCENTAGE = env("USERNAME_SIMILARITY_PERCENTAGE")
 FOLLOWER_COUNT_SCALING_FUNCTION = env(
     "FOLLOWER_COUNT_SCALING_FUNCTION"
 )  # TODO: Add function for how delete time of pulses & replies scales with follower count (y=log_2(x+1), y=x, y=xlog_2(x+1), y=2^x-1, y=(x+1)!-1)

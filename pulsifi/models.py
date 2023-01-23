@@ -18,6 +18,7 @@ from django.db import models
 from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils import timezone
+from thefuzz.fuzz import token_sort_ratio as get_string_similarity
 from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
@@ -154,7 +155,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         return replies
 
 
-class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accounts with similar usernames (especially verified accounts)
+class User(_Visible_Reportable_Model, AbstractUser):
     STAFF_GROUP_NAMES = ["Moderators", "Admins"]
 
     first_name = None  # make blank in save method
@@ -217,7 +218,7 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
         blank=True
     )
     verified = models.BooleanField("Is verified?", default=False)  # TODO: Add verification process
-    following = models.ManyToManyField(  # TODO: prevent follow self
+    following = models.ManyToManyField(
         "self",
         symmetrical=False,
         related_name="followers",
@@ -276,6 +277,14 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
         if (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and "pulsifi" in self.username.lower():
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
+        if get_user_model().objects.filter(id=self.id).exists():
+            username_check_list: list[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
+        else:
+            username_check_list: list[str] = get_user_model().objects.values_list("username", flat=True)
+        for username in username_check_list:
+            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
+                raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
+
         if self.email.count("@") == 1:
             local: str
             whole_domain: str
@@ -316,6 +325,9 @@ class User(_Visible_Reportable_Model, AbstractUser):  # TODO: prevent new accoun
 
         self.ensure_superuser_in_admin_group()
         self.ensure_user_in_moderator_or_admin_group_is_staff()
+
+        if self in self.following.all():
+            self.following.remove(self)
 
         if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():
             old_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)

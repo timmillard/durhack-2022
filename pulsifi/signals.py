@@ -17,7 +17,7 @@ def ready():
 # noinspection PyUnusedLocal
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.liked_by.through)
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.disliked_by.through)
-def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: list[int], **kwargs):
+def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: set[int], **kwargs):
     if isinstance(instance, _User_Generated_Content_Model) and not reverse:
         for user in model.objects.filter(id__in=pk_set):
             if action == "pre_add":
@@ -65,7 +65,7 @@ def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance:
 
 # noinspection PyUnusedLocal
 @receiver(m2m_changed, sender=get_user_model().groups.through)
-def user_in_moderator_group_made_staff(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: list[int], **kwargs):
+def user_in_moderator_group_made_staff(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: set[int], **kwargs):
     if action == "post_add":
         if isinstance(instance, get_user_model()) and not reverse:
             instance.ensure_user_in_moderator_or_admin_group_is_staff()
@@ -100,3 +100,11 @@ def user_in_moderator_group_made_staff(sender, instance: User | Group, action: s
                     user: User
                     for user in check_admin_users:
                         user.ensure_superuser_in_admin_group()
+
+
+# noinspection PyUnusedLocal
+@receiver(m2m_changed, sender=get_user_model().following.through)
+def prevent_follow_self(sender, instance: User, action: str, reverse: bool, model, pk_set: set[int], **kwargs):
+    if action == "pre_add":
+        if instance.id in pk_set:
+            pk_set.remove(instance.id)
