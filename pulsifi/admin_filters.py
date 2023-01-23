@@ -8,9 +8,6 @@ from rangefilter.filters import NumericRangeFilter
 from pulsifi.models import Pulse, Reply, Report, User
 
 
-# TODO: Add more advanced filters with https://github.com/modlinltd/django-advanced-filters
-
-
 class UserVerifiedListFilter(admin.SimpleListFilter):
     title = "Verified"
     parameter_name = "verified"

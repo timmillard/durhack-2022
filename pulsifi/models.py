@@ -112,7 +112,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         Provides a link to the Profile that created this User_Generated_Content.
     """
 
-    liked_by = models.ManyToManyField(  # TODO: prevent users from increasing the time by liking then unliking then reliking
+    liked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="liked_%(class)s_set",
         blank=True
@@ -122,7 +122,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         related_name="disliked_%(class)s_set",
         blank=True
     )
-    reply_set = GenericRelation(
+    reply_set = GenericRelation(  # TODO: ratelimit whether user can create a new reply based on time between now and time of creation of last reply for same original_pulse
         "Reply",
         content_type_field="_content_type",
         object_id_field="_object_id",
