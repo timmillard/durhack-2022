@@ -181,7 +181,6 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
 
 
 class Signup_POST_View(Base_SignupView):
-    form_class = Signup_Form
     http_method_names = ["post"]
     redirect_authenticated_user = True
 
@@ -190,9 +189,9 @@ class Signup_POST_View(Base_SignupView):
         return redirect(settings.SIGNUP_URL)  # BUG: form looses filled in values because redirected to signup URL
 
 
-class Login_POST_View(Base_LoginView):
+class Login_POST_View(Base_LoginView):  # TODO: change to allauth login
     template_name = None
-    form_class = Login_Form
+    form_class = Login_Form  # TODO: move to base_settings.py when using allauth login
     http_method_names = ["post"]
     redirect_authenticated_user = True
 
