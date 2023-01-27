@@ -89,15 +89,6 @@
             {% if redirect_field_value %}
                 <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
             {% endif %}
-            {#            <div class="form-group">#}
-            {#            <label for="sign-in-username">Username</label>#}
-            {#            <input type="text" autocapitalize="none" name="username" maxlength="50" autocomplete="username" required class="form-control" id="sign-in-username" placeholder="Enter your email address">#}
-            {#            </div>#}
-            {#            <div class="form-group">#}
-            {#            <label for="sign-in-password">Password</label>#}
-            {#            <input type="password" name="password" autocomplete="password" required class="form-control" id="sign-in-password" placeholder="Enter your password">#}
-            {#            </div>#}
-            {#            <input type="hidden" name="next" value="{{ next }}">#}
             <div class="modal-footer">
             <a style="margin-right: 2rem;" href="{% url 'pulsifi:home' %}?action=signup{% if "next" in request.GET %}&next={{ request.GET.next|urlencode }}{% endif %}">Create a local account</a>
             <button type="submit" class="btn text-white" id="sign-in-submit" style="background-color: #ba03fc;">Sign In</button>
@@ -106,7 +97,7 @@
         </div>
         </div>
         </div>
-        </div>   <!--TODO: show errors in modal-->
+        </div>
 
         <div class="modal fade" id="sign-up-modal" tabindex="-1">
         <div class="modal-dialog" role="document">

@@ -97,16 +97,21 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
             )
 
         if "signup_form" not in kwargs:
-            context["signup_form"] = Signup_Form
+            context["signup_form"] = Signup_Form(prefix="signup")
+
+        if self.request.method == "GET" and "action" in self.request.GET:
+            if self.request.GET["action"] in ("login", "signup") and self.redirect_field_name in self.request.GET:
+                context["redirect_field_value"] = self.request.GET[self.redirect_field_name]
 
         current_site = get_current_site(self.request)
         context.update(
             {
-                self.redirect_field_name: self.get_redirect_url(),
+                "redirect_field_name": self.redirect_field_name,
                 "site": current_site,
                 "site_name": current_site.name
             }
         )  # TODO: check whether these values are needed in template rendering & remove them if unnecessary
+        print(f"redirect_field_value {context}")
         return context
 
 
