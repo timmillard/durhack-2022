@@ -2,20 +2,21 @@
     Views in pulsifi app.
 """
 
-from allauth.account.views import SignupView as BaseSignupView
+from allauth.account.views import SignupView as Base_SignupView
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView as Base_LoginView, RedirectURLMixin
+from django.contrib.sites.shortcuts import get_current_site
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
-from django.http import Http404, HttpResponseBadRequest
-from django.shortcuts import redirect
+from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
+from django.shortcuts import redirect, resolve_url
 from django.urls import reverse
-from django.utils.translation import gettext as _
 from django.views.generic import CreateView, DetailView, ListView, RedirectView
-from django.views.generic.base import ContextMixin, TemplateResponseMixin
+from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
 
-from .forms import ReplyForm
+from .forms import Login_Form, Reply_Form, Signup_Form
 from .models import Pulse, Reply, User
 
 
@@ -41,7 +42,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
         if "action" in self.request.POST:
             action: str = self.request.POST["action"]
             if action == "reply":
-                form = ReplyForm(self.request.POST)
+                form = Reply_Form(self.request.POST)
                 if form.is_valid():
                     reply: Reply = form.save()
                     return reply
@@ -61,7 +62,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
         elif reply := self.check_reply_in_post_request():
             if isinstance(reply, Reply):
                 return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.replied_content.id}""")
-            elif isinstance(reply, ReplyForm):
+            elif isinstance(reply, Reply_Form):
                 return self.render_to_response(self.get_context_data(form=reply))
         # TODO: what to do if a post is reported
         # elif self.check_report_in_post_request():
@@ -70,9 +71,43 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
             return False
 
 
-class Home_View(LoginView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal), prevent users with >3 in progress reports or >0 completed reports from logging in (with reason page)
-    template_name = "pulsifi/home.html"
-    redirect_authenticated_user = True
+class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal), prevent users with >3 in progress reports or >0 completed reports from logging in (with reason page)
+    template_name = "pulsifi/home.html"  # BUG: errors raised by the model's clean() method are not caught and turned to formatted error messages (they propagate up and cause a server error 500
+
+    def dispatch(self, request, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            redirect_to = self.get_success_url()
+
+            if redirect_to == self.request.path:
+                raise ValueError("Redirection loop for authenticated user detected. Check that your LOGIN_REDIRECT_URL doesn't point to a login page.")
+
+            return HttpResponseRedirect(redirect_to)
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_default_redirect_url(self):
+        return resolve_url(settings.LOGIN_REDIRECT_URL)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        if "login_form" not in kwargs:
+            context["login_form"] = Login_Form(
+                self.request, prefix="login"
+            )
+
+        if "signup_form" not in kwargs:
+            context["signup_form"] = Signup_Form
+
+        current_site = get_current_site(self.request)
+        context.update(
+            {
+                self.redirect_field_name: self.get_redirect_url(),
+                "site": current_site,
+                "site_name": current_site.name
+            }
+        )  # TODO: check whether these values are needed in template rendering & remove them if unnecessary
+        return context
 
 
 class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
@@ -119,9 +154,7 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
             obj: User = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember
-            raise Http404(
-                _(f"That {queryset.model._meta.verbose_name} does not exist.")
-            )
+            raise Http404(f"That {queryset.model._meta.verbose_name} does not exist.")
         return obj
 
     def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username(not already in use & using a form)) if view is for logged-in user
@@ -141,10 +174,27 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
     pass
 
 
-class Signup_View(BaseSignupView):  # TODO: make signup a modal on the home view
-    template_name = "pulsifi/signup.html"  # BUG: errors raised by the model's clean() method are not caught and turned to formatted error messages (they propagate up and cause a server error 500
+class Signup_POST_View(Base_SignupView):
+    form_class = Signup_Form
+    http_method_names = ["post"]
+    redirect_authenticated_user = True
 
-# TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
+    def form_invalid(self, form):
+        # TODO: send errors as messages
+        return redirect(settings.SIGNUP_URL)  # BUG: form looses filled in values because redirected to signup URL
+
+
+class Login_POST_View(Base_LoginView):
+    template_name = None
+    form_class = Login_Form
+    http_method_names = ["post"]
+    redirect_authenticated_user = True
+
+    def form_invalid(self, form):
+        # TODO: send errors as messages
+        return redirect(settings.LOGIN_URL)  # BUG: form looses filled in values because redirected to login URL
+
+    # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
 
 # TODO: 2fa stuff!
 

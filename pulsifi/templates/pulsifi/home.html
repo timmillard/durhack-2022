@@ -21,9 +21,11 @@
             </button>
             <div class="collapse navbar-collapse justify-content-end" id="navbarNavAltMarkup">
             <div class="navbar-nav">
-            <button class="d-none" id="sign-up"></button>   <!--TODO: remove hidden button-->
             <a class="nav-link">
-                <button type="button" class="btn btn-light" id="sign-in">Sign In/Up</button>
+                <button type="button" class="btn btn-light" id="sign-up">Sign Up</button>
+            </a>
+            <a class="nav-link">
+                <button type="button" class="btn btn-light" id="sign-in">Sign In</button>
             </a>
             </div>
             </div>   <!--TODO: add avatar-->
@@ -71,19 +73,33 @@
 
         <h5 class="mt-3">Or log in with a local account</h5>
 
-        <form method="post">  <!--TODO: generate form from default AuthenticationForm-->
+        <form id="login_form" method="post" action="{% url 'pulsifi:login_POST' %}">  <!--TODO: generate form from default AuthenticationForm-->
+            {% if form.errors %}
+                <div id="form-error">
+                <p>The operation could not be performed because one or more error(s) occurred.<br/>Please resubmit the form after making the following changes:</p>
+                <ul>
+                    {% for field in form %}
+                        <li>{{ field.errors|striptags }}</li>
+                    {% endfor %}
+                </ul>
+                </div>
+            {% endif %}
             {% csrf_token %}
-            <div class="form-group">
-            <label for="sign-in-username">Username</label>
-            <input type="text" autocapitalize="none" name="username" maxlength="50" autocomplete="username" required class="form-control" id="sign-in-username" placeholder="Enter your email address">
-            </div>
-            <div class="form-group">
-            <label for="sign-in-password">Password</label>
-            <input type="password" name="password" autocomplete="current-password" required class="form-control" id="sign-in-password" placeholder="Enter your password">
-            </div>
-            <input type="hidden" name="next" value="{{ next }}">
+            {{ login_form }}
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+            {#            <div class="form-group">#}
+            {#            <label for="sign-in-username">Username</label>#}
+            {#            <input type="text" autocapitalize="none" name="username" maxlength="50" autocomplete="username" required class="form-control" id="sign-in-username" placeholder="Enter your email address">#}
+            {#            </div>#}
+            {#            <div class="form-group">#}
+            {#            <label for="sign-in-password">Password</label>#}
+            {#            <input type="password" name="password" autocomplete="password" required class="form-control" id="sign-in-password" placeholder="Enter your password">#}
+            {#            </div>#}
+            {#            <input type="hidden" name="next" value="{{ next }}">#}
             <div class="modal-footer">
-            <a style="margin-right: 2rem;" href="{% url 'pulsifi:signup' %}{% if "next" in request.GET %}?next={{ request.GET.next|urlencode }}{% endif %}">Create a local account</a>
+            <a style="margin-right: 2rem;" href="{% url 'pulsifi:home' %}?action=signup{% if "next" in request.GET %}&next={{ request.GET.next|urlencode }}{% endif %}">Create a local account</a>
             <button type="submit" class="btn text-white" id="sign-in-submit" style="background-color: #ba03fc;">Sign In</button>
             </div>
         </form>
@@ -91,6 +107,51 @@
         </div>
         </div>
         </div>   <!--TODO: show errors in modal-->
+
+        <div class="modal fade" id="sign-up-modal" tabindex="-1">
+        <div class="modal-dialog" role="document">
+        <div class="modal-content">
+        <div class="modal-header">
+        <h5 class="modal-title" id="exammodalLabel">Sign Up</h5>
+        <button type="button" class="close" id="close-sign-up" aria-label="Close" onclick="closeModal('sign-up-modal');">
+            <span aria-hidden="true">x</span>
+        </button>
+        </div>
+        <div class="modal-body">
+        <form id="signup_form" method="post" action="{% url 'pulsifi:signup_POST' %}">  <!--TODO: generate form from default AuthenticationForm-->
+            {% if form.errors %}
+                <div id="form-error">
+                <p>The operation could not be performed because one or more error(s) occurred.<br/>Please resubmit the form after making the following changes:</p>
+                <ul>
+                    {% for field in form %}
+                        <li>{{ field.errors|striptags }}</li>
+                    {% endfor %}
+                </ul>
+                </div>
+            {% endif %}
+            {% csrf_token %}
+            {{ signup_form }}
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+            {#            <div class="form-group">#}
+            {#            <label for="sign-in-username">Username</label>#}
+            {#            <input type="text" autocapitalize="none" name="username" maxlength="50" autocomplete="username" required class="form-control" id="sign-in-username" placeholder="Enter your email address">#}
+            {#            </div>#}
+            {#            <div class="form-group">#}
+            {#            <label for="sign-in-password">Password</label>#}
+            {#            <input type="password" name="password" autocomplete="current-password" required class="form-control" id="sign-in-password" placeholder="Enter your password">#}
+            {#            </div>#}
+            {#            <input type="hidden" name="next" value="{{ next }}">#}
+            <div class="modal-footer">
+            <button type="submit" class="btn text-white" id="sign-in-submit" style="background-color: #ba03fc;">Sign Up</button>
+            </div>
+        </form>
+        </div>
+        </div>
+        </div>
+        </div>
+
         <div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
 
         {#    {% if next in request.GET %}   <!--TODO: make signin modal show by default when next GET parameter exists-->#}
