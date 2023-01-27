@@ -12,6 +12,8 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model, QuerySet
 
+from pulsifi.exceptions import UpdateFieldNamesError
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,21 +74,18 @@ class Custom_Base_Model(Model):
         super().refresh_from_db(using=using, fields=fields)
 
         if deep:
+            model_fields: list[Field] = [model_field for model_field in self._meta.get_fields() if model_field.name != "+"]
             if fields:
-                update_fields = [field for field in self._meta.get_fields(include_hidden=True) if field in fields and field.name != "+"]
+                update_fields = [update_field for update_field in model_fields if update_field in fields]
             else:
-                update_fields = [field for field in self._meta.get_fields() if field.name != "+"]
+                update_fields = model_fields
 
             if not update_fields:
-                if logger.getEffectiveLevel() <= logging.DEBUG:
-                    logger.warning(f"""Model: {self}'s fields: {[field for field in self._meta.get_fields() if field.name != "+"]} do not overlap with refresh_from_db requested fields: {fields} """)
-                else:
-                    logger.warning(f"Model: {self}'s fields do not overlap with refresh_from_db requested fields")
+                raise UpdateFieldNamesError(model_fields, fields)
 
             else:
                 updated_model = self._meta.model.objects.get(id=self.id)
 
-                field: Field
                 for field in update_fields:
                     if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):
                         """
@@ -94,15 +93,7 @@ class Custom_Base_Model(Model):
                             one of these hard-coded field types.
                         """
 
-                        try:
-                            value = getattr(updated_model, field.name)
-                        except (AttributeError, TypeError, ValueError) as e:
-                            logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when getting field: <{type(field).__name__}: {field.name}>, from model: <{type(self).__name__}: {self}>")
-                        else:
-                            try:
-                                setattr(self, field.name, value)
-                            except (AttributeError, TypeError, ValueError) as e:
-                                logger.error(f"Exception: {type(e).__name__} raised during refresh_from_db, when setting field: <{type(field).__name__}: {field.name}>, of model: <{type(self).__name__}: {self}> to value: {value}")
+                        setattr(self, field.name, getattr(updated_model, field.name))
 
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -7,12 +7,12 @@ from pathlib import Path
 from re import search as re_search
 
 from django.core.exceptions import ImproperlyConfigured
-from django.http import QueryDict
-from django.urls import reverse, reverse_lazy
-from django.utils.functional import lazy
+from django.urls import reverse_lazy
 # noinspection PyPackageRequirements
 from environ import Env
 from tldextract import tldextract
+
+from pulsifi.urls_utils import reverse_lazy_with_get_params
 
 # noinspection SpellCheckingInspection
 env = Env(
@@ -70,24 +70,6 @@ if not 20 <= env("USERNAME_SIMILARITY_PERCENTAGE") <= 100:
 def _display_user(user):
     return str(user)
 
-
-def _reverse_with_get_params(*args, **kwargs) -> str:
-    get_params = kwargs.pop("get_params", {})
-    url = reverse(*args, **kwargs)
-    if not get_params:
-        return url
-
-    qdict = QueryDict("", mutable=True)
-    for key, val in get_params.items():
-        if type(val) is list:
-            qdict.setlist(key, val)
-        else:
-            qdict[key] = val
-
-    return url + '?' + qdict.urlencode()
-
-
-reverse_lazy_with_get_params = lazy(_reverse_with_get_params, str)
 
 # Build paths inside the project like this: BASE_DIR / "subdir"
 BASE_DIR = Path(__file__).resolve().parent.parent

@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.views.generic import CreateView, DetailView, ListView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
 
+from .exceptions import RedirectionLoopError
 from .forms import Login_Form, Reply_Form, Signup_Form
 from .models import Pulse, Reply, User
 
@@ -79,7 +80,7 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
             redirect_to = self.get_success_url()
 
             if redirect_to == self.request.path:
-                raise ValueError("Redirection loop for authenticated user detected. Check that your LOGIN_REDIRECT_URL doesn't point to a login page.")
+                raise RedirectionLoopError(redirect_to, "Redirection loop for authenticated user detected. Check that your LOGIN_REDIRECT_URL doesn't point to a login page.")
 
             return HttpResponseRedirect(redirect_to)
 
@@ -155,7 +156,7 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
     def get_object(self, queryset: QuerySet[User] = None):
         if queryset is None:
             queryset = get_user_model().objects.all()
-        try:
+        try:  # TODO: Replace with get object or 404
             obj: User = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
         except queryset.model.DoesNotExist:
             # noinspection PyProtectedMember

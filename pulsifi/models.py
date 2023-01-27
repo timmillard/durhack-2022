@@ -58,8 +58,8 @@ class _Visible_Reportable_Model(Custom_Base_Model):
     @abstractmethod
     def visible(self) -> bool:
         """
-            Abstract declaration of field getter that MUST be implemented by
-            child classes.
+            Abstract declaration of visible field getter that MUST be
+            implemented by child classes.
         """
 
         raise NotImplementedError
@@ -68,8 +68,8 @@ class _Visible_Reportable_Model(Custom_Base_Model):
     @abstractmethod
     def visible(self, value: bool) -> None:
         """
-            Abstract declaration of field setter that MUST be implemented by
-            child classes.
+            Abstract declaration of visible field setter that MUST be
+            implemented by child classes.
         """
 
         raise NotImplementedError
@@ -92,7 +92,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         return "".join(f"{char}\u0336" for char in string)
 
 
-class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement & creator follower count
+class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement (decide {just likes}, {likes & {likes of replies}} or {likes, {likes of replies} & replies}) & creator follower count
     """
 
 
@@ -131,11 +131,24 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     visible = models.BooleanField("Is visible?", default=True)
 
     @property
-    def full_depth_replies(self):
-        if type(self) == Pulse:
-            return [reply for reply in Reply.objects.all() if reply.original_pulse == self]
+    @abstractmethod
+    def original_pulse(self) -> "Pulse":
+        """
+            Abstract declaration of original_pulse field getter that MUST be
+            implemented by child classes.
+        """
 
-        return self._full_depth_replies()
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def full_depth_replies(self) -> list["Reply"]:
+        """
+            Abstract declaration of full_depth_replies field getter that MUST
+            be implemented by child classes.
+        """
+
+        raise NotImplementedError
 
     class Meta:
         abstract = True
@@ -145,14 +158,6 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     def get_absolute_url(self):
         return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
-
-    def _full_depth_replies(self):
-        replies = []
-        for reply in self.reply_set.all():
-            replies.append(reply)
-            # noinspection PyProtectedMember
-            replies.extend(reply._full_depth_replies())
-        return replies
 
 
 class User(_Visible_Reportable_Model, AbstractUser):
@@ -385,6 +390,14 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         super().save(*args, **kwargs)
 
+    @property
+    def original_pulse(self):
+        return self
+
+    @property
+    def full_depth_replies(self):
+        return [reply for reply in Reply.objects.all() if reply.original_pulse is self]
+
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     _content_type = models.ForeignKey(
@@ -398,7 +411,16 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     @property
     def original_pulse(self):
-        return self._find_original_pulse()
+        return self.replied_content.original_pulse
+
+    @property
+    def full_depth_replies(self):
+        replies = []
+        reply: "Reply"
+        for reply in self.reply_set.all():
+            replies.append(reply)
+            replies.extend(reply.full_depth_replies)
+        return replies
 
     class Meta:
         verbose_name = "Reply"
@@ -421,8 +443,9 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
             if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
                 raise ValidationError("Replied content must be valid object.")
 
-        except ContentType.DoesNotExist:
-            logger.warning("Replied object could not be correctly verified because content types for Pulses or Replies do not exist.")
+        except ContentType.DoesNotExist as e:
+            e.args = ("Replied object could not be correctly verified because content types for Pulses or Replies do not exist.",)
+            raise e
 
         super().clean()
 
@@ -433,12 +456,6 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
             self.visible = False
 
         self.base_save(clean=False, *args, **kwargs)
-
-    def _find_original_pulse(self):
-        if isinstance(self.replied_content, Pulse):
-            return self.replied_content
-        # noinspection PyProtectedMember
-        return self.replied_content._find_original_pulse()
 
 
 class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
@@ -565,18 +582,19 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                 if self.assigned_staff_member_id == self._object_id:
                     try:
                         self.assigned_staff_member_id = get_random_staff_member_id([self._object_id])
-                    except get_user_model().DoesNotExist:
-                        raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid")
+                    except get_user_model().DoesNotExist as e:
+                        raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid") from e
 
-        except ContentType.DoesNotExist:
-            logger.warning("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.")
+        except ContentType.DoesNotExist as e:
+            e.args = ("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.",)
+            raise e
 
         print(type([self.reporter_id]))
         if self.assigned_staff_member == self.reporter:
             try:
                 # noinspection PyTypeChecker
                 self.assigned_staff_member_id = get_random_staff_member_id([self.reporter_id])
-            except get_user_model().DoesNotExist:
-                raise ValidationError({"reporter": "This user cannot be the reporter because they are the only moderator available to be assigned to this report"}, code="invalid")
+            except get_user_model().DoesNotExist as e:
+                raise ValidationError({"reporter": "This user cannot be the reporter because they are the only moderator available to be assigned to this report"}, code="invalid") from e
 
         super().clean()
