@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='email',
-            field=models.EmailField(error_messages={'unique': 'That Email Address is already in use by another user.'}, max_length=254, unique=True, validators=[pulsifi.validators.HTML5EmailValidator, pulsifi.validators.validate_free_email, pulsifi.validators.validate_confusables_email, pulsifi.validators.validate_tld_email, pulsifi.validators.validate_example_email], verbose_name='email address'),
+            field=models.EmailField(error_messages={'unique': 'That Email Address is already in use by another user.'}, max_length=254, unique=True, validators=[pulsifi.validators.HTML5EmailValidator, pulsifi.validators.FreeEmailValidator, pulsifi.validators.ConfusableEmailValidator, pulsifi.validators.PreexistingEmailTLDValidator, pulsifi.validators.EmailValidator], verbose_name='email address'),
         ),
     ]

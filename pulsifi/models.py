@@ -23,7 +23,7 @@ from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
 from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_staff_member_id
-from .validators import HTML5EmailValidator, ReservedNameValidator, validate_confusables, validate_confusables_email, validate_example_email, validate_free_email, validate_tld_email
+from .validators import ConfusableEmailValidator, ConfusableStringValidator, ExampleEmailValidator, FreeEmailValidator, HTML5EmailValidator, PreexistingEmailTLDValidator, ReservedNameValidator
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +197,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 "Enter a valid username. This value may contain only letters, digits and ./_ characters."
             ),
             ReservedNameValidator,
-            validate_confusables
+            ConfusableStringValidator
         ],
         error_messages={
             "unique": "A user with that username already exists."
@@ -208,10 +208,10 @@ class User(_Visible_Reportable_Model, AbstractUser):
         unique=True,
         validators=[
             HTML5EmailValidator,
-            validate_free_email,
-            validate_confusables_email,
-            validate_tld_email,
-            validate_example_email
+            FreeEmailValidator,
+            ConfusableEmailValidator,
+            PreexistingEmailTLDValidator,
+            ExampleEmailValidator
         ],
         error_messages={
             "unique": f"That Email Address is already in use by another user."

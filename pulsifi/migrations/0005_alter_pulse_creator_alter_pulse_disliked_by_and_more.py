@@ -58,6 +58,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='username',
-            field=models.CharField(error_messages={'unique': 'A user with that username already exists.'}, max_length=30, unique=True, validators=[django.core.validators.RegexValidator('^[\\w.-]+\\Z', 'Enter a valid username. This value may contain only letters, digits and ./_ characters.'), pulsifi.validators.ReservedNameValidator, pulsifi.validators.validate_confusables], verbose_name='username'),
+            field=models.CharField(error_messages={'unique': 'A user with that username already exists.'}, max_length=30, unique=True, validators=[django.core.validators.RegexValidator('^[\\w.-]+\\Z', 'Enter a valid username. This value may contain only letters, digits and ./_ characters.'), pulsifi.validators.ReservedNameValidator, pulsifi.validators.ConfusableStringValidator], verbose_name='username'),
         ),
     ]

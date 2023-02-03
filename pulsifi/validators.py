@@ -1,268 +1,194 @@
-import re
+"""
+    Validators in pulsifi app.
+"""
+
+from re import compile as re_compile
+from typing import Iterable
 
 from confusable_homoglyphs import confusables
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator, RegexValidator
 from django.utils.deconstruct import deconstructible
-from django.utils.translation import gettext_lazy as _
 from tldextract import tldextract
-
-CONFUSABLE = _("This name cannot be registered. " "Please choose a different name.")
-CONFUSABLE_EMAIL = _(
-    "This email address cannot be registered. "
-    "Please supply a different email address."
-)
-FREE_EMAIL = _(
-    "Registration using free email addresses is prohibited. "
-    "Please supply a different email address."
-)
-EXAMPLE_EMAIL = _(
-    "Registration using unresolvable example email addresses is prohibited. "
-    "Please supply a different email address."
-)
-RESERVED_NAME = _("This name is reserved and cannot be registered.")
-
-# WHATWG HTML5 spec, section 4.10.5.1.5.
-HTML5_EMAIL_RE = (
-    r"^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]"
-    r"+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}"
-    r"[a-zA-Z0-9])?(?:\.[a-zA-Z0-9]"
-    r"(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-)
-
-EXAMPLE_EMAIL_DOMAINS = ["example", "test"]
-
-FREE_EMAIL_ADDRESSES = [
-    "decabg.eu",
-    "gufum.com",
-    "tmail9.com",
-    "ema-sofia.eu",
-    "dropsin.net",
-    "finews.biz",
-    "triots.com",
-    "rungel.net",
-    "jollyfree.com",
-    "gotgel.org",
-    "prolug.com",
-    "tmail1.com",
-    "tmail.com",
-    "tempmail.com",
-    "tmail2.com",
-    "tmail3.com",
-    "tmail4.com",
-    "tmail5.com",
-    "tmail6.com",
-    "tmail7.com",
-    "tmail8.com",
-    "tmail9.com",
-    "lyricspad.net",
-    "lyft.live",
-    "dewareff.com",
-    "kaftee.com",
-    "letpays.com"
-]
-
-# Below we construct a large but non-exhaustive list of names which
-# users probably should not be able to register with, due to various
-# risks:
-#
-# * For a site which creates email addresses from username, important
-#   common addresses must be reserved.
-#
-# * For a site which creates subdomains from usernames, important
-#   common hostnames/domain names must be reserved.
-#
-# * For a site which uses the username to generate a URL to the user's
-#   profile, common well-known filenames must be reserved.
-#
-# etc., etc.
-#
-# Credit for basic idea and most of the list to Geoffrey Thomas's blog
-# post about names to reserve:
-# https://ldpreload.com/blog/names-to-reserve
-SPECIAL_HOSTNAMES = [
-    # Hostnames with special/reserved meaning.
-    "autoconfig",  # Thunderbird autoconfig
-    "autodiscover",  # MS Outlook/Exchange autoconfig
-    "broadcasthost",  # Network broadcast hostname
-    "isatap",  # IPv6 tunnel autodiscovery
-    "localdomain",  # Loopback
-    "localhost",  # Loopback
-    "wpad",  # Proxy autodiscovery
-]
-
-PROTOCOL_HOSTNAMES = [
-    # Common protocol hostnames.
-    "css",
-    "ftp",
-    "html",
-    "http",
-    "https",
-    "https",
-    "imap",
-    "ip",
-    "iscsi",
-    "js",
-    "mail",
-    "news",
-    "ntp",
-    "pop",
-    "pop3",
-    "smtp",
-    "tcp",
-    "udp",
-    "usenet",
-    "uucp",
-    "webmail",
-    "www",
-]
-
-CA_ADDRESSES = [
-    # Email addresses known used by certificate authorities during
-    # verification.
-    "admin",
-    "administrator",
-    "hostmaster",
-    "info",
-    "is",
-    "it",
-    "mis",
-    "postmaster",
-    "root",
-    "ssladmin",
-    "ssladministrator",
-    "sslwebmaster",
-    "sysadmin",
-    "webmaster",
-]
-
-RFC_2142 = [
-    # RFC-2142-defined names not already covered.
-    "abuse",
-    "marketing",
-    "noc",
-    "sales",
-    "security",
-    "support",
-]
-
-NOREPLY_ADDRESSES = [
-    # Common no-reply email addresses.
-    "mailer-daemon",
-    "nobody",
-    "noreply",
-    "no-reply",
-]
-
-SENSITIVE_FILENAMES = [
-    # Sensitive filenames.
-    "clientaccesspolicy.xml",  # Silverlight cross-domain policy file.
-    "crossdomain.xml",  # Flash cross-domain policy file.
-    "favicon.ico",
-    "humans.txt",
-    "keybase.txt",  # Keybase ownership-verification URL.
-    "robots.txt",
-    ".htaccess",
-    ".htpasswd",
-]
-
-OTHER_SENSITIVE_NAMES = [
-    # Other names which could be problems depending on URL/subdomain
-    # structure.
-    "account",
-    "accounts",
-    "auth",
-    "authorize",
-    "blog",
-    "buy",
-    "cart",
-    "clients",
-    "config",
-    "contact",
-    "contactus",
-    "contact-us",
-    "copyright",
-    "dashboard",
-    "doc",
-    "docs",
-    "download",
-    "downloads",
-    "enquiry",
-    "faq",
-    "help",
-    "inquiry",
-    "information",
-    "license",
-    "login",
-    "logout",
-    "me",
-    "myaccount",
-    "moderator",
-    "oauth",
-    "pay",
-    "payment",
-    "payments",
-    "plans",
-    "portfolio",
-    "preferences",
-    "price"
-    "pricing",
-    "privacy",
-    "profile",
-    "puls",
-    "register",
-    "reply",
-    "report",
-    "secure",
-    "settings",
-    "shop",
-    "shopping",
-    "signin",
-    "signup",
-    "ssl",
-    "status",
-    "store",
-    "subscribe",
-    "terms",
-    "test",
-    "tos",
-    "user",
-    "users",
-    "weblog",
-    "work",
-]
-
-DEFAULT_RESERVED_NAMES = (
-        SPECIAL_HOSTNAMES
-        + PROTOCOL_HOSTNAMES
-        + CA_ADDRESSES
-        + RFC_2142
-        + NOREPLY_ADDRESSES
-        + SENSITIVE_FILENAMES
-        + OTHER_SENSITIVE_NAMES
-)
 
 
 @deconstructible
 class ReservedNameValidator:
+    """ Validator which disallows many reserved names as field values. """
+
+    # noinspection SpellCheckingInspection
+    DEFAULT_SPECIAL_HOSTNAMES = [
+        "autoconfig",
+        "autodiscover",
+        "broadcasthost",
+        "isatap",
+        "localdomain",
+        "localhost",
+        "wpad"
+    ]
+    """Hostnames with special/reserved meaning."""
+
+    # noinspection SpellCheckingInspection
+    DEFAULT_PROTOCOL_HOSTNAMES = [
+        "css",
+        "ftp",
+        "html",
+        "http",
+        "https",
+        "https",
+        "imap",
+        "ip",
+        "iscsi",
+        "js",
+        "mail",
+        "news",
+        "ntp",
+        "pop",
+        "pop3",
+        "smtp",
+        "tcp",
+        "udp",
+        "usenet",
+        "uucp",
+        "webmail",
+        "www"
+    ]
+    """ Common protocol hostnames. """
+
+    # noinspection SpellCheckingInspection
+    DEFAULT_CA_ADDRESSES = [
+        "admin",
+        "administrator",
+        "hostmaster",
+        "info",
+        "is",
+        "it",
+        "mis",
+        "postmaster",
+        "root",
+        "ssladmin",
+        "ssladministrator",
+        "sslwebmaster",
+        "sysadmin",
+        "webmaster"
+    ]
     """
-    Validator which disallows many reserved names as form field
-    values.
+        Email addresses known used by certificate authorities during
+        verification.
     """
 
-    def __init__(self, reserved_names=None):
+    DEFAULT_RFC_2142 = [
+        "abuse",
+        "marketing",
+        "noc",
+        "sales",
+        "security",
+        "support"
+    ]
+    """ RFC-2142-defined names not already covered. """
+
+    DEFAULT_NOREPLY_ADDRESSES = [
+        "mailer-daemon",
+        "nobody",
+        "noreply",
+        "no-reply"
+    ]
+    """ Common no-reply email addresses. """
+
+    # noinspection SpellCheckingInspection
+    DEFAULT_SENSITIVE_FILENAMES = [
+        "clientaccesspolicy.xml",
+        "crossdomain.xml",
+        "favicon.ico",
+        "humans.txt",
+        "keybase.txt",
+        "robots.txt",
+        ".htaccess",
+        ".htpasswd"
+    ]
+    """ Sensitive filenames. """
+
+    # noinspection SpellCheckingInspection
+    DEFAULT_OTHER_SENSITIVE_NAMES = [
+        "account",
+        "accounts",
+        "auth",
+        "authorize",
+        "blog",
+        "buy",
+        "cart",
+        "clients",
+        "config",
+        "contact",
+        "contactus",
+        "contact-us",
+        "copyright",
+        "dashboard",
+        "doc",
+        "docs",
+        "download",
+        "downloads",
+        "enquiry",
+        "faq",
+        "help",
+        "inquiry",
+        "information",
+        "license",
+        "login",
+        "logout",
+        "me",
+        "myaccount",
+        "moderator",
+        "oauth",
+        "pay",
+        "payment",
+        "payments",
+        "plans",
+        "portfolio",
+        "preferences",
+        "price"
+        "pricing",
+        "privacy",
+        "profile",
+        "puls",
+        "register",
+        "reply",
+        "report",
+        "secure",
+        "settings",
+        "shop",
+        "shopping",
+        "signin",
+        "signup",
+        "ssl",
+        "status",
+        "store",
+        "subscribe",
+        "terms",
+        "test",
+        "tos",
+        "user",
+        "users",
+        "weblog",
+        "work"
+    ]
+    """
+        Other names which could be problems depending on URL/subdomain
+        structure.
+    """
+
+    def __init__(self, reserved_names: Iterable[str] = None):
         if reserved_names is None:
-            reserved_names = DEFAULT_RESERVED_NAMES
+            reserved_names = self.DEFAULT_SPECIAL_HOSTNAMES + self.DEFAULT_PROTOCOL_HOSTNAMES + self.DEFAULT_CA_ADDRESSES + self.DEFAULT_RFC_2142 + self.DEFAULT_NOREPLY_ADDRESSES + self.DEFAULT_SENSITIVE_FILENAMES + self.DEFAULT_OTHER_SENSITIVE_NAMES
         self.reserved_names = reserved_names
 
     def __call__(self, value: str):
-        # GH issue 82: this validator only makes sense when the
-        # username field is a string type.
         if not isinstance(value, str):
             return
+
         if value in self.reserved_names or value.startswith(".well-known"):
-            raise ValidationError(RESERVED_NAME, code="invalid")
+            raise ValidationError("This name is reserved and cannot be registered.", code="invalid")
 
     def __eq__(self, other):
         return self.reserved_names == other.reserved_names
@@ -270,108 +196,167 @@ class ReservedNameValidator:
 
 @deconstructible
 class HTML5EmailValidator(RegexValidator):
-    """
-    Validator which applies HTML5's email address rules.
-    """
+    """ Validator which applies HTML5's email address rules. """
+
+    HTML5_EMAIL_RE = (
+        r"^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]"
+        r"+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}"
+        r"[a-zA-Z0-9])?(?:\.[a-zA-Z0-9]"
+        r"(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+    )  # SOURCE: WHATWG HTML5 spec, section 4.10.5.1.5.
 
     message = EmailValidator.message
-    regex = re.compile(HTML5_EMAIL_RE)
+    regex = re_compile(HTML5_EMAIL_RE)
 
 
-def validate_free_email(value: str):
-    if value.count("@") != 1:
-        return
-
-    domain: str
-    _, domain = value.split("@", maxsplit=1)
-
-    if domain in FREE_EMAIL_ADDRESSES:
-        raise ValidationError(FREE_EMAIL, code="invalid")
-
-
-def validate_example_email(value: str):
-    if value.count("@") != 1:
-        return
-
-    domain: str
-    _, domain = value.split("@", maxsplit=1)
-
-    if tldextract.extract(domain).domain in EXAMPLE_EMAIL_DOMAINS:
-        raise ValidationError(EXAMPLE_EMAIL, code="invalid")
-
-
-def validate_tld_email(value: str):
-    if value.count("@") != 1:
-        return
-
-    local: str
-    domain: str
-    local, domain = value.split("@", maxsplit=1)
-
-    if get_user_model().objects.exclude(email=value).filter(email__icontains=f"{local}@{tldextract.extract(domain).domain}").exists():
-        raise ValidationError(f"The Email Address: {value} is already in use by another user.", code="unique")
-
-
-def validate_confusables(value: str):
+@deconstructible
+class FreeEmailValidator:
     """
-    Validator which disallows 'dangerous' usernames likely to
-    represent homograph attacks.
-    A username is 'dangerous' if it is mixed-script (as defined by
-    Unicode 'Script' property) and contains one or more characters
-    appearing in the Unicode Visually Confusable Characters file.
+        Validator which disallows common temporary/free email hosting services
+        as email address domain values.
     """
-    if not isinstance(value, str):
-        return
 
-    if confusables.is_dangerous(value):
-        raise ValidationError(CONFUSABLE, code="invalid")
+    # noinspection SpellCheckingInspection
+    DEFAULT_FREE_EMAIL_DOMAINS = [
+        "decabg.eu",
+        "gufum.com",
+        "tmail9.com",
+        "ema-sofia.eu",
+        "dropsin.net",
+        "finews.biz",
+        "triots.com",
+        "rungel.net",
+        "jollyfree.com",
+        "gotgel.org",
+        "prolug.com",
+        "tmail1.com",
+        "tmail.com",
+        "tempmail.com",
+        "tmail2.com",
+        "tmail3.com",
+        "tmail4.com",
+        "tmail5.com",
+        "tmail6.com",
+        "tmail7.com",
+        "tmail8.com",
+        "tmail9.com",
+        "lyricspad.net",
+        "lyft.live",
+        "dewareff.com",
+        "kaftee.com",
+        "letpays.com"
+    ]
+
+    def __init__(self, free_email_domains: Iterable[str] = None):
+        if free_email_domains is None:
+            free_email_domains = self.FREE_EMAIL_DOMAINS
+        self.free_email_domains = free_email_domains
+
+    def __call__(self, value: str):
+        if not isinstance(value, str):
+            return
+
+        if value.count("@") != 1:
+            return
+
+        domain: str
+        _, domain = value.split("@", maxsplit=1)
+
+        if domain in self.free_email_domains:
+            raise ValidationError("Registration using free email addresses is prohibited. Please supply a different email address.", code="invalid")
+
+    def __eq__(self, other):
+        return self.free_email_domains == other.free_email_domains
 
 
-def validate_confusables_email(value: str):
+@deconstructible
+class ExampleEmailValidator:
+    """ Validator which disallows common example address domain values. """
+
+    DEFAULT_EXAMPLE_EMAIL_DOMAINS = ["example", "test"]
+
+    def __init__(self, example_email_domains: Iterable[str] = None):
+        if example_email_domains is None:
+            example_email_domains = self.DEFAULT_EXAMPLE_EMAIL_DOMAINS
+        self.example_email_domains = example_email_domains
+
+    def __call__(self, value: str):
+        if not isinstance(value, str):
+            return
+
+        if value.count("@") != 1:
+            return
+
+        domain: str
+        _, domain = value.split("@", maxsplit=1)
+
+        if tldextract.extract(domain).domain in self.example_email_domains:
+            raise ValidationError("Registration using unresolvable example email addresses is prohibited. Please supply a different email address.", code="invalid")
+
+
+@deconstructible
+class PreexistingEmailTLDValidator:
     """
-    Validator which disallows 'dangerous' email addresses likely to
-    represent homograph attacks.
-    An email address is 'dangerous' if either the local-part or the
-    domain, considered on their own, are mixed-script and contain one
-    or more characters appearing in the Unicode Visually Confusable
-    Characters file.
+        Validator which disallows email address values (without any subdomain
+        parts) that are already used by another user (even if it is not that
+        other user's primary email address).
     """
-    # Email addresses are extremely difficult.
-    #
-    # The current RFC governing syntax of email addresses is RFC 5322
-    # which, as the HTML5 specification succinctly states, "defines a
-    # syntax for e-mail addresses that is simultaneously too strict
-    # ... too vague ...  and too lax ...  to be of practical use".
-    #
-    # In order to be useful, this validator must consider only the
-    # addr-spec portion of an email address, and must examine the
-    # local-part and the domain of that addr-spec
-    # separately. Unfortunately, there are no good general-purpose
-    # Python libraries currently available (that the author of
-    # django-registration is aware of), supported on all versions of
-    # Python django-registration supports, which can reliably provide
-    # an RFC-complient parse of either a full address or an addr-spec
-    # which allows the local-part and domain to be treated separately.
-    #
-    # To work around this shortcoming, RegistrationForm applies the
-    # HTML5 email validation rule, which HTML5 admits (in section
-    # 4.10.5.1.5) is a "willful violation" of RFC 5322, to the
-    # submitted email address. This will reject many technically-valid
-    # but problematic email addresses, including those which make use
-    # of comments, or which embed otherwise-illegal characters via
-    # quoted-string.
-    #
-    # That in turn allows this validator to take a much simpler
-    # approach: it considers any value containing exactly one '@'
-    # (U+0040) to be an addr-spec, and consders everything prior to
-    # the '@' to be the local-part and everything after to be the
-    # domain, and performs validation on them. Any value not
-    # containing exactly one '@' is assumed not to be an addr-spec,
-    # and is thus "accepted" by not being validated at all.
-    if value.count("@") != 1:
-        return
 
-    local_part, domain = value.split("@", maxsplit=1)
+    def __call__(self, value: str):
+        if not isinstance(value, str):
+            return
 
-    if confusables.is_dangerous(local_part) or confusables.is_dangerous(domain):
-        raise ValidationError(CONFUSABLE_EMAIL, code="invalid")
+        if value.count("@") != 1:
+            return
+
+        local: str
+        domain: str
+        local, domain = value.split("@", maxsplit=1)
+
+        if get_user_model().objects.exclude(email=value).filter(
+                email__icontains=f"{local}@{tldextract.extract(domain).domain}"
+        ).exists():
+            raise ValidationError(f"The Email Address: {value} is already in use by another user.", code="unique")
+
+
+@deconstructible
+class ConfusableStringValidator:
+    """
+        Validator which disallows 'dangerous' strings likely to represent
+        homograph attacks. A string is 'dangerous' if it is mixed-script (as
+        defined by Unicode 'Script' property) and contains one or more
+        characters appearing in the Unicode Visually Confusable Characters
+        file.
+    """
+
+    def __call__(self, value: str):
+        if not isinstance(value, str):
+            return
+
+        if confusables.is_dangerous(value):
+            raise ValidationError("This name cannot be registered. Please choose a different name.", code="invalid")
+
+
+@deconstructible
+class ConfusableEmailValidator:
+    """
+        Validator which disallows 'dangerous' email addresses likely to
+        represent homograph attacks. An email address is 'dangerous' if either
+        the local-part or the domain, considered on their own, are mixed-script
+        and contain one or more characters appearing in the Unicode Visually
+        Confusable Characters file.
+    """
+
+    def __call__(self, value: str):
+        if not isinstance(value, str):
+            return
+
+        if value.count("@") != 1:
+            return
+
+        local: str
+        domain: str
+        local, domain = value.split("@", maxsplit=1)
+
+        if confusables.is_dangerous(local) or confusables.is_dangerous(domain):
+            raise ValidationError("This email address cannot be registered. Please supply a different email address.", code="invalid")

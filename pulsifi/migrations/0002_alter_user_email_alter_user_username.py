@@ -16,11 +16,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='email',
-            field=models.EmailField(error_messages={'unique': 'That Email Address is already in use by another user.'}, max_length=254, unique=True, validators=[pulsifi.validators.HTML5EmailValidator, pulsifi.validators.validate_free_email, pulsifi.validators.validate_confusables_email, pulsifi.validators.validate_tld_email], verbose_name='email address'),
+            field=models.EmailField(error_messages={'unique': 'That Email Address is already in use by another user.'}, max_length=254, unique=True, validators=[pulsifi.validators.HTML5EmailValidator, pulsifi.validators.FreeEmailValidator, pulsifi.validators.ConfusableEmailValidator, pulsifi.validators.PreexistingEmailTLDValidator], verbose_name='email address'),
         ),
         migrations.AlterField(
             model_name='user',
             name='username',
-            field=models.CharField(error_messages={'unique': 'A user with that username already exists.'}, help_text='Required. 30 characters or fewer. Letters, digits and ./_ only.', max_length=30, unique=True, validators=[django.core.validators.RegexValidator('^[\\w.-]+\\Z', 'Enter a valid username. This value may contain only letters, digits and ./_ characters.'), pulsifi.validators.ReservedNameValidator, pulsifi.validators.validate_confusables], verbose_name='username'),
+            field=models.CharField(error_messages={'unique': 'A user with that username already exists.'}, help_text='Required. 30 characters or fewer. Letters, digits and ./_ only.', max_length=30, unique=True, validators=[django.core.validators.RegexValidator('^[\\w.-]+\\Z', 'Enter a valid username. This value may contain only letters, digits and ./_ characters.'), pulsifi.validators.ReservedNameValidator, pulsifi.validators.ConfusableStringValidator], verbose_name='username'),
         ),
     ]
