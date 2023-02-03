@@ -179,6 +179,20 @@ class User_Model_Tests(Base_TestCase):
 
             self.assertTrue(user.is_staff)
 
+    def test_user_cannot_be_in_own_following(self):
+        user = CreateTestUserHelper.create_test_user()
+
+        user.following.add(user)
+
+        self.assertNotIn(user, user.following.all())
+
+    def test_user_cannot_be_in_own_followers(self):
+        user = CreateTestUserHelper.create_test_user()
+
+        user.followers.add(user)
+
+        self.assertNotIn(user, user.followers.all())
+
     def test_dots_removed_from_local_part_of_email(self):
         local_email = "test.local.email"
         domain_email = "test.domain.email.com"

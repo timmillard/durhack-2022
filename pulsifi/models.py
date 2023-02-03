@@ -303,6 +303,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 local = local.split("+", maxsplit=1)[0]
 
             if extracted_domain.domain == "googlemail":
+                # noinspection PyArgumentList
                 extracted_domain = ExtractResult(subdomain=extracted_domain.subdomain, domain="gmail", suffix=extracted_domain.suffix)
 
             elif (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and extracted_domain.domain == "pulsifi":
