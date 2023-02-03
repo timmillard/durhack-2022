@@ -64,6 +64,7 @@ class StaffListFilter(admin.SimpleListFilter):
             return queryset.filter(is_staff=False)
 
 
+# noinspection PyAbstractClass
 class CreatedPulsesListFilter(admin.ListFilter):
     def __new__(cls, request, params, model, model_admin):
         return NumericRangeFilter(
@@ -76,6 +77,7 @@ class CreatedPulsesListFilter(admin.ListFilter):
         )
 
 
+# noinspection PyAbstractClass
 class CreatedRepliesListFilter(admin.ListFilter):
     def __new__(cls, request, params, model, model_admin):
         return NumericRangeFilter(
@@ -151,6 +153,7 @@ class StatusListFilter(admin.SimpleListFilter):
         return queryset
 
 
+# noinspection PyAbstractClass
 class LikesListFilter(admin.ListFilter):
     def __new__(cls, request, params, model, model_admin):
         return NumericRangeFilter(
@@ -163,6 +166,7 @@ class LikesListFilter(admin.ListFilter):
         )
 
 
+# noinspection PyAbstractClass
 class DislikesListFilter(admin.ListFilter):
     def __new__(cls, request, params, model, model_admin):
         return NumericRangeFilter(
@@ -224,6 +228,7 @@ class RepliedObjectTypeListFilter(admin.SimpleListFilter):
         return queryset
 
 
+# noinspection PyAbstractClass
 class DirectRepliesListFilter(admin.ListFilter):
     def __new__(cls, request, params, model, model_admin):
         return NumericRangeFilter(

@@ -18,10 +18,10 @@ class Get_Random_Staff_Member_Util_Function_Tests(Base_TestCase):
     def test_get_random_staff_member_with_reportable_objects_and_no_staff_members(self):
         for model in ["pulse", "reply", "user"]:
             if model in CreateTestUserGeneratedContentHelper.GENERATABLE_OBJECTS:
-                reportable_object = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model)
+                CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model)
 
             elif model in CreateTestUserHelper.GENERATABLE_OBJECTS:
-                reportable_object = CreateTestUserHelper.create_test_user()
+                CreateTestUserHelper.create_test_user()
 
             # noinspection PyTypeChecker
             with self.assertRaises(get_user_model().DoesNotExist):
