@@ -110,18 +110,18 @@ class ReportedObjectTypeListFilter(admin.SimpleListFilter):
         return queryset
 
 
-class AssignedStaffListFilter(admin.SimpleListFilter):
-    title = "Assigned Staff Member"
-    parameter_name = "assigned_staff_member"
+class AssignedModeratorListFilter(admin.SimpleListFilter):
+    title = "Assigned Moderator"
+    parameter_name = "assigned_moderator"
 
     def lookups(self, request, model_admin):
         # noinspection PyProtectedMember
-        return [(user.id, str(user)) for user in get_user_model().objects.filter(**Report._meta.get_field("assigned_staff_member")._limit_choices_to)]
+        return [(user.id, str(user)) for user in get_user_model().objects.filter(**Report._meta.get_field("assigned_moderator")._limit_choices_to)]
 
     def queryset(self, request, queryset: QuerySet[Report]):
         user_id = self.value()
         if user_id is not None:
-            return queryset.filter(assigned_staff_member_id=user_id)
+            return queryset.filter(assigned_moderator_id=user_id)
         return queryset
 
 

@@ -225,9 +225,9 @@ class Submitted_Report_Inline(_Base_Report_Inline_Config, admin.TabularInline):
     verbose_name = "Submitted Report"
 
 
-class Staff_Assigned_Report_Inline(_Base_Report_Inline_Config, admin.TabularInline):
-    fk_name = "assigned_staff_member"
-    verbose_name = "Staff Assigned Report"
+class Moderator_Assigned_Report_Inline(_Base_Report_Inline_Config, admin.TabularInline):
+    fk_name = "assigned_moderator"
+    verbose_name = "Moderator Assigned Report"
 
 
 class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_User_Content_Inline_Config, _Base_GenericInline):

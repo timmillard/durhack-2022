@@ -22,7 +22,7 @@ from thefuzz.fuzz import token_sort_ratio as get_string_similarity
 from tldextract import tldextract
 from tldextract.tldextract import ExtractResult
 
-from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_staff_member_id
+from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_moderator_id
 from .validators import ConfusableEmailValidator, ConfusableStringValidator, ExampleEmailValidator, FreeEmailValidator, HTML5EmailValidator, PreexistingEmailTLDValidator, ReservedNameValidator
 
 logger = logging.getLogger(__name__)
@@ -58,8 +58,8 @@ class _Visible_Reportable_Model(Custom_Base_Model):
     @abstractmethod
     def visible(self) -> bool:
         """
-            Abstract declaration of visible field getter that MUST be
-            implemented by child classes.
+            Boolean flag to determine whether this object should be accessible
+            to the website. Use this flag instead of deleting objects.
         """
 
         raise NotImplementedError
@@ -67,16 +67,24 @@ class _Visible_Reportable_Model(Custom_Base_Model):
     @visible.setter
     @abstractmethod
     def visible(self, value: bool) -> None:
-        """
-            Abstract declaration of visible field setter that MUST be
-            implemented by child classes.
-        """
-
         raise NotImplementedError
 
-    def delete(self, using: str = None, *args, **kwargs):
+    def delete(self, using: str = None, *args, **kwargs) -> tuple[int, dict[str, int]]:
+        """
+            Sets this instances visible field to False instead of deleting this
+            instance's data from the database.
+        """
+
         self.visible = False
         self.save()
+
+        return 0, {}
+
+    @abstractmethod
+    def get_absolute_url(self):
+        """ Returns the canonical URL for this object instance. """
+
+        raise NotImplementedError
 
     def string_when_visible(self, string: str):
         """
@@ -94,7 +102,9 @@ class _Visible_Reportable_Model(Custom_Base_Model):
 
 class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement (decide {just likes}, {likes & {likes of replies}} or {likes, {likes of replies} & replies}) & creator follower count
     """
-
+        Base model that defines fields for all types of user generated content,
+        as well as extra instance methods for retrieving commonly computed
+        properties.
 
         This class is abstract so should not be instantiated or have a table
         made for it in the database (see
@@ -108,34 +118,40 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         verbose_name="Creator",
         related_name="created_%(class)s_set"
     )
-    """
-        Provides a link to the Profile that created this User_Generated_Content.
-    """
-
     liked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="liked_%(class)s_set",
         blank=True
     )
+    """ The set of Users that have liked this content object instance. """
+
     disliked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="disliked_%(class)s_set",
         blank=True
     )
+    """ The set of Users that have disliked this content object instance. """
+
     reply_set = GenericRelation(  # TODO: ratelimit whether user can create a new reply based on time between now and time of creation of last reply for same original_pulse
         "Reply",
         content_type_field="_content_type",
         object_id_field="_object_id",
         verbose_name="Replies"
     )
+    """ The set of Reply objects for this content object instance. """
+
     visible = models.BooleanField("Is visible?", default=True)
+    """
+        Boolean flag to determine whether this object should be accessible
+        to the website. Use this flag instead of deleting objects.
+    """
 
     @property
     @abstractmethod
     def original_pulse(self) -> "Pulse":
         """
-            Abstract declaration of original_pulse field getter that MUST be
-            implemented by child classes.
+            Returns the Pulse object that is the highest parent object in the
+            tree of Pulse & Reply objects that this instance is within.
         """
 
         raise NotImplementedError
@@ -144,8 +160,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     @abstractmethod
     def full_depth_replies(self) -> list["Reply"]:
         """
-            Abstract declaration of full_depth_replies field getter that MUST
-            be implemented by child classes.
+            Returns all the Reply objects that are within the tree of this
+            instance's children/children's children etc.
         """
 
         raise NotImplementedError
@@ -154,13 +170,25 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         abstract = True
 
     def __str__(self):
+        """
+            Returns the stingified version of this content's creator and the
+            message within this content if it is still visible, otherwise
+            returns the crossed out message within this content.
+        """
+
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
+    # noinspection PyMissingOrEmptyDocstring
     def get_absolute_url(self):
         return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
 
 
 class User(_Visible_Reportable_Model, AbstractUser):
+    """
+        Model to define changes to existing fields/extra fields & processing
+        for users, beyond that/those given by Django's base User model.
+    """
+
     STAFF_GROUP_NAMES = ["Moderators", "Admins"]
 
     first_name = None  # make blank in save method
@@ -168,7 +196,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
     get_full_name = None
     get_short_name = None
 
-    staff_assigned_report_set: Manager
+    moderator_assigned_report_set: Manager
     avatar_set: Manager
     disliked_pulse_set: Manager
     disliked_reply_set: Manager
@@ -258,6 +286,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
     @property
     def visible(self):
+        """
+            Shortcut variable for the is_active property, to provide a
+            consistent way to access the visibility of all objects in pulsifi
+            app.
+        """
+
         return self.is_active
 
     @visible.setter
@@ -276,6 +310,11 @@ class User(_Visible_Reportable_Model, AbstractUser):
         return self.string_when_visible(f"@{self.username}")
 
     def clean(self):
+        """
+            Performs extra model-wide validation after clean() has been called
+            on every field by self.clean_fields().
+        """
+
         if self.is_superuser:
             self.is_staff = self.is_superuser
 
@@ -325,15 +364,24 @@ class User(_Visible_Reportable_Model, AbstractUser):
         super().clean()
 
     def save(self, *args, **kwargs):
+        """
+            Saves the current instance to the database then performs extra
+            cleanup of relations (E.g. removing self from followers or ensuring
+            EmailAddress object exists for primary email).
+        """
+
         self_already_exists: bool = get_user_model().objects.filter(id=self.id).exists()
 
         super().save(*args, **kwargs)
 
         self.ensure_superuser_in_admin_group()
-        self.ensure_user_in_moderator_or_admin_group_is_staff()
+        self.ensure_user_in_any_staff_group_is_staff()
 
         if self in self.following.all():
             self.following.remove(self)
+
+        if self in self.followers.all():
+            self.followers.remove(self)
 
         if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():
             old_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
@@ -344,7 +392,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
 
-    def ensure_user_in_moderator_or_admin_group_is_staff(self):
+    def ensure_user_in_any_staff_group_is_staff(self):
+        """
+            Ensures that if the current user instance has been added to any of
+            the staff groups, then they should have the is_staff property set
+            to True.
+        """
+
         index = 0
         while not self.is_staff and index < len(self.STAFF_GROUP_NAMES):
             group_QS = Group.objects.filter(name=self.STAFF_GROUP_NAMES[index])
@@ -357,6 +411,11 @@ class User(_Visible_Reportable_Model, AbstractUser):
             index += 1
 
     def ensure_superuser_in_admin_group(self):
+        """
+            Ensures that if the current user instance has the is_superuser
+            property set to True then they should be added to the Admins group.
+        """
+
         if self.is_superuser:
             admin_group_QS = Group.objects.filter(name="Admins")
             if admin_group_QS.exists():
@@ -366,15 +425,36 @@ class User(_Visible_Reportable_Model, AbstractUser):
             else:
                 logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
 
+    # noinspection PyMissingOrEmptyDocstring
     def get_absolute_url(self):
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
 
+    # noinspection PyMissingOrEmptyDocstring
+    @classmethod
+    def get_proxy_fields(cls):
+        extra_property_fields = super().get_proxy_fields()
+
+        extra_property_fields.append("visible")
+
+        return extra_property_fields
+
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
+    """
+        Model to define pulses (posts) that are made by users and visible on
+        the main website.
+    """
+
     class Meta:
         verbose_name = "Pulse"
 
     def save(self, *args, **kwargs):
+        """
+            Saves the current instance to the database, after making any Reply
+            objects of this instance the matching visibility to this Pulse
+            instance's visibility.
+        """
+
         self.full_clean()
 
         self_QS = Pulse.objects.filter(id=self.id)
@@ -393,14 +473,29 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     @property
     def original_pulse(self):
+        """
+            Returns the Pulse object that is the highest parent object in the
+            tree of Pulse & Reply objects that this instance is within.
+
+            A Pulse object is always the highest User_Generated_Content object
+            within the current replies tree.
+        """
+
         return self
 
+    # noinspection PyMissingOrEmptyDocstring
     @property
     def full_depth_replies(self):
         return [reply for reply in Reply.objects.all() if reply.original_pulse is self]
 
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
+    """
+        Model to define replies (posts assigned to a parent Pulse object) that
+        are made by users and visible on the main website, underneath the
+        corresponding Pulse.
+    """
+
     _content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
@@ -410,10 +505,12 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
     _object_id = models.PositiveIntegerField(verbose_name="Replied Content ID")
     replied_content = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
 
+    # noinspection PyMissingOrEmptyDocstring
     @property
     def original_pulse(self):
         return self.replied_content.original_pulse
 
+    # noinspection PyMissingOrEmptyDocstring
     @property
     def full_depth_replies(self):
         replies = []
@@ -434,6 +531,11 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {type(self.replied_content).__name__.upper()[0]} | {self.replied_content})"[:100]
 
     def clean(self):
+        """
+            Performs extra model-wide validation after clean() has been called
+            on every field by self.clean_fields().
+        """
+
         try:
             if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
@@ -451,6 +553,12 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         super().clean()
 
     def save(self, *args, **kwargs):
+        """
+            Saves the current instance to the database, after ensuring the
+            current instance is not visible if the original_pulse is not
+            visible.
+        """
+
         self.full_clean()
 
         if not self.original_pulse.visible:
@@ -460,6 +568,11 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
 
 class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
+    """
+        Model to define reports, which flag inappropriate content/users to
+        moderators.
+    """
+
     SPAM: Final = "SPM"
     SEXUAL: Final = "SEX"
     HATE: Final = "HAT"
@@ -494,7 +607,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
     _content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
-        limit_choices_to={"app_label": "pulsifi", "model__in": ("user", "pulse", "reply")},
+        limit_choices_to={"app_label": "pulsifi", "model__in": settings.REPORTABLE_CONTENT_TYPE_NAMES},
         verbose_name="Reported Object Type"
     )
     _object_id = models.PositiveIntegerField(verbose_name="Reported Object ID")
@@ -505,13 +618,13 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         verbose_name="Reporter",
         related_name="submitted_report_set"
     )
-    assigned_staff_member = models.ForeignKey(
+    assigned_moderator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        verbose_name="Assigned Staff Member",
-        related_name="staff_assigned_report_set",
+        verbose_name="Assigned Moderator",
+        related_name="moderator_assigned_report_set",
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
-        default=get_random_staff_member_id
+        default=get_random_moderator_id
     )
     reason = models.TextField("Reason")
     category = models.CharField(
@@ -551,11 +664,16 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Staff Member - {self.assigned_staff_member})"
+        return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Moderator - {self.assigned_moderator})"
 
     def clean(self):
+        """
+            Performs extra model-wide validation after clean() has been called
+            on every field by self.clean_fields().
+        """
+
         try:
-            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
+            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=settings.REPORTABLE_CONTENT_TYPE_NAMES):
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
             elif (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
@@ -580,9 +698,9 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                     elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
                         raise REPORT_ADMIN_ERROR
 
-                if self.assigned_staff_member_id == self._object_id:
+                if self.assigned_moderator_id == self._object_id:
                     try:
-                        self.assigned_staff_member_id = get_random_staff_member_id([self._object_id])
+                        self.assigned_moderator_id = get_random_moderator_id([self._object_id])
                     except get_user_model().DoesNotExist as e:
                         raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid") from e
 
@@ -590,11 +708,10 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
             e.args = ("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.",)
             raise e
 
-        print(type([self.reporter_id]))
-        if self.assigned_staff_member == self.reporter:
+        if self.assigned_moderator == self.reporter:
             try:
                 # noinspection PyTypeChecker
-                self.assigned_staff_member_id = get_random_staff_member_id([self.reporter_id])
+                self.assigned_moderator_id = get_random_moderator_id([self.reporter_id])
             except get_user_model().DoesNotExist as e:
                 raise ValidationError({"reporter": "This user cannot be the reporter because they are the only moderator available to be assigned to this report"}, code="invalid") from e
 

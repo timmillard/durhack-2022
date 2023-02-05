@@ -68,7 +68,7 @@ def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance:
 def user_in_moderator_group_made_staff(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: set[int], **kwargs):
     if action == "post_add":
         if isinstance(instance, get_user_model()) and not reverse:
-            instance.ensure_user_in_moderator_or_admin_group_is_staff()
+            instance.ensure_user_in_any_staff_group_is_staff()
 
         elif isinstance(instance, Group) and reverse:
             existing_groups = []
@@ -81,7 +81,7 @@ def user_in_moderator_group_made_staff(sender, instance: User | Group, action: s
             if instance in existing_groups:
                 user: User
                 for user in model.objects.filter(id__in=pk_set):
-                    user.ensure_user_in_moderator_or_admin_group_is_staff()
+                    user.ensure_user_in_any_staff_group_is_staff()
 
     if action == "post_remove" or action == "post_clear":
         if isinstance(instance, get_user_model()) and not reverse:

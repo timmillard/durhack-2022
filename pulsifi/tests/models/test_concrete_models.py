@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db.models import BooleanField
 
 from pulsifi.models import Report, User
@@ -267,11 +267,28 @@ class User_Model_Tests(Base_TestCase):
             self.assertTrue(content.liked_by.filter(id=user2.id).exists())
             self.assertFalse(content.disliked_by.filter(id=user2.id).exists())
 
+    def test_obsolete_fields_from_base_user_class_are_none(self):
+        user = CreateTestUserHelper.create_test_user()
+
+        self.assertIsNone(user.first_name)
+        self.assertIsNone(user.last_name)
+
+        with self.assertRaises(FieldDoesNotExist):
+            user.update(first_name="test_value")
+
+        self.assertIsNone(user.first_name)
+
+        with self.assertRaises(FieldDoesNotExist):
+            user.update(last_name="test_value")
+
+        self.assertIsNone(user.last_name)
+
 
 class _User_Generated_Content_Model_Tests(Base_TestCase):  # TODO: test validation errors from clean method
     def test_liked_content_becoming_disliked_removes_like(self):
         user1 = CreateTestUserHelper.create_test_user()
         user2 = CreateTestUserHelper.create_test_user()
+
         for model in ["pulse", "reply"]:
             content = CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model, creator=user1)
 

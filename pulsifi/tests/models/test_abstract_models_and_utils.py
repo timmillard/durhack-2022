@@ -5,7 +5,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from pulsifi.models import get_random_staff_member_id
+from pulsifi.models import get_random_moderator_id
 from pulsifi.tests.utils import Base_TestCase, CreateTestUserGeneratedContentHelper, CreateTestUserHelper
 
 
@@ -13,7 +13,7 @@ from pulsifi.tests.utils import Base_TestCase, CreateTestUserGeneratedContentHel
 
 class Get_Random_Staff_Member_Util_Function_Tests(Base_TestCase):
     def test_get_random_staff_member_with_no_reportable_objects_and_no_staff_members(self):
-        self.assertIsNone(get_random_staff_member_id())
+        self.assertIsNone(get_random_moderator_id())
 
     def test_get_random_staff_member_with_reportable_objects_and_no_staff_members(self):
         for model in ["pulse", "reply", "user"]:
@@ -25,13 +25,13 @@ class Get_Random_Staff_Member_Util_Function_Tests(Base_TestCase):
 
             # noinspection PyTypeChecker
             with self.assertRaises(get_user_model().DoesNotExist):
-                get_random_staff_member_id()
+                get_random_moderator_id()
 
     def test_get_random_staff_member_with_reportable_objects_and_staff_members(self):
         user = CreateTestUserHelper.create_test_user()
         user.groups.add(Group.objects.get(name="Moderators"))
 
-        self.assertEqual(get_random_staff_member_id(), user.id)
+        self.assertEqual(get_random_moderator_id(), user.id)
 
 
 class Custom_Base_Model_Tests(Base_TestCase):

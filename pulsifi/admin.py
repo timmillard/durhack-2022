@@ -9,8 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, QuerySet
 from rangefilter.filters import DateTimeRangeFilter
 
-from .admin_filters import AssignedStaffListFilter, CategoryListFilter, CreatedPulsesListFilter, CreatedRepliesListFilter, DirectRepliesListFilter, DislikesListFilter, GroupListFilter, HasReportAboutObjectListFilter, LikesListFilter, RepliedObjectTypeListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, UserContentVisibleListFilter, UserVerifiedListFilter, UserVisibleListFilter
-from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Staff_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
+from .admin_filters import AssignedModeratorListFilter, CategoryListFilter, CreatedPulsesListFilter, CreatedRepliesListFilter, DirectRepliesListFilter, DislikesListFilter, GroupListFilter, HasReportAboutObjectListFilter, LikesListFilter, RepliedObjectTypeListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, UserContentVisibleListFilter, UserVerifiedListFilter, UserVisibleListFilter
+from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Moderator_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
 from .models import Pulse, Reply, Report, User
 
 admin.site.login = login_required(admin.site.login)
@@ -120,7 +120,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         inlines = list(super().get_inlines(request, obj))
 
         try:
-            Report._meta.get_field("assigned_staff_member").default()
+            Report._meta.get_field("assigned_moderator").default()
 
         except get_user_model().DoesNotExist:
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
@@ -277,7 +277,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
         ("_content_type", "_object_id"),
         "reason",
         "category",
-        ("assigned_staff_member", "status"),
+        ("assigned_moderator", "status"),
         "display_date_time_created"
     ]
     list_display = ["display_report", "reporter", "category", "status"]
@@ -289,10 +289,10 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
         "_content_type",
         "reason",
         "category",
-        "assigned_staff_member",
+        "assigned_moderator",
         "status"
     ]
-    search_help_text = "Search for a reporter, reported object type, reason, category, assigned staff member or status"
+    search_help_text = "Search for a reporter, reported object type, reason, category, assigned moderator or status"
 
     @admin.display(description="Report", ordering=["_content_type", "_object_id"])
     def display_report(self, obj: Report):
@@ -301,15 +301,15 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
     def get_fields(self, request, obj: Report = None):
         fields = super().get_fields(request, obj)
         if obj is None:
-            if ("assigned_staff_member", "status") in fields and "status" not in fields:
-                fields[fields.index(("assigned_staff_member", "status"))] = "status"
+            if ("assigned_moderator", "status") in fields and "status" not in fields:
+                fields[fields.index(("assigned_moderator", "status"))] = "status"
 
             if "display_date_time_created" in fields:
                 fields.remove("display_date_time_created")
 
         else:
-            if ("assigned_staff_member", "status") not in fields and "status" in fields:
-                fields[fields.index("status")] = ("assigned_staff_member", "status")
+            if ("assigned_moderator", "status") not in fields and "status" in fields:
+                fields[fields.index("status")] = ("assigned_moderator", "status")
 
             if "display_date_time_created" not in fields:
                 fields.append("display_date_time_created")
@@ -321,8 +321,8 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
 
         if ReportedObjectTypeListFilter not in old_list_filter:
             new_list_filter.append(ReportedObjectTypeListFilter)
-        if AssignedStaffListFilter not in old_list_filter:
-            new_list_filter.append(AssignedStaffListFilter)
+        if AssignedModeratorListFilter not in old_list_filter:
+            new_list_filter.append(AssignedModeratorListFilter)
         if CategoryListFilter not in old_list_filter:
             new_list_filter.append(CategoryListFilter)
         if StatusListFilter not in old_list_filter:
@@ -333,7 +333,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
 
     def has_add_permission(self, request):
         try:
-            Report._meta.get_field("assigned_staff_member").default()
+            Report._meta.get_field("assigned_moderator").default()
         except get_user_model().DoesNotExist:
             return False
         return True
@@ -400,7 +400,7 @@ class User_Admin(BaseUserAdmin):
         Disliked_Reply_Inline,
         About_Object_Report_Inline,
         Submitted_Report_Inline,
-        Staff_Assigned_Report_Inline
+        Moderator_Assigned_Report_Inline
     ]
     list_display = [
         "display_username",
@@ -492,7 +492,7 @@ class User_Admin(BaseUserAdmin):
             inlines = [inline for inline in inlines if inline != EmailAddress_Inline]
 
         try:
-            Report._meta.get_field("assigned_staff_member").default()
+            Report._meta.get_field("assigned_moderator").default()
         except get_user_model().DoesNotExist:
             inlines = [inline for inline in inlines if not issubclass(inline, _Base_Report_Inline_Config)]
 

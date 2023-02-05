@@ -7,9 +7,11 @@ from random import choice as random_choice
 from typing import Iterable
 
 from django.apps import apps
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model, QuerySet
 
 from pulsifi.exceptions import UpdateFieldNamesError
@@ -17,11 +19,11 @@ from pulsifi.exceptions import UpdateFieldNamesError
 logger = logging.getLogger(__name__)
 
 
-def get_random_staff_member_id(excluded_staff_id_list: list[int] = None) -> int | None:
-    """ Returns a random staff member's ID. """
+def get_random_moderator_id(excluded_moderator_id_list: list[int] = None) -> int | None:
+    """ Returns a random moderator's ID. """
 
     ret = True
-    for content_type in ContentType.objects.filter(app_label="pulsifi", model__in=("user", "pulse", "reply")):
+    for content_type in ContentType.objects.filter(app_label="pulsifi", model__in=settings.REPORTABLE_CONTENT_TYPE_NAMES):
         if content_type.model == "user":
             if content_type.model_class().objects.exclude(groups__name="Admins").exists():
                 ret = False
@@ -29,19 +31,19 @@ def get_random_staff_member_id(excluded_staff_id_list: list[int] = None) -> int 
             ret = False
     if ret:
         return
-    if excluded_staff_id_list:
+    if excluded_moderator_id_list:
         # noinspection PyProtectedMember
-        staff_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to).exclude(id__in=excluded_staff_id_list)
+        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to).exclude(id__in=excluded_moderator_id_list)
     else:
         # noinspection PyProtectedMember
-        staff_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_staff_member")._limit_choices_to)
+        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
 
-    if staff_QS.exists():
+    if moderator_QS.exists():
         return get_user_model().objects.get(
-            id=random_choice(staff_QS.values_list("id", flat=True))
+            id=random_choice(moderator_QS.values_list("id", flat=True))
         ).id
 
-    raise get_user_model().DoesNotExist("Random staff member cannot be chosen, because none exist.")
+    raise get_user_model().DoesNotExist("Random moderator cannot be chosen, because none exist.")
 
 
 class Custom_Base_Model(Model):
@@ -58,6 +60,12 @@ class Custom_Base_Model(Model):
         abstract = True
 
     def base_save(self, clean=True, *args, **kwargs):
+        """
+            The lowest level saving function that can bypass model cleaning
+            (which will usually occur if save() is called), when recursive
+            saving is required (E.g. within the update() method).
+        """
+
         if clean:
             self.full_clean()
         Model.save(self, *args, **kwargs)
@@ -96,6 +104,13 @@ class Custom_Base_Model(Model):
                         setattr(self, field.name, getattr(updated_model, field.name))
 
     def save(self, *args, **kwargs):
+        """
+            Saves the current instance to the database, only after the model
+            has been cleaned. This ensures any data in the database is valid,
+            even if the data was not added via a ModelForm (E.g. data is added
+            using the ORM API).
+        """
+
         self.full_clean()
         super().save(*args, **kwargs)
 
@@ -107,6 +122,11 @@ class Custom_Base_Model(Model):
         """
 
         for key, value in kwargs.items():
+            if key not in self.get_proxy_fields():
+                try:
+                    self._meta.get_field(key)
+                except FieldDoesNotExist:
+                    raise
             setattr(self, key, value)
 
         if commit:
@@ -126,10 +146,21 @@ class Custom_Base_Model(Model):
                 else:
                     self.save()
 
+    @classmethod
+    def get_proxy_fields(cls) -> list[str]:
+        """
+            Returns a list of names of extra properties of this model that can
+            be saved to the database, even though those fields don't actually
+            exist. They are just proxy fields.
+        """
+
+        return []
+
 
 class Date_Time_Created_Base_Model(Model):
     """
-
+        Base model that provides the field date_time_created, which is used by
+        some other models in pulsifi app.
 
         This class is abstract so should not be instantiated or have a table
         made for it in the database (see
@@ -143,6 +174,11 @@ class Date_Time_Created_Base_Model(Model):
 
     @property
     def date_time_created(self):
+        """
+            Datetime object representing the date & time that this object
+            instance was created.
+        """
+
         return self._date_time_created
 
     class Meta:
