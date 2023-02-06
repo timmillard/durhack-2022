@@ -4,7 +4,7 @@
 
 import logging
 from random import choice as random_choice
-from typing import Iterable
+from typing import Any, Iterable
 
 from django.apps import apps
 from django.conf import settings
@@ -19,7 +19,7 @@ from pulsifi.exceptions import UpdateFieldNamesError
 logger = logging.getLogger(__name__)
 
 
-def get_random_moderator_id(excluded_moderator_id_list: list[int] = None) -> int | None:
+def get_random_moderator_id(excluded_moderator_id_list: Iterable[int] = None) -> int | None:
     """ Returns a random moderator's ID. """
 
     ret = True
@@ -59,7 +59,7 @@ class Custom_Base_Model(Model):
     class Meta:
         abstract = True
 
-    def base_save(self, clean=True, *args, **kwargs):
+    def base_save(self, clean=True, *args, **kwargs) -> None:
         """
             The lowest level saving function that can bypass model cleaning
             (which will usually occur if save() is called), when recursive
@@ -68,9 +68,10 @@ class Custom_Base_Model(Model):
 
         if clean:
             self.full_clean()
+
         Model.save(self, *args, **kwargs)
 
-    def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True):
+    def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True) -> None:
         """
             Custom implementation of refreshing in-memory objects from the
             database, which also updates any related fields on this object. The
@@ -84,7 +85,7 @@ class Custom_Base_Model(Model):
         if deep:
             model_fields: list[Field] = [model_field for model_field in self._meta.get_fields() if model_field.name != "+"]
             if fields:
-                update_fields = [update_field for update_field in model_fields if update_field in fields]
+                update_fields = [update_field for update_field in model_fields if update_field.name in fields]
             else:
                 update_fields = model_fields
 
@@ -103,7 +104,7 @@ class Custom_Base_Model(Model):
 
                         setattr(self, field.name, getattr(updated_model, field.name))
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """
             Saves the current instance to the database, only after the model
             has been cleaned. This ensures any data in the database is valid,
@@ -114,13 +115,15 @@ class Custom_Base_Model(Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
-    def update(self, commit=True, base_save=False, clean=True, using: str = None, **kwargs):
+    def update(self, commit=True, base_save=False, clean=True, using: str = None, **kwargs) -> None:
         """
             Changes an in-memory object's values & save that object to the
             database all in one operation (based on Django's
             Queryset.bulk_update method).
         """
 
+        key: str
+        value: Any
         for key, value in kwargs.items():
             if key not in self.get_proxy_fields():
                 try:
@@ -135,19 +138,21 @@ class Custom_Base_Model(Model):
                     Use the base_save method of the object (to skip additional
                     save functionality) and only clean the object if specified.
                 """
+
                 if using is not None:
                     self.base_save(clean, using)
                 else:
                     self.base_save(clean)
             else:
                 """ Otherwise use the normal full save method of the object. """
+
                 if using is not None:
                     self.save(using)
                 else:
                     self.save()
 
-    @classmethod
-    def get_proxy_fields(cls) -> list[str]:
+    @staticmethod
+    def get_proxy_fields() -> Iterable[str]:
         """
             Returns a list of names of extra properties of this model that can
             be saved to the database, even though those fields don't actually

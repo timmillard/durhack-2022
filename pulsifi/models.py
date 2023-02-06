@@ -4,7 +4,7 @@
 
 import logging
 from abc import abstractmethod
-from typing import Final
+from typing import Final, Iterable
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
@@ -150,17 +150,17 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     @abstractmethod
     def original_pulse(self) -> "Pulse":
         """
-            Returns the Pulse object that is the highest parent object in the
-            tree of Pulse & Reply objects that this instance is within.
+            The single Pulse object instance that is the highest parent object
+            in the tree of Pulse & Reply objects that this instance is within.
         """
 
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def full_depth_replies(self) -> list["Reply"]:
+    def full_depth_replies(self) -> Iterable["Reply"]:
         """
-            Returns all the Reply objects that are within the tree of this
+            The set of all Reply objects that are within the tree of this
             instance's children/children's children etc.
         """
 
@@ -169,7 +169,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     class Meta:
         abstract = True
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
             Returns the stingified version of this content's creator and the
             message within this content if it is still visible, otherwise
@@ -179,7 +179,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
     # noinspection PyMissingOrEmptyDocstring
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
 
 
@@ -197,6 +197,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
     get_short_name = None
 
     moderator_assigned_report_set: Manager
+    """
+    The set of Report objects that this user (if they are a moderator) has been assigned to moderate. """
     avatar_set: Manager
     disliked_pulse_set: Manager
     disliked_reply_set: Manager
@@ -285,7 +287,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
     )
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         """
             Shortcut variable for the is_active property, to provide a
             consistent way to access the visibility of all objects in pulsifi
@@ -295,13 +297,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
         return self.is_active
 
     @visible.setter
-    def visible(self, value):
+    def visible(self, value: bool):
         self.is_active = value
 
     class Meta:
         verbose_name = "User"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
             Returns the User's username if they are still visible, otherwise
             returns the crossed out username.
@@ -309,7 +311,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
         return self.string_when_visible(f"@{self.username}")
 
-    def clean(self):
+    def clean(self) -> None:
         """
             Performs extra model-wide validation after clean() has been called
             on every field by self.clean_fields().
@@ -322,9 +324,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
         if get_user_model().objects.filter(id=self.id).exists():
-            username_check_list: list[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
+            username_check_list: Iterable[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
         else:
-            username_check_list: list[str] = get_user_model().objects.values_list("username", flat=True)
+            username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
         for username in username_check_list:
             if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
@@ -363,7 +365,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
         super().clean()
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """
             Saves the current instance to the database then performs extra
             cleanup of relations (E.g. removing self from followers or ensuring
@@ -392,7 +394,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
             EmailAddress.objects.create(email=self.email, user=self, primary=True)
 
-    def ensure_user_in_any_staff_group_is_staff(self):
+    def ensure_user_in_any_staff_group_is_staff(self) -> None:
         """
             Ensures that if the current user instance has been added to any of
             the staff groups, then they should have the is_staff property set
@@ -410,7 +412,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 logger.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
             index += 1
 
-    def ensure_superuser_in_admin_group(self):
+    def ensure_superuser_in_admin_group(self) -> None:
         """
             Ensures that if the current user instance has the is_superuser
             property set to True then they should be added to the Admins group.
@@ -426,13 +428,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
 
     # noinspection PyMissingOrEmptyDocstring
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
 
     # noinspection PyMissingOrEmptyDocstring
-    @classmethod
-    def get_proxy_fields(cls):
-        extra_property_fields = super().get_proxy_fields()
+    @staticmethod
+    def get_proxy_fields() -> Iterable[str]:
+        extra_property_fields: list[str] = list(super().get_proxy_fields())
 
         extra_property_fields.append("visible")
 
@@ -448,7 +450,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
     class Meta:
         verbose_name = "Pulse"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """
             Saves the current instance to the database, after making any Reply
             objects of this instance the matching visibility to this Pulse
@@ -460,7 +462,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         self_QS = Pulse.objects.filter(id=self.id)
 
         if self_QS.exists():
-            old_visible = self_QS.get().visible
+            old_visible: bool = self_QS.get().visible
             if not self.visible and old_visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=False)
@@ -472,7 +474,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         super().save(*args, **kwargs)
 
     @property
-    def original_pulse(self):
+    def original_pulse(self) -> "Pulse":
         """
             Returns the Pulse object that is the highest parent object in the
             tree of Pulse & Reply objects that this instance is within.
@@ -485,7 +487,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     # noinspection PyMissingOrEmptyDocstring
     @property
-    def full_depth_replies(self):
+    def full_depth_replies(self) -> Iterable["Reply"]:
         return [reply for reply in Reply.objects.all() if reply.original_pulse is self]
 
 
@@ -507,12 +509,12 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     # noinspection PyMissingOrEmptyDocstring
     @property
-    def original_pulse(self):
+    def original_pulse(self) -> Pulse:
         return self.replied_content.original_pulse
 
     # noinspection PyMissingOrEmptyDocstring
     @property
-    def full_depth_replies(self):
+    def full_depth_replies(self) -> Iterable["Reply"]:
         replies = []
         reply: "Reply"
         for reply in self.reply_set.all():
@@ -527,10 +529,10 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
             models.Index(fields=["_content_type", "_object_id"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {type(self.replied_content).__name__.upper()[0]} | {self.replied_content})"[:100]
 
-    def clean(self):
+    def clean(self) -> None:
         """
             Performs extra model-wide validation after clean() has been called
             on every field by self.clean_fields().
@@ -552,7 +554,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         super().clean()
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """
             Saves the current instance to the database, after ensuring the
             current instance is not visible if the original_pulse is not
@@ -646,7 +648,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         ]
 
     # noinspection PyFinal
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.SPAM: Final = type(self).SPAM
         self.SEXUAL: Final = type(self).SEXUAL
         self.HATE: Final = type(self).HATE
@@ -663,10 +665,10 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
 
         super().__init__(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Moderator - {self.assigned_moderator})"
 
-    def clean(self):
+    def clean(self) -> None:
         """
             Performs extra model-wide validation after clean() has been called
             on every field by self.clean_fields().
@@ -681,20 +683,25 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
 
             elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
                 REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
+
                 if Group.objects.filter(name="Admins").exists():
                     if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
                         raise REPORT_ADMIN_CONTENT_ERROR
+
                 elif self.reported_object.creator in get_user_model().objects.filter(is_superuser=True):
                     raise REPORT_ADMIN_CONTENT_ERROR
 
             elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
                 if self._object_id == self.reporter_id:
                     raise ValidationError({"_object_id": f"The reporter cannot create a report about themself."}, code="invalid")  # TODO: Better error message
+
                 else:
                     REPORT_ADMIN_ERROR = ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+
                     if Group.objects.filter(name="Admins").exists():
                         if self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
                             raise REPORT_ADMIN_ERROR
+
                     elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
                         raise REPORT_ADMIN_ERROR
 

@@ -1,12 +1,13 @@
 """
     Utility classes for pulsifi app test suite.
 """
+
 from typing import Iterable
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.fields import GenericRelation
-from django.db.models import ManyToManyField, Model
+from django.db.models import Field, ManyToManyField, Model
 from django.test import TestCase
 
 from pulsifi.models import Pulse, Reply, User
@@ -14,12 +15,23 @@ from pulsifi.models import Pulse, Reply, User
 
 class Base_TestCase(TestCase):
     def setUp(self):
+        """
+            Hook method for setting up the test fixture before exercising it.
+
+            All staff Group instances must be created before tests are run.
+        """
+
         staff_group_name: str
         for staff_group_name in get_user_model().STAFF_GROUP_NAMES:
             Group.objects.create(name=staff_group_name)
 
 
 class CreateTestUserHelper:
+    """
+        Helper class to provide functions that create test data for User object
+        instances.
+    """
+
     GENERATABLE_OBJECTS = ["user"]
     # noinspection SpellCheckingInspection
     TEST_USERS = [
@@ -48,30 +60,37 @@ class CreateTestUserHelper:
 
     @classmethod
     def create_test_user(cls, save=True, **kwargs) -> User:
+        """
+            Helper function that creates & returns a test User object instance
+            with additional options for its attributes provided in kwargs. The
+            save argument declares whether the User instance should be saved to
+            the database or not.
+        """
+
         if kwargs:
             if "username" not in kwargs or "password" not in kwargs or "email" not in kwargs or "bio" not in kwargs:
                 cls._test_users_index = (cls._test_users_index + 1) % len(cls.TEST_USERS)
 
             if "username" in kwargs:
-                username = kwargs.pop("username")
+                username: str = kwargs.pop("username")
             else:
-                username = cls.TEST_USERS[cls._test_users_index]["username"]
+                username: str = cls.TEST_USERS[cls._test_users_index]["username"]
             if "password" in kwargs:
-                password = kwargs.pop("password")
+                password: str = kwargs.pop("password")
             else:
-                password = cls.TEST_USERS[cls._test_users_index]["password"]
+                password: str = cls.TEST_USERS[cls._test_users_index]["password"]
             if "email" in kwargs:
-                email = kwargs.pop("email")
+                email: str = kwargs.pop("email")
             else:
-                email = cls.TEST_USERS[cls._test_users_index]["email"]
+                email: str = cls.TEST_USERS[cls._test_users_index]["email"]
             if "bio" in kwargs:
-                bio = kwargs.pop("bio")
+                bio: str = kwargs.pop("bio")
             else:
-                bio = cls.TEST_USERS[cls._test_users_index]["bio"]
+                bio: str = cls.TEST_USERS[cls._test_users_index]["bio"]
 
             if "visible" in kwargs or "verified" in kwargs or "is_superuser" in kwargs or "is_staff" in kwargs or "is_active" in kwargs:
                 if "visible" in kwargs:
-                    is_active = kwargs["visible"]
+                    is_active: bool = kwargs["visible"]
                     if "is_active" in kwargs:
                         if kwargs["is_active"] != is_active:
                             raise ValueError("User attribute <visible> cannot be set to a different value from the User attribute <is_active>.")
@@ -145,7 +164,12 @@ class CreateTestUserHelper:
             )
 
     @classmethod
-    def get_test_unknown_field(cls, field_name: str):
+    def get_test_unknown_field(cls, field_name: str) -> str:
+        """
+            Helper function to return a new random value for the given field
+            name.
+        """
+
         if field_name == "bio":
             return cls.create_test_user(save=False).bio
         elif field_name == "username":
@@ -158,30 +182,12 @@ class CreateTestUserHelper:
             raise ValueError(f"Given field_name ({field_name}) is not one that can have test values created for it.")
 
 
-class GetFieldsHelper:
-    @staticmethod
-    def get_non_relation_fields(model: Model, exclude: Iterable[str] = None):
-        if exclude is None:
-            exclude = []
-
-        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and not field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
-
-    @staticmethod
-    def get_single_relation_fields(model: Model, exclude: Iterable[str] = None):
-        if exclude is None:
-            exclude = []
-
-        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
-
-    @staticmethod
-    def get_multi_relation_fields(model: Model, exclude: Iterable[str] = None):
-        if exclude is None:
-            exclude = []
-
-        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and (isinstance(field, ManyToManyField) or isinstance(field, GenericRelation))]
-
-
 class CreateTestUserGeneratedContentHelper:
+    """
+        Helper class to provide functions that create test data for
+        User_Generated_Content objects.
+    """
+
     GENERATABLE_OBJECTS = ["pulse", "reply"]
     TEST_MESSAGES = [
         "This Vodka says, everything will be okay. At least for a few hours.",
@@ -208,26 +214,41 @@ class CreateTestUserGeneratedContentHelper:
     _test_message_index = -1
 
     @classmethod
-    def create_test_user_generated_content(cls, model: str, save=True, **kwargs):
-        if model not in ("pulse", "reply"):
-            raise ValueError(f"""{model} is not a valid choice for parameter "model", choose one of: "pulse", "reply".""")
+    def create_test_user_generated_content(cls, model_name: str, save=True, **kwargs) -> Pulse | Reply:
+        """
+            Helper function that creates & returns a test
+            User_Generated_Content object with additional options for its
+            attributes provided in kwargs. The model argument declares which
+            type of model object instance to create. The save argument declares
+            whether the object instance should be saved to the database or not.
+        """
 
-        if model == "pulse":
+        if model_name not in cls.GENERATABLE_OBJECTS:
+            raise ValueError(f"""{model_name} is not a valid choice for parameter "model", choose one of: "pulse", "reply".""")
+
+        if model_name == "pulse":
             return cls._create_test_pulse(save, **kwargs)
-        elif model == "reply":
+        elif model_name == "reply":
             return cls._create_test_reply(save, **kwargs)
 
     @classmethod
-    def _create_test_pulse(cls, save=True, **kwargs):
+    def _create_test_pulse(cls, save=True, **kwargs) -> Pulse:
+        """
+            Helper function that creates & returns a test Pulse object instance
+            with additional options for its attributes provided in kwargs. The
+            save argument declares whether the object instance should be saved
+            to the database or not.
+        """
+
         if kwargs:
             if "message" not in kwargs:
                 cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-                message = cls.TEST_MESSAGES[cls._test_message_index]
+                message: str = cls.TEST_MESSAGES[cls._test_message_index]
             else:
-                message = kwargs.pop("message")
+                message: str = kwargs.pop("message")
 
             if "visible" in kwargs:
-                visible = kwargs.pop("visible")
+                visible: bool = kwargs.pop("visible")
 
                 if "creator" in kwargs:
                     if save:
@@ -292,19 +313,26 @@ class CreateTestUserGeneratedContentHelper:
             )
 
     @classmethod
-    def _create_test_reply(cls, save=True, **kwargs):
+    def _create_test_reply(cls, save=True, **kwargs) -> Reply:
+        """
+            Helper function that creates & returns a test Reply object instance
+            with additional options for its attributes provided in kwargs. The
+            save argument declares whether the object instance should be saved
+            to the database or not.
+        """
+
         if kwargs:
             if "message" not in kwargs:
                 cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-                message = cls.TEST_MESSAGES[cls._test_message_index]
+                message: str = cls.TEST_MESSAGES[cls._test_message_index]
             else:
-                message = kwargs.pop("message")
+                message: str = kwargs.pop("message")
 
             if "replied_content" in kwargs:
-                replied_content = kwargs.pop("replied_content")
+                replied_content: Pulse | Reply = kwargs.pop("replied_content")
 
                 if "visible" in kwargs:
-                    visible = kwargs.pop("visible")
+                    visible: bool = kwargs.pop("visible")
 
                     if "creator" in kwargs:
                         if save:
@@ -363,35 +391,35 @@ class CreateTestUserGeneratedContentHelper:
                 )
 
             if "visible" in kwargs:
-                visible = kwargs.pop("visible")
+                visible: bool = kwargs.pop("visible")
 
                 if "creator" in kwargs:
                     if save:
                         return Reply.objects.create(
                             message=message,
                             creator=kwargs.pop("creator"),
-                            replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
+                            replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse"),
                             visible=visible
                         )
 
                     return Reply(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse"),
                         visible=visible
                     )
                 if save:
                     return Reply.objects.create(
                         message=message,
                         creator=CreateTestUserHelper.create_test_user(**kwargs),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse"),
                         visible=visible
                     )
 
                 return Reply(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse"),
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse"),
                     visible=visible
                 )
 
@@ -400,25 +428,25 @@ class CreateTestUserGeneratedContentHelper:
                     return Reply.objects.create(
                         message=message,
                         creator=kwargs.pop("creator"),
-                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                        replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
                     )
 
                 return Reply(
                     message=message,
                     creator=kwargs.pop("creator"),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
                 )
             if save:
                 return Reply.objects.create(
                     message=message,
                     creator=CreateTestUserHelper.create_test_user(**kwargs),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
                 )
 
             return Reply(
                 message=message,
                 creator=CreateTestUserHelper.create_test_user(**kwargs),
-                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
             )
 
         else:
@@ -428,15 +456,73 @@ class CreateTestUserGeneratedContentHelper:
                 return Reply.objects.create(
                     message=cls.TEST_MESSAGES[cls._test_message_index],
                     creator=CreateTestUserHelper.create_test_user(),
-                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                    replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
                 )
 
             return Reply(
                 message=cls.TEST_MESSAGES[cls._test_message_index],
                 creator=CreateTestUserHelper.create_test_user(),
-                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model="pulse")
+                replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
             )
 
     @classmethod
-    def get_test_message(cls):
-        return cls.create_test_user_generated_content(model="pulse", save=False).message
+    def get_test_message(cls) -> str:
+        """
+            Helper function to return a new random value for the message field.
+        """
+
+        return cls.create_test_user_generated_content(model_name="pulse", save=False).message
+
+
+class GetFieldsHelper:
+    """
+        Helper class to filter the available fields of a given model by their
+        type.
+    """
+
+    @staticmethod
+    def _get_all_fields(model: Model) -> Iterable[Field]:
+        all_fields: list[Field] = list(model._meta.get_fields())
+
+        if hasattr(model, "get_proxy_fields"):
+            all_fields.extend(model.get_proxy_fields())
+
+        return all_fields
+
+    @classmethod
+    def get_non_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+        """
+            Helper function to return an iterable of all the standard non-relation fields.
+        """
+
+        if exclude is None:
+            exclude = []
+
+        # noinspection PyTypeChecker
+        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and not field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+
+    @classmethod
+    def get_single_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+        """
+            Helper function to return an iterable of all the forward single
+            relation fields.
+        """
+
+        if exclude is None:
+            exclude = []
+
+        # noinspection PyTypeChecker
+        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+
+    @classmethod
+    def get_multi_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+        """
+            Helper function to return an iterable of all the forward
+            many-to-many relation fields.
+        """
+
+        if exclude is None:
+            exclude = []
+
+        # noinspection PyTypeChecker
+        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and (isinstance(field, ManyToManyField) or isinstance(field, GenericRelation))]

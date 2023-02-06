@@ -67,7 +67,7 @@ if not 20 <= env("USERNAME_SIMILARITY_PERCENTAGE") <= 100:
     raise ImproperlyConfigured("USERNAME_SIMILARITY_PERCENTAGE must be an integer between 20 and 100.")
 
 
-def _display_user(user):
+def _display_user(user) -> str:
     return str(user)
 
 
