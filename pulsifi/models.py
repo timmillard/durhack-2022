@@ -432,9 +432,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
 
     # noinspection PyMissingOrEmptyDocstring
-    @staticmethod
-    def get_proxy_fields() -> Iterable[str]:
-        extra_property_fields: list[str] = list(super().get_proxy_fields())
+    @classmethod
+    def get_proxy_field_names(cls) -> Iterable[str]:
+        extra_property_fields: list[str] = list(super().get_proxy_field_names())
 
         extra_property_fields.append("visible")
 

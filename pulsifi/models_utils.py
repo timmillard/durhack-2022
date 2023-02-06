@@ -125,7 +125,7 @@ class Custom_Base_Model(Model):
         key: str
         value: Any
         for key, value in kwargs.items():
-            if key not in self.get_proxy_fields():
+            if key not in self.get_proxy_field_names():
                 try:
                     self._meta.get_field(key)
                 except FieldDoesNotExist:
@@ -152,7 +152,7 @@ class Custom_Base_Model(Model):
                     self.save()
 
     @staticmethod
-    def get_proxy_fields() -> Iterable[str]:
+    def get_proxy_field_names() -> Iterable[str]:
         """
             Returns a list of names of extra properties of this model that can
             be saved to the database, even though those fields don't actually

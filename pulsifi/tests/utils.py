@@ -481,16 +481,7 @@ class GetFieldsHelper:
     """
 
     @staticmethod
-    def _get_all_fields(model: Model) -> Iterable[Field]:
-        all_fields: list[Field] = list(model._meta.get_fields())
-
-        if hasattr(model, "get_proxy_fields"):
-            all_fields.extend(model.get_proxy_fields())
-
-        return all_fields
-
-    @classmethod
-    def get_non_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+    def get_non_relation_fields(model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
         """
             Helper function to return an iterable of all the standard non-relation fields.
         """
@@ -499,10 +490,10 @@ class GetFieldsHelper:
             exclude = []
 
         # noinspection PyTypeChecker
-        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and not field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and not field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
 
-    @classmethod
-    def get_single_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+    @staticmethod
+    def get_single_relation_fields(model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
         """
             Helper function to return an iterable of all the forward single
             relation fields.
@@ -512,10 +503,10 @@ class GetFieldsHelper:
             exclude = []
 
         # noinspection PyTypeChecker
-        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
+        return [field for field in model._meta.get_fields() if field.name not in exclude and field.name != "+" and field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, GenericRelation)]
 
-    @classmethod
-    def get_multi_relation_fields(cls, model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
+    @staticmethod
+    def get_multi_relation_fields(model: Model, exclude: Iterable[str] = None) -> Iterable[Field]:
         """
             Helper function to return an iterable of all the forward
             many-to-many relation fields.
@@ -525,4 +516,4 @@ class GetFieldsHelper:
             exclude = []
 
         # noinspection PyTypeChecker
-        return [field for field in cls._get_all_fields(model) if field.name not in exclude and field.name != "+" and (isinstance(field, ManyToManyField) or isinstance(field, GenericRelation))]
+        return [field for field in model._meta.get_fields if field.name not in exclude and field.name != "+" and (isinstance(field, ManyToManyField) or isinstance(field, GenericRelation))]
