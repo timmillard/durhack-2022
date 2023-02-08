@@ -3,7 +3,7 @@
 """
 
 from re import compile as re_compile
-from typing import Iterable
+from typing import Collection
 
 from confusable_homoglyphs import confusables
 from django.contrib.auth import get_user_model
@@ -18,7 +18,7 @@ class ReservedNameValidator:
     """ Validator which disallows many reserved names as field values. """
 
     # noinspection SpellCheckingInspection
-    DEFAULT_SPECIAL_HOSTNAMES = [
+    DEFAULT_SPECIAL_HOSTNAMES = {
         "autoconfig",
         "autodiscover",
         "broadcasthost",
@@ -26,11 +26,11 @@ class ReservedNameValidator:
         "localdomain",
         "localhost",
         "wpad"
-    ]
+    }
     """Hostnames with special/reserved meaning."""
 
     # noinspection SpellCheckingInspection
-    DEFAULT_PROTOCOL_HOSTNAMES = [
+    DEFAULT_PROTOCOL_HOSTNAMES = {
         "css",
         "ftp",
         "html",
@@ -53,11 +53,11 @@ class ReservedNameValidator:
         "uucp",
         "webmail",
         "www"
-    ]
+    }
     """ Common protocol hostnames. """
 
     # noinspection SpellCheckingInspection
-    DEFAULT_CA_ADDRESSES = [
+    DEFAULT_CA_ADDRESSES = {
         "admin",
         "administrator",
         "hostmaster",
@@ -72,32 +72,32 @@ class ReservedNameValidator:
         "sslwebmaster",
         "sysadmin",
         "webmaster"
-    ]
+    }
     """
         Email addresses known used by certificate authorities during
         verification.
     """
 
-    DEFAULT_RFC_2142 = [
+    DEFAULT_RFC_2142 = {
         "abuse",
         "marketing",
         "noc",
         "sales",
         "security",
         "support"
-    ]
+    }
     """ RFC-2142-defined names not already covered. """
 
-    DEFAULT_NOREPLY_ADDRESSES = [
+    DEFAULT_NOREPLY_ADDRESSES = {
         "mailer-daemon",
         "nobody",
         "noreply",
         "no-reply"
-    ]
+    }
     """ Common no-reply email addresses. """
 
     # noinspection SpellCheckingInspection
-    DEFAULT_SENSITIVE_FILENAMES = [
+    DEFAULT_SENSITIVE_FILENAMES = {
         "clientaccesspolicy.xml",
         "crossdomain.xml",
         "favicon.ico",
@@ -106,11 +106,11 @@ class ReservedNameValidator:
         "robots.txt",
         ".htaccess",
         ".htpasswd"
-    ]
+    }
     """ Sensitive filenames. """
 
     # noinspection SpellCheckingInspection
-    DEFAULT_OTHER_SENSITIVE_NAMES = [
+    DEFAULT_OTHER_SENSITIVE_NAMES = {
         "account",
         "accounts",
         "auth",
@@ -172,15 +172,17 @@ class ReservedNameValidator:
         "users",
         "weblog",
         "work"
-    ]
+    }
     """
         Other names which could be problems depending on URL/subdomain
         structure.
     """
 
-    def __init__(self, reserved_names: Iterable[str] = None):
+    def __init__(self, reserved_names: Collection[str] = None):
         if reserved_names is None:
-            reserved_names = self.DEFAULT_SPECIAL_HOSTNAMES + self.DEFAULT_PROTOCOL_HOSTNAMES + self.DEFAULT_CA_ADDRESSES + self.DEFAULT_RFC_2142 + self.DEFAULT_NOREPLY_ADDRESSES + self.DEFAULT_SENSITIVE_FILENAMES + self.DEFAULT_OTHER_SENSITIVE_NAMES
+            reserved_names: set[str] = self.DEFAULT_SPECIAL_HOSTNAMES | self.DEFAULT_PROTOCOL_HOSTNAMES | self.DEFAULT_CA_ADDRESSES | self.DEFAULT_RFC_2142 | self.DEFAULT_NOREPLY_ADDRESSES | self.DEFAULT_SENSITIVE_FILENAMES | self.DEFAULT_OTHER_SENSITIVE_NAMES
+        else:
+            reserved_names = set(reserved_names)
         self.reserved_names = reserved_names
 
     def __call__(self, value: str):
@@ -217,7 +219,7 @@ class FreeEmailValidator:
     """
 
     # noinspection SpellCheckingInspection
-    DEFAULT_FREE_EMAIL_DOMAINS = [
+    DEFAULT_FREE_EMAIL_DOMAINS = {
         "decabg.eu",
         "gufum.com",
         "tmail9.com",
@@ -245,11 +247,13 @@ class FreeEmailValidator:
         "dewareff.com",
         "kaftee.com",
         "letpays.com"
-    ]
+    }
 
-    def __init__(self, free_email_domains: Iterable[str] = None):
+    def __init__(self, free_email_domains: Collection[str] = None):
         if free_email_domains is None:
-            free_email_domains = self.FREE_EMAIL_DOMAINS
+            free_email_domains: set[str] = self.FREE_EMAIL_DOMAINS
+        else:
+            free_email_domains = set(free_email_domains)
         self.free_email_domains = free_email_domains
 
     def __call__(self, value: str):
@@ -273,11 +277,14 @@ class FreeEmailValidator:
 class ExampleEmailValidator:
     """ Validator which disallows common example address domain values. """
 
-    DEFAULT_EXAMPLE_EMAIL_DOMAINS = ["example", "test"]
+    DEFAULT_EXAMPLE_EMAIL_DOMAINS = {"example", "test"}
 
-    def __init__(self, example_email_domains: Iterable[str] = None):
+    def __init__(self, example_email_domains: Collection[str] = None):
         if example_email_domains is None:
-            example_email_domains = self.DEFAULT_EXAMPLE_EMAIL_DOMAINS
+            example_email_domains: set[str] = self.DEFAULT_EXAMPLE_EMAIL_DOMAINS
+        else:
+            example_email_domains = set(example_email_domains)
+
         self.example_email_domains = example_email_domains
 
     def __call__(self, value: str):

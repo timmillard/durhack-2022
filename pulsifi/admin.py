@@ -22,6 +22,14 @@ admin.site.empty_value_display = "- - - - -"
 
 class _Custom_Base_Admin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset: QuerySet[Pulse | Reply | Report]):
+        """
+            Overrides original queryset deletion by calling delete() on each
+            object individually (rather than the bulk delete command), so that
+            every objects custom delete() method can be executed (which will
+            just mark each object as not visible, rather than actually deleting
+            it from the database).
+        """
+
         for obj in queryset:
             obj.delete()
 

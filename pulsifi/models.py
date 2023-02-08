@@ -4,7 +4,7 @@
 
 import logging
 from abc import abstractmethod
-from typing import Final, Iterable
+from typing import Final
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
@@ -158,7 +158,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     @property
     @abstractmethod
-    def full_depth_replies(self) -> Iterable["Reply"]:
+    def full_depth_replies(self) -> set["Reply"]:
         """
             The set of all Reply objects that are within the tree of this
             instance's children/children's children etc.
@@ -198,24 +198,37 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
     moderator_assigned_report_set: Manager
     """
-    The set of Report objects that this user (if they are a moderator) has been assigned to moderate. """
+        The set of Report objects that this user (if they are a moderator) has
+        been assigned to moderate.
+    """
+
     avatar_set: Manager
+    """ The set of Avatar image objects that this user has uploaded. """
+
     disliked_pulse_set: Manager
+    """ The set of Pulse objects that this user has disliked. """
+
     disliked_reply_set: Manager
+    """ The set of Reply objects that this user has disliked. """
+
     # noinspection SpellCheckingInspection
     emailaddress_set: Manager
+    """ The set of EmailAddress objects that have been assigned to this user. """
+
     liked_pulse_set: Manager
+    """ The set of Pulse objects that this user has liked. """
+
     liked_reply_set: Manager
-    logentry_set: Manager
+    """ The set of Reply objects that this user has liked. """
+
     created_pulse_set: Manager
+    """ The set of Pulse objects that this user has created. """
+
     created_reply_set: Manager
+    """ The set of Reply objects that this user has created. """
+
     submitted_report_set: Manager
-    # noinspection SpellCheckingInspection
-    socialaccount_set: Manager
-    # noinspection SpellCheckingInspection
-    staticdevice_set: Manager
-    # noinspection SpellCheckingInspection
-    totpdevice_set: Manager
+    """ The set of Report objects that this user has submitted. """
 
     username = models.CharField(
         "Username",
@@ -252,28 +265,55 @@ class User(_Visible_Reportable_Model, AbstractUser):
         max_length=200,
         blank=True
     )
+    """
+        Longer textfield containing an autobiographical description of this
+        user.
+    """
+
     verified = models.BooleanField("Is verified?", default=False)  # TODO: Add verification process
+    """
+        Boolean flag to indicate whether this user is a noteable
+        person/organisation.
+    """
+
     following = models.ManyToManyField(
         "self",
         symmetrical=False,
         related_name="followers",
         blank=True
     )
+    """ Set of other User objects that this user is following. """
+
     is_staff = models.BooleanField(
         "Is a staff member?",
         default=False,
-        help_text="Designates whether the user can log into this admin site."
+        help_text="Designates whether the user can log into the admin site."
     )
+    """
+        Boolean flag to indicate whether this user is a staff member, and thus
+        can log into the admin site.
+    """
+
     is_superuser = models.BooleanField(
         "Is a superuser?",
         default=False,
         help_text="Designates that this user has all permissions without explicitly assigning them."
     )
+    """
+        Boolean flag to provide a quick way to designate that this user has all
+        permissions without explicitly assigning them.
+    """
+
     is_active = models.BooleanField(
         "Is visible?",
         default=True,
-        help_text="Designates whether this user is visible. Unselect this instead of deleting accounts.",
+        help_text="Designates whether this user is visible. Unselect this instead of deleting accounts."
     )
+    """
+        Boolean flag to determine whether this object should be accessible
+        to the website. Use this flag instead of deleting objects.
+    """
+
     date_joined = models.DateTimeField(
         "Date Joined",
         default=timezone.now,
@@ -324,9 +364,10 @@ class User(_Visible_Reportable_Model, AbstractUser):
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
         if get_user_model().objects.filter(id=self.id).exists():
-            username_check_list: Iterable[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
+            username_check_list: tuple[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
         else:
-            username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
+            username_check_list: tuple[str] = get_user_model().objects.values_list("username", flat=True)
+
         for username in username_check_list:
             if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
@@ -433,10 +474,10 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
     # noinspection PyMissingOrEmptyDocstring
     @classmethod
-    def get_proxy_field_names(cls) -> Iterable[str]:
-        extra_property_fields: list[str] = list(super().get_proxy_field_names())
+    def get_proxy_field_names(cls) -> set[str]:
+        extra_property_fields: set[str] = super().get_proxy_field_names()
 
-        extra_property_fields.append("visible")
+        extra_property_fields.add("visible")
 
         return extra_property_fields
 
@@ -487,8 +528,8 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     # noinspection PyMissingOrEmptyDocstring
     @property
-    def full_depth_replies(self) -> Iterable["Reply"]:
-        return [reply for reply in Reply.objects.all() if reply.original_pulse is self]
+    def full_depth_replies(self) -> set["Reply"]:
+        return {reply for reply in Reply.objects.all() if reply.original_pulse is self}
 
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
@@ -504,8 +545,19 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         limit_choices_to={"app_label": "pulsifi", "model__in": ("pulse", "reply")},
         verbose_name="Replied Content Type"
     )
+    """
+        Link to the content type of the replied_content instance (either Pulse
+        or Reply).
+    """
+
     _object_id = models.PositiveIntegerField(verbose_name="Replied Content ID")
+    """ ID number of the specific instance of the replied_content instance. """
+
     replied_content = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+    """
+        Shortcut variable for the instance of replied_content, determined from
+        the _content_type and _object_id.
+    """
 
     # noinspection PyMissingOrEmptyDocstring
     @property
@@ -514,12 +566,12 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     # noinspection PyMissingOrEmptyDocstring
     @property
-    def full_depth_replies(self) -> Iterable["Reply"]:
-        replies = []
+    def full_depth_replies(self) -> set["Reply"]:
+        replies = set()
         reply: "Reply"
         for reply in self.reply_set.all():
-            replies.append(reply)
-            replies.extend(reply.full_depth_replies)
+            replies.add(reply)
+            replies.update(reply.full_depth_replies)
         return replies
 
     class Meta:
@@ -600,11 +652,14 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         (SCAM, "Scam or fraud"),
         (FALSE_INFO, "False or misleading information")
     ]
+    """ List of category code & display values of each category. """
+
     status_choices = [
         (IN_PROGRESS, "In Progress"),
         (REJECTED, "Rejected"),
         (COMPLETED, "Completed")
     ]
+    """ List of status code & display values of each status. """
 
     _content_type = models.ForeignKey(
         ContentType,
@@ -612,14 +667,28 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         limit_choices_to={"app_label": "pulsifi", "model__in": settings.REPORTABLE_CONTENT_TYPE_NAMES},
         verbose_name="Reported Object Type"
     )
+    """
+        Link to the content type of the reported_object instance (either User,
+        Pulse or Reply).
+    """
+
     _object_id = models.PositiveIntegerField(verbose_name="Reported Object ID")
+    """ ID number of the specific instance of the reported_object instance. """
+
     reported_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
+    """
+        Shortcut variable for the instance of reported_object, determined from
+        the _content_type and _object_id.
+    """
+
     reporter = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Reporter",
         related_name="submitted_report_set"
     )
+    """ Link to the User object instance that created this Report instance. """
+
     assigned_moderator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -628,18 +697,37 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
         default=get_random_moderator_id
     )
+    """
+        Link to the User object instance (from the set of moderators) that has
+        been assigned to moderate this Report instance.
+    """
+
     reason = models.TextField("Reason")
+    """
+        Longer textfield containing an detailed description of the reason for
+        this report's existence.
+    """
+
     category = models.CharField(
         "Category",
         max_length=3,
         choices=category_choices
     )
+    """
+        The category code that gives an overview as to the reason for the
+        report.
+    """
+
     status = models.CharField(
         "Status",
         max_length=2,
         choices=status_choices,
         default=IN_PROGRESS
     )
+    """
+        The status code that outlines the current position within the
+        moderation cycle that this Report instance is within.
+    """
 
     class Meta:
         verbose_name = "Report"
@@ -648,7 +736,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         ]
 
     # noinspection PyFinal
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:  # HACK: Make instance constants final by using type hinting & reassigning the original values from the class constants
         self.SPAM: Final = type(self).SPAM
         self.SEXUAL: Final = type(self).SEXUAL
         self.HATE: Final = type(self).HATE

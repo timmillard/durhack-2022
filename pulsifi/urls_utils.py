@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from django.http import QueryDict
 from django.urls import reverse
 from django.utils.functional import lazy
@@ -11,12 +13,12 @@ def reverse_with_get_params(*args, **kwargs) -> str:
 
     qdict = QueryDict("", mutable=True)
     for key, val in get_params.items():
-        if type(val) is list:
-            qdict.setlist(key, val)
+        if isinstance(val, Sequence):
+            qdict.setlist(key, list(val))
         else:
             qdict[key] = val
 
-    return url + '?' + qdict.urlencode()
+    return url + "?" + qdict.urlencode()
 
 
 reverse_lazy_with_get_params = lazy(reverse_with_get_params, str)

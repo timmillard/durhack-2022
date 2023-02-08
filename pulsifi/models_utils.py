@@ -4,7 +4,7 @@
 
 import logging
 from random import choice as random_choice
-from typing import Any, Iterable
+from typing import Any, Collection, Iterable
 
 from django.apps import apps
 from django.conf import settings
@@ -19,7 +19,7 @@ from pulsifi.exceptions import UpdateFieldNamesError
 logger = logging.getLogger(__name__)
 
 
-def get_random_moderator_id(excluded_moderator_id_list: Iterable[int] = None) -> int | None:
+def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int | None:
     """ Returns a random moderator's ID. """
 
     ret = True
@@ -31,9 +31,10 @@ def get_random_moderator_id(excluded_moderator_id_list: Iterable[int] = None) ->
             ret = False
     if ret:
         return
-    if excluded_moderator_id_list:
+
+    if excluded_moderator_ids:
         # noinspection PyProtectedMember
-        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to).exclude(id__in=excluded_moderator_id_list)
+        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to).exclude(id__in=excluded_moderator_ids)
     else:
         # noinspection PyProtectedMember
         moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
@@ -71,7 +72,7 @@ class Custom_Base_Model(Model):
 
         Model.save(self, *args, **kwargs)
 
-    def refresh_from_db(self, using: str = None, fields: Iterable[str] = None, deep=True) -> None:
+    def refresh_from_db(self, using: str = None, fields: Collection[str] = None, deep=True) -> None:
         """
             Custom implementation of refreshing in-memory objects from the
             database, which also updates any related fields on this object. The
@@ -80,17 +81,24 @@ class Custom_Base_Model(Model):
             "deep" argument.
         """
 
+        if fields is not None and not isinstance(fields, set):
+            fields = set(fields)
+
         super().refresh_from_db(using=using, fields=fields)
 
+        if fields is None:
+            fields = set()
+
         if deep:
-            model_fields: list[Field] = [model_field for model_field in self._meta.get_fields() if model_field.name != "+"]
+            model_fields: set[Field] = {model_field for model_field in self._meta.get_fields() if model_field.name != "+"}
+
             if fields:
-                update_fields = [update_field for update_field in model_fields if update_field.name in fields]
+                update_fields: set[Field] = {update_field for update_field in model_fields if update_field.name in fields}
             else:
                 update_fields = model_fields
 
             if not update_fields:
-                raise UpdateFieldNamesError(model_fields, fields)
+                raise UpdateFieldNamesError(model_fields, update_field_names=fields)
 
             else:
                 updated_model = self._meta.model.objects.get(id=self.id)
@@ -152,14 +160,14 @@ class Custom_Base_Model(Model):
                     self.save()
 
     @staticmethod
-    def get_proxy_field_names() -> Iterable[str]:
+    def get_proxy_field_names() -> set[str]:
         """
-            Returns a list of names of extra properties of this model that can
+            Returns a set of names of extra properties of this model that can
             be saved to the database, even though those fields don't actually
             exist. They are just proxy fields.
         """
 
-        return []
+        return set()
 
 
 class Date_Time_Created_Base_Model(Model):

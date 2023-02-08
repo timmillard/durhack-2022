@@ -361,7 +361,8 @@ class Report_Model_Tests(Base_TestCase):
                 reason="test reason message",
                 category=Report.SPAM
             )
-        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+        self.assertEqual(len(e.exception.error_dict), 1)
+        self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
 
     def test_content_created_by_admin_cannot_be_reported(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -380,7 +381,8 @@ class Report_Model_Tests(Base_TestCase):
                     reason="test reason message",
                     category=Report.SPAM
                 )
-            self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+            self.assertEqual(len(e.exception.error_dict), 1)
+            self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
 
     def test_reported_user_is_not_the_only_moderator(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -395,7 +397,8 @@ class Report_Model_Tests(Base_TestCase):
                 reason="test reason message",
                 category=Report.SPAM
             )
-        self.assertEqual(list(e.exception.error_dict.keys())[0], "_object_id")
+        self.assertEqual(len(e.exception.error_dict), 1)
+        self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
 
     def test_reporter_is_not_the_only_moderator(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -412,4 +415,5 @@ class Report_Model_Tests(Base_TestCase):
                     reason="test reason message",
                     category=Report.SPAM
                 )
-            self.assertEqual(list(e.exception.error_dict.keys())[0], "reporter")
+            self.assertEqual(len(e.exception.error_dict), 1)
+            self.assertEqual(e.exception.error_dict.popitem()[0], "reporter")
