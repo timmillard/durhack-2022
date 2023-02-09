@@ -2,15 +2,14 @@
     Forms in pulsifi app.
 """
 
-from allauth.account.forms import SignupForm as Base_SignupForm
+from allauth.account.forms import LoginForm as Base_LoginForm, SignupForm as Base_SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import AuthenticationForm as Base_AuthenticationForm
 
 from pulsifi.models import Pulse, Reply
 
 
-class Login_Form(Base_AuthenticationForm):
+class Login_Form(Base_LoginForm):
     """ Form to customise the HTML & CSS generated for the login form. """
 
     template_name = "pulsifi/auth_form_snippet.html"
@@ -22,8 +21,8 @@ class Login_Form(Base_AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["username"].label = "Username / Email Address"
-        self.fields["username"].widget.attrs.update(
+        self.fields["login"].label = "Username / Email Address"
+        self.fields["login"].widget.attrs.update(
             {
                 "class": "form-control",
                 "placeholder": "Enter your Username / Email Address"

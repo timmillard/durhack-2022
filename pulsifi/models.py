@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Manager, Q
+from django.db.models import Manager, Q, QuerySet
 from django.urls import reverse
 from django.utils import timezone
 from thefuzz.fuzz import token_sort_ratio as get_string_similarity
@@ -471,6 +471,16 @@ class User(_Visible_Reportable_Model, AbstractUser):
     # noinspection PyMissingOrEmptyDocstring
     def get_absolute_url(self) -> str:
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
+
+    def get_feed_pulses(self) -> QuerySet["Pulse"]:
+        """
+            Returns the set of Pulse objects that should be displayed on the
+            Feed_View for this User object instance.
+        """
+
+        return Pulse.objects.filter(
+            creator__in=self.following.exclude(is_active=False)
+        ).order_by("_date_time_created")
 
     # noinspection PyMissingOrEmptyDocstring
     @classmethod

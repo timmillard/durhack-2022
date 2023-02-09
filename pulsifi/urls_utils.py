@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Collection
 
 from django.http import QueryDict
 from django.urls import reverse
@@ -13,7 +13,7 @@ def reverse_with_get_params(*args, **kwargs) -> str:
 
     qdict = QueryDict("", mutable=True)
     for key, val in get_params.items():
-        if isinstance(val, Sequence):
+        if isinstance(val, Collection) and not isinstance(val, str):
             qdict.setlist(key, list(val))
         else:
             qdict[key] = val
