@@ -5,7 +5,6 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, QuerySet
 from rangefilter.filters import DateTimeRangeFilter
 
@@ -13,7 +12,7 @@ from .admin_filters import AssignedModeratorListFilter, CategoryListFilter, Crea
 from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Moderator_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
 from .models import Pulse, Reply, Report, User
 
-admin.site.login = login_required(admin.site.login)
+# admin.site.login = login_required(admin.site.login)
 admin.site.site_header = "Pulsifi Administration"
 admin.site.site_title = "Pulsifi Admin"
 admin.site.index_title = "Whole Site Overview"

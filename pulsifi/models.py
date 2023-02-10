@@ -28,6 +28,8 @@ from .validators import ConfusableEmailValidator, ConfusableStringValidator, Exa
 logger = logging.getLogger(__name__)
 
 
+# TODO: Add help texts
+
 class _Visible_Reportable_Model(Custom_Base_Model):
     """
         Base model that prevents objects from actually being deleted (making
@@ -47,8 +49,8 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         verbose_name="Reports About This Object"
     )
     """
-        Provides a link to the set of all Report objects that link to this
-        object.
+        Provides a link to the set of all :model:`pulsifi.report` objects that
+        link to this object.
     """
 
     class Meta:
@@ -123,14 +125,20 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         related_name="liked_%(class)s_set",
         blank=True
     )
-    """ The set of Users that have liked this content object instance. """
+    """
+        The set of :model:`pulsifi.user`s that have liked this content object
+        instance.
+    """
 
     disliked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="disliked_%(class)s_set",
         blank=True
     )
-    """ The set of Users that have disliked this content object instance. """
+    """
+        The set of :model:`pulsifi.user`s that have disliked this content
+        object instance.
+    """
 
     reply_set = GenericRelation(  # TODO: ratelimit whether user can create a new reply based on time between now and time of creation of last reply for same original_pulse
         "Reply",
@@ -138,7 +146,10 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         object_id_field="_object_id",
         verbose_name="Replies"
     )
-    """ The set of Reply objects for this content object instance. """
+    """
+        The set of :model:`pulsifi.reply` objects for this content object
+        instance.
+    """
 
     visible = models.BooleanField("Is visible?", default=True)
     """
@@ -150,8 +161,9 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     @abstractmethod
     def original_pulse(self) -> "Pulse":
         """
-            The single Pulse object instance that is the highest parent object
-            in the tree of Pulse & Reply objects that this instance is within.
+            The single :model:`pulsifi.pulse` object instance that is the
+            highest parent object in the tree of :model:`pulsifi.pulse` &
+            :model:`pulsifi.reply` objects that this instance is within.
         """
 
         raise NotImplementedError
@@ -160,8 +172,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     @abstractmethod
     def full_depth_replies(self) -> set["Reply"]:
         """
-            The set of all Reply objects that are within the tree of this
-            instance's children/children's children etc.
+            The set of all :model:`pulsifi.reply` objects that are within the
+            tree of this instance's children/children's children etc.
         """
 
         raise NotImplementedError
@@ -186,7 +198,8 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 class User(_Visible_Reportable_Model, AbstractUser):
     """
         Model to define changes to existing fields/extra fields & processing
-        for users, beyond that/those given by Django's base User model.
+        for users, beyond that/those given by Django's base :model:`auth.user`
+        model.
     """
 
     STAFF_GROUP_NAMES = ["Moderators", "Admins"]
@@ -198,12 +211,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
     moderator_assigned_report_set: Manager
     """
-        The set of Report objects that this user (if they are a moderator) has
-        been assigned to moderate.
+        The set of :model:`pulsifi.report` objects that this user (if they are
+        a moderator) has been assigned to moderate.
     """
 
     avatar_set: Manager
-    """ The set of Avatar image objects that this user has uploaded. """
+    """ The set of :model:`avatar.avatar` image objects that this user has uploaded. """
 
     disliked_pulse_set: Manager
     """ The set of Pulse objects that this user has disliked. """

@@ -19,6 +19,9 @@ from pulsifi.exceptions import UpdateFieldNamesError
 logger = logging.getLogger(__name__)
 
 
+# TODO: Add help texts
+
+
 def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int | None:
     """ Returns a random moderator's ID. """
 
@@ -98,7 +101,7 @@ class Custom_Base_Model(Model):
                 update_fields = model_fields
 
             if not update_fields:
-                raise UpdateFieldNamesError(model_fields, update_field_names=fields)
+                raise UpdateFieldNamesError(model_fields=model_fields, update_field_names=fields)
 
             else:
                 updated_model = self._meta.model.objects.get(id=self.id)

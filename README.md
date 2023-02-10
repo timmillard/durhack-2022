@@ -135,6 +135,7 @@ By Tim Millard, Padgriffin, Charlie Simpson and Charlie Wilson
   <li>Model field names are lowercase, must not contain the model name and have words seperated by underscores <nobr>(E.g. <code>date_time_created</code>, not <code><del>postDateTimeCreated</del></code>)</nobr></li>
   <li>HTML template names are lowercase and have words seperated by underscores <nobr>(E.g. <code>feed.html</code>)</nobr></li>
   <li>Use docstrings on all classes and public methods to help others understand code functionality</li>
+  <li>Use <nobr><a href="https://docs.djangoproject.com/en/4.1/ref/contrib/admin/admindocs/#documentation-helpers">the django-admindocs format</a></nobr> to refer to models/views/templates <nobr>(E.g. <nobr><code>This is a :model:`pulsifi.pulse` object.</code></nobr>)</nobr></li>
   <li>All comments should be on the same line as the code being referenced, and should use this format: <nobr><code>&lt;code&gt;··#·&lt;mnemonic&gt;:·&lt;comment&gt;</code></nobr> <nobr>(E.g. <nobr><code>print("Hello")&nbsp;&nbsp;#&nbsp;TODO:&nbsp;Output username</code></nobr>)</nobr></li>
   <li>Comment mnemonics must be one of the example values specified in <nobr><a href="https://peps.python.org/pep-0350/#mnemonics">the CodeTags style documentation</a></nobr></li>
   <li>Docstrings and type hinting is preferred over using the <nobr><code>NOTE</code></nobr> mnemonic in a comment</li>
