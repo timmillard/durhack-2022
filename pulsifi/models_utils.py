@@ -10,7 +10,6 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model, QuerySet
 
@@ -23,17 +22,20 @@ logger = logging.getLogger(__name__)
 
 
 def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int | None:
-    """ Returns a random moderator's ID. """
+    """
+        Returns a random moderator's ID. (Returns None if no moderators and no
+        reportable objects exist).
+    """
 
     ret = True
-    for content_type in ContentType.objects.filter(app_label="pulsifi", model__in=settings.REPORTABLE_CONTENT_TYPE_NAMES):
-        if content_type.model == "user":
-            if content_type.model_class().objects.exclude(groups__name="Admins").exists():
+    for model_name in settings.REPORTABLE_CONTENT_TYPE_NAMES:
+        if model_name == "user":
+            if apps.get_model(app_label="pulsifi", model_name=model_name).objects.exclude(groups__name="Admins").exists():
                 ret = False
-        elif content_type.model_class().objects.all().exists():
+        elif apps.get_model(app_label="pulsifi", model_name=model_name).objects.all().exists():
             ret = False
     if ret:
-        return
+        return  # HACK: Return None rather than raising an exception if no reportable objects exist. This prevents crashing during initialisation, as this function is parsed before reportable objects have been loaded (which would normally cause a crash)
 
     if excluded_moderator_ids:
         # noinspection PyProtectedMember
@@ -185,7 +187,8 @@ class Date_Time_Created_Base_Model(Model):
 
     _date_time_created = DateTimeField(
         "Creation Date & Time",
-        auto_now=True
+        auto_now=True,
+        help_text="Datetime object representing the date & time that this object instance was created."
     )
 
     @property

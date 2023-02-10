@@ -21,4 +21,4 @@ def reverse_with_get_params(*args, **kwargs) -> str:
     return url + "?" + qdict.urlencode()
 
 
-reverse_lazy_with_get_params = lazy(reverse_with_get_params, str)
+reverse_with_get_params_lazy = lazy(reverse_with_get_params, str)

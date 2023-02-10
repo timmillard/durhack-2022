@@ -11,6 +11,9 @@ class RedirectionLoopError(ValueError):
         self.redirect_url = redirect_url
         super().__init__(message or self.DEFAULT_MESSAGE)
 
+    def __str__(self):
+        return f"{self.message} (redirect_url={repr(self.redirect_url)})"
+
 
 class UpdateFieldNamesError(ValueError):
     DEFAULT_MESSAGE = "Model's fields does not contain any of the requested update field names."  # TODO: Better default message
@@ -30,6 +33,9 @@ class UpdateFieldNamesError(ValueError):
 
         super().__init__(message or self.DEFAULT_MESSAGE)
 
+    def __str__(self):
+        return f"{self.message} (model_fields={repr(self.model_fields)}, update_field_names={repr(self.update_field_names)})"
+
 
 class GetParameterError(ValueError):
     DEFAULT_MESSAGE = "One or more of the supplied Get parameters have an invalid value."
@@ -43,3 +49,19 @@ class GetParameterError(ValueError):
             self.get_parameters = get_parameters
 
         super().__init__(message or self.DEFAULT_MESSAGE)
+
+    def __str__(self):
+        return f"{self.message} (get_parameters={repr(self.get_parameters)})"
+
+
+class ReportableContentTypeNamesSettingError(ValueError):
+    DEFAULT_MESSAGE = "One of the supplied REPORTABLE_CONTENT_TYPE_NAMES is not a valid model name."
+
+    def __init__(self, message: str = None, reportable_content_type_name: str = None) -> None:
+        self.message: str = message or self.DEFAULT_MESSAGE
+        self.reportable_content_type_name = reportable_content_type_name
+
+        super().__init__(message or self.DEFAULT_MESSAGE)
+
+    def __str__(self):
+        return f"{self.message} (reportable_content_type_name={repr(self.reportable_content_type_name)})"

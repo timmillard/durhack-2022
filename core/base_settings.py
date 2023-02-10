@@ -12,7 +12,7 @@ from django.urls import reverse_lazy
 from environ import Env
 from tldextract import tldextract
 
-from pulsifi.urls_utils import reverse_lazy_with_get_params
+from pulsifi.urls_utils import reverse_with_get_params_lazy
 
 # noinspection SpellCheckingInspection
 env = Env(
@@ -83,13 +83,13 @@ MEDIA_ROOT = BASE_DIR / r"pulsifi\media"
 MEDIA_URL = "media/"
 
 # Default URL redirect settings (used for authentication)
-LOGIN_URL = reverse_lazy_with_get_params(
+LOGIN_URL = reverse_with_get_params_lazy(
     "pulsifi:home",
     get_params={"action": "login"}
 )
 LOGIN_REDIRECT_URL = reverse_lazy("pulsifi:feed")
 LOGOUT_REDIRECT_URL = reverse_lazy("default")
-SIGNUP_URL = reverse_lazy_with_get_params(
+SIGNUP_URL = reverse_with_get_params_lazy(
     "pulsifi:home",
     get_params={"action": "signup"}
 )

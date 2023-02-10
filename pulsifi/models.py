@@ -28,7 +28,7 @@ from .validators import ConfusableEmailValidator, ConfusableStringValidator, Exa
 logger = logging.getLogger(__name__)
 
 
-# TODO: Add help texts
+# TODO: Add inherited docstrings, add model reference links
 
 class _Visible_Reportable_Model(Custom_Base_Model):
     """
@@ -46,11 +46,12 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         content_type_field="_content_type",
         object_id_field="_object_id",
         related_query_name="reverse_parent_object",
-        verbose_name="Reports About This Object"
+        verbose_name="Reports About This Object",
+        help_text="Provides a link to the set of all :model:`pulsifi.report` objects that are reporting this object."
     )
     """
         Provides a link to the set of all :model:`pulsifi.report` objects that
-        link to this object.
+        are reporting this object.
     """
 
     class Meta:
@@ -123,35 +124,42 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     liked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="liked_%(class)s_set",
-        blank=True
+        blank=True,
+        help_text="The set of :model:`pulsifi.user` instances that have liked this content object instance."
     )
     """
-        The set of :model:`pulsifi.user`s that have liked this content object
-        instance.
+        The set of :model:`pulsifi.user` instances that have liked this content
+        object instance.
     """
 
     disliked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="disliked_%(class)s_set",
-        blank=True
+        blank=True,
+        help_text="The set of :model:`pulsifi.user` instances that have disliked this content object instance."
     )
     """
-        The set of :model:`pulsifi.user`s that have disliked this content
-        object instance.
+        The set of :model:`pulsifi.user` instances that have disliked this
+        content object instance.
     """
 
     reply_set = GenericRelation(  # TODO: ratelimit whether user can create a new reply based on time between now and time of creation of last reply for same original_pulse
         "Reply",
         content_type_field="_content_type",
         object_id_field="_object_id",
-        verbose_name="Replies"
+        verbose_name="Replies",
+        help_text="The set of :model:`pulsifi.reply` objects for this content object instance."
     )
     """
         The set of :model:`pulsifi.reply` objects for this content object
         instance.
     """
 
-    visible = models.BooleanField("Is visible?", default=True)
+    visible = models.BooleanField(
+        "Is visible?",
+        default=True,
+        help_text="Boolean flag to determine whether this object should be accessible to the website. Use this flag instead of deleting objects."
+    )
     """
         Boolean flag to determine whether this object should be accessible
         to the website. Use this flag instead of deleting objects.
@@ -190,8 +198,9 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
         return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])}"
 
-    # noinspection PyMissingOrEmptyDocstring
     def get_absolute_url(self) -> str:
+        """ Returns the canonical URL for this object instance. """
+
         return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
 
 
@@ -216,32 +225,42 @@ class User(_Visible_Reportable_Model, AbstractUser):
     """
 
     avatar_set: Manager
-    """ The set of :model:`avatar.avatar` image objects that this user has uploaded. """
+    """
+        The set of :model:`avatar.avatar` image objects that this user has
+        uploaded.
+    """
 
     disliked_pulse_set: Manager
-    """ The set of Pulse objects that this user has disliked. """
+    """ The set of :model:`pulsifi.pulse` objects that this user has disliked. """
 
     disliked_reply_set: Manager
-    """ The set of Reply objects that this user has disliked. """
+    """ The set of :model:`pulsifi.reply` objects that this user has disliked. """
 
     # noinspection SpellCheckingInspection
     emailaddress_set: Manager
-    """ The set of EmailAddress objects that have been assigned to this user. """
+    # noinspection SpellCheckingInspection
+    """
+        The set of :model:`account.emailaddress` objects that have been
+        assigned to this user.
+    """
 
     liked_pulse_set: Manager
-    """ The set of Pulse objects that this user has liked. """
+    """ The set of :model:`pulsifi.pulse` objects that this user has liked. """
 
     liked_reply_set: Manager
-    """ The set of Reply objects that this user has liked. """
+    """ The set of :model:`pulsifi.reply` objects that this user has liked. """
 
     created_pulse_set: Manager
-    """ The set of Pulse objects that this user has created. """
+    """ The set of :model:`pulsifi.pulse` objects that this user has created. """
 
     created_reply_set: Manager
-    """ The set of Reply objects that this user has created. """
+    """ The set of :model:`pulsifi.reply` objects that this user has created. """
 
     submitted_report_set: Manager
-    """ The set of Report objects that this user has submitted. """
+    """
+        The set of :model:`pulsifi.report` objects that this user has
+        submitted.
+    """
 
     username = models.CharField(
         "Username",
@@ -276,14 +295,19 @@ class User(_Visible_Reportable_Model, AbstractUser):
     bio = models.TextField(
         "Bio",
         max_length=200,
-        blank=True
+        blank=True,
+        help_text="Longer textfield containing an autobiographical description of this user."
     )
     """
         Longer textfield containing an autobiographical description of this
         user.
     """
 
-    verified = models.BooleanField("Is verified?", default=False)  # TODO: Add verification process
+    verified = models.BooleanField(  # TODO: Add verification process
+        "Is verified?",
+        default=False,
+        help_text="Boolean flag to indicate whether this user is a noteable person/organisation."
+    )
     """
         Boolean flag to indicate whether this user is a noteable
         person/organisation.
@@ -293,14 +317,15 @@ class User(_Visible_Reportable_Model, AbstractUser):
         "self",
         symmetrical=False,
         related_name="followers",
-        blank=True
+        blank=True,
+        help_text="Set of other :model:`pulsifi.user` objects that this user is following."
     )
-    """ Set of other User objects that this user is following. """
+    """ Set of other :model:`pulsifi.user` objects that this user is following. """
 
     is_staff = models.BooleanField(
         "Is a staff member?",
         default=False,
-        help_text="Designates whether the user can log into the admin site."
+        help_text="Boolean flag to indicate whether this user is a staff member, and thus can log into the admin site."
     )
     """
         Boolean flag to indicate whether this user is a staff member, and thus
@@ -310,7 +335,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
     is_superuser = models.BooleanField(
         "Is a superuser?",
         default=False,
-        help_text="Designates that this user has all permissions without explicitly assigning them."
+        help_text="Boolean flag to provide a quick way to designate that this user has all permissions without explicitly assigning them."
     )
     """
         Boolean flag to provide a quick way to designate that this user has all
@@ -320,7 +345,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
     is_active = models.BooleanField(
         "Is visible?",
         default=True,
-        help_text="Designates whether this user is visible. Unselect this instead of deleting accounts."
+        help_text="Boolean flag to determine whether this object should be accessible to the website. Use this flag instead of deleting objects."
     )
     """
         Boolean flag to determine whether this object should be accessible
@@ -358,7 +383,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
     def __str__(self) -> str:
         """
-            Returns the User's username if they are still visible, otherwise
+            Returns this user's username, if they are still visible; otherwise
             returns the crossed out username.
         """
 
@@ -420,10 +445,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
         super().clean()
 
     def save(self, *args, **kwargs) -> None:
+        # noinspection SpellCheckingInspection
         """
             Saves the current instance to the database then performs extra
             cleanup of relations (E.g. removing self from followers or ensuring
-            EmailAddress object exists for primary email).
+            an :model:`account.emailaddress` object exists for the user's
+            primary email).
         """
 
         self_already_exists: bool = get_user_model().objects.filter(id=self.id).exists()
@@ -451,8 +478,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
     def ensure_user_in_any_staff_group_is_staff(self) -> None:
         """
             Ensures that if the current user instance has been added to any of
-            the staff groups, then they should have the is_staff property set
-            to True.
+            the staff :model:`auth.group` objects, then they should have the
+            is_staff property set to True.
         """
 
         index = 0
@@ -469,7 +496,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
     def ensure_superuser_in_admin_group(self) -> None:
         """
             Ensures that if the current user instance has the is_superuser
-            property set to True then they should be added to the Admins group.
+            property set to True then they should be added to the Admins
+            :model:`auth.group`.
         """
 
         if self.is_superuser:
@@ -481,23 +509,29 @@ class User(_Visible_Reportable_Model, AbstractUser):
             else:
                 logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
 
-    # noinspection PyMissingOrEmptyDocstring
     def get_absolute_url(self) -> str:
+        """ Returns the canonical URL for this object instance. """
+
         return reverse("pulsifi:specific_account", kwargs={"username": self.username})
 
     def get_feed_pulses(self) -> QuerySet["Pulse"]:
         """
-            Returns the set of Pulse objects that should be displayed on the
-            Feed_View for this User object instance.
-        """
+            Returns the set of :model:`pulsifi.pulse` objects that should be
+            displayed on the :view:`pulsifi.views.Feed_View` for this user.
+        """  # BUG: Admindocs does not generate link to view correctly
 
         return Pulse.objects.filter(
             creator__in=self.following.exclude(is_active=False)
         ).order_by("_date_time_created")
 
-    # noinspection PyMissingOrEmptyDocstring
     @classmethod
     def get_proxy_field_names(cls) -> set[str]:
+        """
+            Returns a set of names of extra properties of this model that can
+            be saved to the database, even though those fields don't actually
+            exist. They are just proxy fields.
+        """
+
         extra_property_fields: set[str] = super().get_proxy_field_names()
 
         extra_property_fields.add("visible")
@@ -507,8 +541,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
 class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     """
-        Model to define pulses (posts) that are made by users and visible on
-        the main website.
+        Model to define pulses (posts) that are made by users and are visible
+        on the main website.
     """
 
     class Meta:
@@ -516,9 +550,9 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
     def save(self, *args, **kwargs) -> None:
         """
-            Saves the current instance to the database, after making any Reply
-            objects of this instance the matching visibility to this Pulse
-            instance's visibility.
+            Saves the current instance to the database, after making any
+            :model:`pulsifi.reply` objects, of this instance, the matching
+            visibility, to this pulse's visibility.
         """
 
         self.full_clean()
@@ -540,40 +574,50 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
     @property
     def original_pulse(self) -> "Pulse":
         """
-            Returns the Pulse object that is the highest parent object in the
-            tree of Pulse & Reply objects that this instance is within.
+            Returns the :model:`pulsifi.pulse` object that is the highest
+            parent object in the tree of :model:`pulsifi.pulse` &
+            :model:`pulsifi.reply` objects that this instance is within.
 
-            A Pulse object is always the highest User_Generated_Content object
-            within the current replies tree.
+            The highest User_Generated_Content object within the current
+            replies-tree is always a :model:`pulsifi.pulse` object.
         """
 
         return self
 
-    # noinspection PyMissingOrEmptyDocstring
     @property
     def full_depth_replies(self) -> set["Reply"]:
+        """
+            The set of all :model:`pulsifi.reply` objects that are within the
+            tree of this instance's children/children's children etc.
+        """
+
         return {reply for reply in Reply.objects.all() if reply.original_pulse is self}
 
 
 class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
     """
-        Model to define replies (posts assigned to a parent Pulse object) that
-        are made by users and visible on the main website, underneath the
-        corresponding Pulse.
+        Model to define replies (posts assigned to a parent
+        :model:`pulsifi.pulse` object) that are made by a :model:`pulsifi.user`
+        and visible on the main website (underneath the corresponding
+        :model:`pulsifi.pulse`).
     """
 
     _content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
         limit_choices_to={"app_label": "pulsifi", "model__in": ("pulse", "reply")},
-        verbose_name="Replied Content Type"
+        verbose_name="Replied Content Type",
+        help_text="Link to the content type of the replied_content instance (either :model:`pulsifi.pulse` or :model:`pulsifi.reply`)."
     )
     """
-        Link to the content type of the replied_content instance (either Pulse
-        or Reply).
+        Link to the content type of the replied_content instance (either
+        :model:`pulsifi.pulse` or :model:`pulsifi.reply`).
     """
 
-    _object_id = models.PositiveIntegerField(verbose_name="Replied Content ID")
+    _object_id = models.PositiveIntegerField(
+        verbose_name="Replied Content ID",
+        help_text="ID number of the specific instance of the replied_content instance."
+    )
     """ ID number of the specific instance of the replied_content instance. """
 
     replied_content = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
@@ -582,14 +626,23 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         the _content_type and _object_id.
     """
 
-    # noinspection PyMissingOrEmptyDocstring
     @property
     def original_pulse(self) -> Pulse:
+        """
+            The single :model:`pulsifi.pulse` object instance that is the
+            highest parent object in the tree of :model:`pulsifi.pulse` &
+            :model:`pulsifi.reply` objects that this instance is within.
+        """
+
         return self.replied_content.original_pulse
 
-    # noinspection PyMissingOrEmptyDocstring
     @property
     def full_depth_replies(self) -> set["Reply"]:
+        """
+            The set of all :model:`pulsifi.reply` objects that are within the
+            tree of this instance's children/children's children etc.
+        """
+
         replies = set()
         reply: "Reply"
         for reply in self.reply_set.all():
@@ -646,7 +699,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
 class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
     """
-        Model to define reports, which flag inappropriate content/users to
+        Model to define reports, which flags inappropriate content/users to
         moderators.
     """
 
@@ -688,14 +741,19 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         ContentType,
         on_delete=models.CASCADE,
         limit_choices_to={"app_label": "pulsifi", "model__in": settings.REPORTABLE_CONTENT_TYPE_NAMES},
-        verbose_name="Reported Object Type"
+        verbose_name="Reported Object Type",
+        help_text="Link to the content type of the reported_object instance (either :model:`pulsifi.user`, :model:`pulsifi.pulse` or :model:`pulsifi.reply`)."
     )
     """
-        Link to the content type of the reported_object instance (either User,
-        Pulse or Reply).
+        Link to the content type of the reported_object instance (either
+        :model:`pulsifi.user`, :model:`pulsifi.pulse` or
+        :model:`pulsifi.reply`).
     """
 
-    _object_id = models.PositiveIntegerField(verbose_name="Reported Object ID")
+    _object_id = models.PositiveIntegerField(
+        verbose_name="Reported Object ID",
+        help_text="ID number of the specific instance of the reported_object instance."
+    )
     """ ID number of the specific instance of the reported_object instance. """
 
     reported_object = GenericForeignKey(ct_field="_content_type", fk_field="_object_id")
@@ -708,9 +766,13 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Reporter",
-        related_name="submitted_report_set"
+        related_name="submitted_report_set",
+        help_text="Link to the :model:`pulsifi.user` object instance that created this report."
     )
-    """ Link to the User object instance that created this Report instance. """
+    """
+        Link to the :model:`pulsifi.user` object instance that created this
+        report.
+    """
 
     assigned_moderator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -718,14 +780,18 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         verbose_name="Assigned Moderator",
         related_name="moderator_assigned_report_set",
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
-        default=get_random_moderator_id
+        default=get_random_moderator_id,
+        help_text="Link to the :model:`pulsifi.user` object instance (from the set of moderators) that has been assigned to moderate this report."
     )
     """
-        Link to the User object instance (from the set of moderators) that has
-        been assigned to moderate this Report instance.
+        Link to the :model:`pulsifi.user` object instance (from the set of
+        moderators) that has been assigned to moderate this report.
     """
 
-    reason = models.TextField("Reason")
+    reason = models.TextField(
+        "Reason",
+        help_text="Longer textfield containing an detailed description of the reason for this report's existence."
+    )
     """
         Longer textfield containing an detailed description of the reason for
         this report's existence.
@@ -734,7 +800,8 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
     category = models.CharField(
         "Category",
         max_length=3,
-        choices=category_choices
+        choices=category_choices,
+        help_text="The category code that gives an overview as to the reason for the report."
     )
     """
         The category code that gives an overview as to the reason for the
@@ -745,11 +812,12 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         "Status",
         max_length=2,
         choices=status_choices,
-        default=IN_PROGRESS
+        default=IN_PROGRESS,
+        help_text="The status code that outlines the current position within the moderation cycle that this report is within."
     )
     """
         The status code that outlines the current position within the
-        moderation cycle that this Report instance is within.
+        moderation cycle that this report is within.
     """
 
     class Meta:
