@@ -21,8 +21,16 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
 # Logging settings
+# noinspection SpellCheckingInspection
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": False,
-    "root": {"level": env("LOG_LEVEL").upper()}
+    "formatters": {"default": {
+        "format": "{levelname} - {module}: {message}",
+        "style": "{"
+    }},
+    "handlers": {"console": {
+        "class": "logging.StreamHandler",
+        "formatter": "default"
+    }},
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL").upper()}
 }

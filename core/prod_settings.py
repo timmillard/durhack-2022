@@ -23,8 +23,16 @@ ALLOWED_ORIGINS = env("ALLOWED_ORIGINS")  # TODO: work out how to host site
 CSRF_TRUSTED_ORIGINS = ALLOWED_ORIGINS.copy()
 
 # Logging settings
+# noinspection SpellCheckingInspection
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": False,
-    "root": {"level": env("LOG_LEVEL").upper()}
+    "formatters": {"default": {
+        "format": "{levelname} - {module}: {message}",
+        "style": "{"
+    }},
+    "handlers": {"console": {
+        "class": "logging.StreamHandler",
+        "formatter": "default"
+    }},
+    "root": {"handlers": ["console"], "level": env("LOG_LEVEL").upper()}
 }

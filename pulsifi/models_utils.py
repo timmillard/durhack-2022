@@ -18,9 +18,6 @@ from pulsifi.exceptions import UpdateFieldNamesError
 logger = logging.getLogger(__name__)
 
 
-# TODO: Add help texts
-
-
 def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int | None:
     """
         Returns a random moderator's ID. (Returns None if no moderators and no
@@ -44,12 +41,13 @@ def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int
         # noinspection PyProtectedMember
         moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
 
-    if moderator_QS.exists():
+    try:
         return get_user_model().objects.get(
             id=random_choice(moderator_QS.values_list("id", flat=True))
         ).id
-
-    raise get_user_model().DoesNotExist("Random moderator cannot be chosen, because none exist.")
+    except get_user_model().DoesNotExist as e:
+        e.args = ("Random moderator cannot be chosen, because none exist.",)
+        raise e
 
 
 class Custom_Base_Model(Model):
@@ -109,12 +107,7 @@ class Custom_Base_Model(Model):
                 updated_model = self._meta.model.objects.get(id=self.id)
 
                 for field in update_fields:
-                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):
-                        """
-                            It is only possible to refresh related objects from
-                            one of these hard-coded field types.
-                        """
-
+                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: It is only possible to refresh related objects from one of these hard-coded field types
                         setattr(self, field.name, getattr(updated_model, field.name))
 
     def save(self, *args, **kwargs) -> None:
@@ -126,6 +119,7 @@ class Custom_Base_Model(Model):
         """
 
         self.full_clean()
+
         super().save(*args, **kwargs)
 
     def update(self, commit=True, base_save=False, clean=True, using: str = None, **kwargs) -> None:
@@ -146,19 +140,13 @@ class Custom_Base_Model(Model):
             setattr(self, key, value)
 
         if commit:
-            if base_save:
-                """
-                    Use the base_save method of the object (to skip additional
-                    save functionality) and only clean the object if specified.
-                """
-
+            if base_save:  # NOTE: Use the base_save method of the object (to skip additional save functionality) and only clean the object if specified
                 if using is not None:
                     self.base_save(clean, using)
                 else:
                     self.base_save(clean)
-            else:
-                """ Otherwise use the normal full save method of the object. """
 
+            else:  # NOTE: Otherwise use the normal full save method of the object
                 if using is not None:
                     self.save(using)
                 else:

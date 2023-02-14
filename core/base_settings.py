@@ -29,7 +29,8 @@ env = Env(
     MESSAGE_DISPLAY_LENGTH=(int, 15),
     FOLLOWER_COUNT_SCALING_FUNCTION=(str, "linear"),
     PASSWORD_SIMILARITY_TO_USER_ATTRIBUTES=(float, 0.627),
-    USERNAME_SIMILARITY_PERCENTAGE=(int, 87)
+    USERNAME_SIMILARITY_PERCENTAGE=(int, 87),
+    RESTRICTED_ADMIN_USERNAMES=(list, ["pulsifi"])
 )
 
 # Confirming that the supplied environment variable values for these settings are one of the valid choices
@@ -164,6 +165,7 @@ REPORTABLE_CONTENT_TYPE_NAMES = ["user", "pulse", "reply"]
 PULSIFI_ADMIN_COUNT = env("PULSIFI_ADMIN_COUNT")
 MESSAGE_DISPLAY_LENGTH = env("MESSAGE_DISPLAY_LENGTH")
 USERNAME_SIMILARITY_PERCENTAGE = env("USERNAME_SIMILARITY_PERCENTAGE")
+RESTRICTED_ADMIN_USERNAMES = set(env("RESTRICTED_ADMIN_USERNAMES"))
 FOLLOWER_COUNT_SCALING_FUNCTION = env(
     "FOLLOWER_COUNT_SCALING_FUNCTION"
 )  # TODO: Add function for how delete time of pulses & replies scales with follower count (y=log_2(x+1), y=x, y=xlog_2(x+1), y=2^x-1, y=(x+1)!-1)

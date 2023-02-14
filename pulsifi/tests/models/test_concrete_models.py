@@ -193,6 +193,28 @@ class User_Model_Tests(Base_TestCase):
 
         self.assertNotIn(user, user.followers.all())
 
+    def test_non_staff_cannot_have_restricted_admin_username(self):
+        for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES:
+            with self.assertRaises(ValidationError) as e:
+                CreateTestUserHelper.create_test_user(username=restricted_admin_username)
+            self.assertEqual(len(e.exception.error_dict), 1)
+            self.assertEqual(e.exception.error_dict.popitem()[0], "username")
+
+    def test_staff_cannot_have_restricted_admin_username_when_already_max_admin_count(self):
+        for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES:
+            CreateTestUserHelper.create_test_user(
+                username=f"{restricted_admin_username}test",
+                is_staff=True
+            )
+
+            with self.assertRaises(ValidationError) as e:
+                CreateTestUserHelper.create_test_user(
+                    username=restricted_admin_username,
+                    is_staff=True
+                )
+            self.assertEqual(len(e.exception.error_dict), 1)
+            self.assertEqual(e.exception.error_dict.popitem()[0], "username")
+
     def test_dots_removed_from_local_part_of_email(self):
         local_email = "test.local.email"
         domain_email = "test.domain.email.com"

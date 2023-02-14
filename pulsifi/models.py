@@ -3,7 +3,9 @@
 """
 
 import logging
+import operator
 from abc import abstractmethod
+from functools import reduce
 from typing import Final
 
 from allauth.account.models import EmailAddress
@@ -27,8 +29,6 @@ from .validators import ConfusableEmailValidator, ConfusableStringValidator, Exa
 
 logger = logging.getLogger(__name__)
 
-
-# TODO: Add inherited docstrings, add model reference links
 
 class _Visible_Reportable_Model(Custom_Base_Model):
     """
@@ -395,18 +395,21 @@ class User(_Visible_Reportable_Model, AbstractUser):
             on every field by self.clean_fields().
         """
 
-        if self.is_superuser:
+        if self.is_superuser:  # NOTE: is_staff should be True if is_superuser is True
             self.is_staff = self.is_superuser
 
-        if (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and "pulsifi" in self.username.lower():
+        query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
+        restricted_admin_users_count: int = get_user_model().objects.filter(reduce(operator.or_, query_restricted_admin_usernames)).count()
+        restricted_admin_username_in_username = any(restricted_admin_username in self.username.lower() for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
+        if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
-        if get_user_model().objects.filter(id=self.id).exists():
+        if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all of the usernames except for this user
             username_check_list: tuple[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
         else:
             username_check_list: tuple[str] = get_user_model().objects.values_list("username", flat=True)
 
-        for username in username_check_list:
+        for username in username_check_list:  # NOTE: Check this username is not too similar to any other username
             if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
 
@@ -417,19 +420,23 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
             extracted_domain = tldextract.extract(whole_domain)
 
-            local = local.replace(".", "")
+            local = local.replace(".", "")  # NOTE: Format the local part of the email address to remove dots
 
             if "+" in local:
-                local = local.split("+", maxsplit=1)[0]
+                local = local.split("+", maxsplit=1)[0]  # NOTE: Format the local part of the email address to remove any part after a plus symbol
 
-            if extracted_domain.domain == "googlemail":
+            if extracted_domain.domain == "googlemail":  # NOTE: Rename alias email domains (E.g. googlemail == gmail)
                 # noinspection PyArgumentList
                 extracted_domain = ExtractResult(subdomain=extracted_domain.subdomain, domain="gmail", suffix=extracted_domain.suffix)
 
-            elif (get_user_model().objects.filter(username__icontains="pulsifi").count() > settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and extracted_domain.domain == "pulsifi":
-                raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
+            else:
+                query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
+                restricted_admin_users_count: int = get_user_model().objects.filter(reduce(operator.or_, query_restricted_admin_usernames)).count()
+                restricted_admin_username_in_username = any(restricted_admin_username in extracted_domain.domain for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
+                if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The email domain can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
+                    raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
 
-            self.email = "@".join([local, extracted_domain.fqdn])
+            self.email = "@".join([local, extracted_domain.fqdn])  # NOTE: Replace the cleaned email address
 
         if EmailAddress.objects.filter(email=self.email).exclude(user=self).exists():
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
@@ -439,7 +446,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             if get_user_model().objects.filter(id=self.id).exists():
                 if not self.emailaddress_set.filter(verified=True).exists():
                     raise NO_EMAIL_ERROR
-            else:
+            else:  # NOTE: User cannot be verified upon initial creation because no verified EmailAddress objects will exist yet
                 raise NO_EMAIL_ERROR
 
         super().clean()
@@ -466,10 +473,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
         if self in self.followers.all():
             self.followers.remove(self)
 
-        if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():
-            old_primary_email_QS = EmailAddress.objects.filter(user=self, primary=True)
-            if old_primary_email_QS.exists():
-                old_primary_email = old_primary_email_QS.get()
+        if self_already_exists and not EmailAddress.objects.filter(email=self.email, user=self).exists():  # HACK: Checking for EmailAddress object existence (for primary email) cannot be done upon creation because EmailAddress objects are created after user save during signup flow
+            try:
+                old_primary_email = EmailAddress.objects.get(user=self, primary=True)  # NOTE: Make existing EmailAddress object marked as primary not primary
+            except EmailAddress.DoesNotExist:
+                pass
+            else:
                 old_primary_email.primary = False
                 old_primary_email.save()
 
@@ -484,14 +493,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
         index = 0
         while not self.is_staff and index < len(self.STAFF_GROUP_NAMES):
-            group_QS = Group.objects.filter(name=self.STAFF_GROUP_NAMES[index])
-            if group_QS.exists():
-                group = group_QS.get()
-                if group in self.groups.all():
+            try:
+                if Group.objects.get(name=self.STAFF_GROUP_NAMES[index]) in self.groups.all():
                     self.update(is_staff=True)
-            else:
+            except Group.DoesNotExist:
                 logger.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
-            index += 1
+            finally:
+                index += 1
 
     def ensure_superuser_in_admin_group(self) -> None:
         """
@@ -501,13 +509,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
         """
 
         if self.is_superuser:
-            admin_group_QS = Group.objects.filter(name="Admins")
-            if admin_group_QS.exists():
-                admin_group = admin_group_QS.get()
+            try:
+                admin_group = Group.objects.get(name="Admins")
+            except Group.DoesNotExist:
+                logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
+            else:
                 if admin_group not in self.groups.all():
                     self.groups.add(admin_group)
-            else:
-                logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
 
     def get_absolute_url(self) -> str:
         """ Returns the canonical URL for this object instance. """
@@ -557,10 +565,11 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         self.full_clean()
 
-        self_QS = Pulse.objects.filter(id=self.id)
-
-        if self_QS.exists():
-            old_visible: bool = self_QS.get().visible
+        try:
+            old_visible = Pulse.objects.get(id=self.id).visible
+        except Pulse.DoesNotExist:
+            pass
+        else:
             if not self.visible and old_visible:
                 for reply in self.full_depth_replies:
                     reply.update(base_save=True, visible=False)
@@ -646,8 +655,8 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         replies = set()
         reply: "Reply"
         for reply in self.reply_set.all():
-            replies.add(reply)
-            replies.update(reply.full_depth_replies)
+            replies.add(reply)  # NOTE: Add the current level :model:`pulsifi.reply` objects to the set
+            replies.update(reply.full_depth_replies)  # NOTE: Add the child :model:`pulsifi.reply` objects recursively to the set
         return replies
 
     class Meta:
@@ -884,7 +893,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                     elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
                         raise REPORT_ADMIN_ERROR
 
-                if self.assigned_moderator_id == self._object_id:
+                if self.assigned_moderator_id == self._object_id:  # NOTE: Attempt to pick a different moderator if the default is the reported user
                     try:
                         self.assigned_moderator_id = get_random_moderator_id([self._object_id])
                     except get_user_model().DoesNotExist as e:
@@ -894,7 +903,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
             e.args = ("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.",)
             raise e
 
-        if self.assigned_moderator == self.reporter:
+        if self.assigned_moderator == self.reporter:  # NOTE: Attempt to pick a different moderator if the default is the reporter
             try:
                 # noinspection PyTypeChecker
                 self.assigned_moderator_id = get_random_moderator_id([self.reporter_id])
