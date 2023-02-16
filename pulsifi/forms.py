@@ -18,7 +18,7 @@ class Login_Form(Base_LoginForm):
         (see https://docs.djangoproject.com/en/4.1/topics/forms/#reusable-form-templates).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.fields["login"].label = "Username / Email Address"
@@ -48,7 +48,7 @@ class Signup_Form(Base_SignupForm):
         (see https://docs.djangoproject.com/en/4.1/topics/forms/#reusable-form-templates).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.fields["email"].label = "Email Address"
@@ -87,6 +87,7 @@ class Signup_Form(Base_SignupForm):
 class Pulse_Form(forms.ModelForm):
     """ Form for creating a new Pulse """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = Pulse
         fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field)
@@ -95,6 +96,7 @@ class Pulse_Form(forms.ModelForm):
 class Reply_Form(forms.ModelForm):
     """ Form for creating a new reply. """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = Reply
         fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field), add parent object field
@@ -103,6 +105,7 @@ class Reply_Form(forms.ModelForm):
 class Bio_Form(forms.ModelForm):
     """ Form for updating a user's bio. """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = get_user_model()
         fields = ("bio",)

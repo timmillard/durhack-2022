@@ -6,8 +6,8 @@ from django.utils.functional import lazy
 
 
 def reverse_with_get_params(*args, **kwargs) -> str:
-    get_params = kwargs.pop("get_params", {})
-    url = reverse(*args, **kwargs)
+    get_params: dict[str, ...] = kwargs.pop("get_params", {})
+    url: str = reverse(*args, **kwargs)
     if not get_params:
         return url
 

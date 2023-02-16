@@ -4,7 +4,7 @@
 
 import logging
 from random import choice as random_choice
-from typing import Any, Collection, Iterable
+from typing import Collection, Iterable
 
 from django.apps import apps
 from django.conf import settings
@@ -133,7 +133,6 @@ class Custom_Base_Model(Model):
         """
 
         key: str
-        value: Any
         for key, value in kwargs.items():
             if key not in self.get_proxy_field_names():  # NOTE: Given field name must be a proxy field name or an actual field name
                 try:
