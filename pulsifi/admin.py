@@ -1,6 +1,7 @@
 """
     Admin configurations for models in pulsifi app.
 """
+
 import logging
 from typing import Sequence, Type
 
@@ -172,16 +173,14 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
             list_filters, only if they don't already exist.
         """
 
-        list_filter: set[Type[admin.ListFilter]] = set(super().get_list_filter(request))
+        list_filter: list[Type[admin.ListFilter]] = list(super().get_list_filter(request))
 
-        list_filter.update(
-            (
-                UserContentVisibleListFilter,
-                HasReportAboutObjectListFilter,
-                LikesListFilter,
-                DislikesListFilter,
-                DirectRepliesListFilter
-            )
+        list_filter[0:0] = (
+            UserContentVisibleListFilter,
+            HasReportAboutObjectListFilter,
+            LikesListFilter,
+            DislikesListFilter,
+            DirectRepliesListFilter
         )
 
         return tuple(list_filter)
@@ -244,7 +243,7 @@ class Pulse_Admin(_User_Content_Admin):
 
         try:
             list_display.remove("display_original_pulse")
-        except KeyError:
+        except ValueError:
             pass
 
         return tuple(list_display)
@@ -262,7 +261,7 @@ class Pulse_Admin(_User_Content_Admin):
             fields_2 = list(fieldsets[2][1]["fields"])
             try:
                 fields_2.remove("display_date_time_created")
-            except KeyError:
+            except ValueError:
                 pass
             else:
                 fieldsets[2][1]["fields"] = tuple(fields_2)
@@ -349,7 +348,7 @@ class Reply_Admin(_User_Content_Admin):
             fields_1 = list(fieldsets[1][1]["fields"])
             try:
                 fields_1.remove("display_original_pulse")
-            except KeyError:
+            except ValueError:
                 pass
             else:
                 fieldsets[1][1]["fields"] = tuple(fields_1)
@@ -357,7 +356,7 @@ class Reply_Admin(_User_Content_Admin):
             fields_3 = list(fieldsets[3][1]["fields"])
             try:
                 fields_3.remove("display_date_time_created")
-            except KeyError:
+            except ValueError:
                 pass
             else:
                 fieldsets[3][1]["fields"] = fields_3
@@ -415,9 +414,9 @@ class Reply_Admin(_User_Content_Admin):
             list_filters, only if they don't already exist.
         """
 
-        list_filter: set[Type[admin.ListFilter]] = set(super().get_list_filter(request))
+        list_filter: list[Type[admin.ListFilter]] = list(super().get_list_filter(request))
 
-        list_filter.add(RepliedObjectTypeListFilter)
+        list_filter.insert(2, RepliedObjectTypeListFilter)
 
         return tuple(list_filter)
 
@@ -491,7 +490,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
 
             try:
                 fields.remove("display_date_time_created")
-            except KeyError:
+            except ValueError:
                 pass
 
         else:
@@ -518,15 +517,13 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
             list_filters, only if they don't already exist.
         """
 
-        list_filter: set[Type[admin.ListFilter]] = set(super().get_list_filter(request))
+        list_filter: list[Type[admin.ListFilter]] = list(super().get_list_filter(request))
 
-        list_filter.update(
-            (
-                ReportedObjectTypeListFilter,
-                AssignedModeratorListFilter,
-                CategoryListFilter,
-                StatusListFilter
-            )
+        list_filter[0:0] = (
+            ReportedObjectTypeListFilter,
+            AssignedModeratorListFilter,
+            CategoryListFilter,
+            StatusListFilter
         )
 
         return tuple(list_filter)
