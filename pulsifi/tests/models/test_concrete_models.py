@@ -1,6 +1,7 @@
 """
     Automated test suite for concrete models in pulsifi app.
 """
+
 from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -37,7 +38,6 @@ class User_Model_Tests(Base_TestCase):
                 getattr(user, field.name),
                 getattr(old_user, field.name)
             )
-
             user.refresh_from_db()
             self.assertEqual(
                 getattr(user, field.name),

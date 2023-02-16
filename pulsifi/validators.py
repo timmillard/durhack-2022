@@ -178,21 +178,21 @@ class ReservedNameValidator:
         structure.
     """
 
-    def __init__(self, reserved_names: Collection[str] = None):
+    def __init__(self, reserved_names: Collection[str] = None) -> None:
         if reserved_names is None:
             reserved_names: set[str] = self.DEFAULT_SPECIAL_HOSTNAMES | self.DEFAULT_PROTOCOL_HOSTNAMES | self.DEFAULT_CA_ADDRESSES | self.DEFAULT_RFC_2142 | self.DEFAULT_NOREPLY_ADDRESSES | self.DEFAULT_SENSITIVE_FILENAMES | self.DEFAULT_OTHER_SENSITIVE_NAMES
         else:
             reserved_names = set(reserved_names)
         self.reserved_names = reserved_names
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 
         if value in self.reserved_names or value.startswith(".well-known"):
             raise ValidationError("This name is reserved and cannot be registered.", code="invalid")
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.reserved_names == other.reserved_names
 
 
@@ -249,14 +249,15 @@ class FreeEmailValidator:
         "letpays.com"
     }
 
-    def __init__(self, free_email_domains: Collection[str] = None):
+    def __init__(self, free_email_domains: Collection[str] = None) -> None:
         if free_email_domains is None:
             free_email_domains: set[str] = self.FREE_EMAIL_DOMAINS
         else:
             free_email_domains = set(free_email_domains)
+
         self.free_email_domains = free_email_domains
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 
@@ -269,7 +270,7 @@ class FreeEmailValidator:
         if domain in self.free_email_domains:
             raise ValidationError("Registration using free email addresses is prohibited. Please supply a different email address.", code="invalid")
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.free_email_domains == other.free_email_domains
 
 
@@ -279,7 +280,7 @@ class ExampleEmailValidator:
 
     DEFAULT_EXAMPLE_EMAIL_DOMAINS = {"example", "test"}
 
-    def __init__(self, example_email_domains: Collection[str] = None):
+    def __init__(self, example_email_domains: Collection[str] = None) -> None:
         if example_email_domains is None:
             example_email_domains: set[str] = self.DEFAULT_EXAMPLE_EMAIL_DOMAINS
         else:
@@ -287,7 +288,7 @@ class ExampleEmailValidator:
 
         self.example_email_domains = example_email_domains
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 
@@ -309,7 +310,7 @@ class PreexistingEmailTLDValidator:
         other user's primary email address).
     """
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 
@@ -320,9 +321,7 @@ class PreexistingEmailTLDValidator:
         domain: str
         local, domain = value.split("@", maxsplit=1)
 
-        if get_user_model().objects.exclude(email=value).filter(
-                email__icontains=f"{local}@{tldextract.extract(domain).domain}"
-        ).exists():
+        if get_user_model().objects.exclude(email=value).filter(email__icontains=f"{local}@{tldextract.extract(domain).domain}").exists():
             raise ValidationError(f"The Email Address: {value} is already in use by another user.", code="unique")
 
 
@@ -336,7 +335,7 @@ class ConfusableStringValidator:
         file.
     """
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 
@@ -354,7 +353,7 @@ class ConfusableEmailValidator:
         Confusable Characters file.
     """
 
-    def __call__(self, value: str):
+    def __call__(self, value: str) -> None:
         if not isinstance(value, str):
             return
 

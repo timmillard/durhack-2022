@@ -84,7 +84,7 @@ class Custom_Base_Model(Model):
             "deep" argument.
         """
 
-        if fields is not None and not isinstance(fields, set):
+        if fields is not None and not isinstance(fields, set):  # NOTE: Remove duplicate field names from fields parameter
             fields = set(fields)
 
         super().refresh_from_db(using=using, fields=fields)
@@ -92,15 +92,15 @@ class Custom_Base_Model(Model):
         if fields is None:
             fields = set()
 
-        if deep:
+        if deep:  # NOTE: Refresh any related fields/objects if requested
             model_fields: set[Field] = {model_field for model_field in self._meta.get_fields() if model_field.name != "+"}
 
-            if fields:
+            if fields:  # NOTE: Limit the fields to update by the provided list of field names
                 update_fields: set[Field] = {update_field for update_field in model_fields if update_field.name in fields}
             else:
                 update_fields = model_fields
 
-            if not update_fields:
+            if not update_fields:  # NOTE: Raise exception if none of the provided field names are valid fields for this model
                 raise UpdateFieldNamesError(model_fields=model_fields, update_field_names=fields)
 
             else:
@@ -109,6 +109,9 @@ class Custom_Base_Model(Model):
                 for field in update_fields:
                     if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: It is only possible to refresh related objects from one of these hard-coded field types
                         setattr(self, field.name, getattr(updated_model, field.name))
+
+                    elif field.is_relation and logger.getEffectiveLevel() == logging.DEBUG:
+                        logger.warning(f"Field {field.name}{repr(field)} could not be refreshed from {repr(updated_model)} to {repr(self)}.")
 
     def save(self, *args, **kwargs) -> None:
         """
@@ -132,7 +135,7 @@ class Custom_Base_Model(Model):
         key: str
         value: Any
         for key, value in kwargs.items():
-            if key not in self.get_proxy_field_names():
+            if key not in self.get_proxy_field_names():  # NOTE: Given field name must be a proxy field name or an actual field name
                 try:
                     self._meta.get_field(key)
                 except FieldDoesNotExist:

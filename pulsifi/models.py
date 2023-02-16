@@ -6,7 +6,7 @@ import logging
 import operator
 from abc import abstractmethod
 from functools import reduce
-from typing import Final
+from typing import Final, Iterable
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
@@ -405,9 +405,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
         if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all of the usernames except for this user
-            username_check_list: tuple[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
+            username_check_list: Iterable[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
         else:
-            username_check_list: tuple[str] = get_user_model().objects.values_list("username", flat=True)
+            username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
 
         for username in username_check_list:  # NOTE: Check this username is not too similar to any other username
             if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
