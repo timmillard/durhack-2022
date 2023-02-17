@@ -159,10 +159,12 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         readonly_fields: set[str] = set(super().get_readonly_fields(request, obj))
 
         readonly_fields.update(
-            "display_likes",
-            "display_dislikes",
-            "display_direct_replies_count",
-            "display_full_depth_replies_count"
+            (
+                "display_likes",
+                "display_dislikes",
+                "display_direct_replies_count",
+                "display_full_depth_replies_count"
+            )
         )
 
         return tuple(readonly_fields)
@@ -280,7 +282,7 @@ class Pulse_Admin(_User_Content_Admin):
                 temp_fieldsets.remove(
                     ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]})
                 )
-            except KeyError:
+            except ValueError:
                 pass
             else:
                 fieldsets = tuple(temp_fieldsets)
@@ -375,7 +377,7 @@ class Reply_Admin(_User_Content_Admin):
                 temp_fieldsets.remove(
                     ("Replies", {"fields": [("display_direct_replies_count", "display_full_depth_replies_count")]})
                 )
-            except KeyError:
+            except ValueError:
                 pass
             else:
                 fieldsets = tuple(temp_fieldsets)
