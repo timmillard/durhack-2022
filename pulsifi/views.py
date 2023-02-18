@@ -140,6 +140,7 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
                 "site_name": current_site.name
             }
         )  # TODO: check whether these values are needed in template rendering & remove them if unnecessary
+
         return context
 
 
@@ -218,6 +219,7 @@ class Create_Pulse_View(LoginRequiredMixin, CreateView):
 class Signup_POST_View(Base_SignupView):
     http_method_names = ["post"]
     redirect_authenticated_user = True
+    prefix = "signup"
 
     def form_invalid(self, form):
         # TODO: send errors as messages
@@ -235,6 +237,7 @@ class Signup_POST_View(Base_SignupView):
 class Login_POST_View(Base_LoginView):
     http_method_names = ["post"]
     redirect_authenticated_user = True
+    prefix = "login"
 
     def form_invalid(self, form):
         # TODO: send errors as messages

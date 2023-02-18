@@ -2,7 +2,6 @@
     Admin configurations for models in pulsifi app.
 """
 
-import logging
 from typing import Sequence, Type
 
 from django.contrib import admin
@@ -21,8 +20,6 @@ admin.site.site_header = "Pulsifi Administration"
 admin.site.site_title = "Pulsifi Admin"
 admin.site.index_title = "Whole Site Overview"
 admin.site.empty_value_display = "- - - - -"
-
-logger = logging.getLogger(__name__)
 
 
 class _Custom_Base_Admin(admin.ModelAdmin):

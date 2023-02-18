@@ -1,13 +1,9 @@
-import logging
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 
 from .models import Pulse, Reply, User, _User_Generated_Content_Model
-
-logger = logging.getLogger(__name__)
 
 
 def ready() -> None:
