@@ -22,14 +22,16 @@
                 <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
                 <a class="nav-link px-3 text-white" href="">Profile</a>
                 </div>
+                </div>   <!--TODO: add avatar-->
+                <div class="right">
                     <form method="post" action="{% url 'account_logout' %}">
                       {% csrf_token %}
                       {% if redirect_field_value %}
                       <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
                       {% endif %}
-                      <button type="submit">Sign Out</button>
+                      <button type="submit" class="btn w3-purple" style="float: right;" >Sign Out</button>
                     </form>
-                </div>   <!--TODO: add avatar-->
+                </div>
             </nav>
 
 
