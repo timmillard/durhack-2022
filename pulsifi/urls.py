@@ -22,6 +22,5 @@ urlpatterns = [
     path("create-new-pulse", views.Create_Pulse_View.as_view(), name="create_pulse"),
     path("signup/", views.Signup_POST_View.as_view(), name="signup_POST"),
     path("login/", views.Login_POST_View.as_view(), name="login_POST"),
-    path('logout/', LogoutView.as_view(), name='account_logout'),
-    # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
+    # TODO: password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view, Popup for are you sure you want to logout
 ]
