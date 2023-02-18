@@ -39,13 +39,16 @@ def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int
         # noinspection PyProtectedMember
         moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
 
+    NO_MODERATORS_EXIST_ERROR = "Random moderator cannot be chosen, because none exist."
     try:
         return get_user_model().objects.get(
             id=random_choice(moderator_QS.values_list("id", flat=True))
         ).id
     except get_user_model().DoesNotExist as e:
-        e.args = ("Random moderator cannot be chosen, because none exist.",)
+        e.args = (NO_MODERATORS_EXIST_ERROR,)
         raise e
+    except IndexError as e:
+        raise get_user_model().DoesNotExist(NO_MODERATORS_EXIST_ERROR) from e
 
 
 class Custom_Base_Model(Model):
