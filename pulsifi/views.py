@@ -2,7 +2,7 @@
     Views in pulsifi app.
 """
 
-from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView, LogoutView as Base_LogoutView
+from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -73,7 +73,7 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
 
 
 class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal), prevent users with >3 in progress reports or >0 completed reports from logging in (with reason page)
-    template_name = "pulsifi/home.html"  # BUG: errors raised by the model's clean() method are not caught and turned to formatted error messages (they propagate up and cause a server error 500
+    template_name = "pulsifi/home.html"
     http_method_names = ["get"]
 
     def dispatch(self, request, *args, **kwargs):
@@ -222,7 +222,6 @@ class Signup_POST_View(Base_SignupView):
     prefix = "signup"
 
     def form_invalid(self, form):
-        # TODO: send errors as messages
         if "signup_form" in self.request.session:
             del self.request.session["signup_form"]
 
@@ -240,7 +239,6 @@ class Login_POST_View(Base_LoginView):
     prefix = "login"
 
     def form_invalid(self, form):
-        # TODO: send errors as messages
         if "login_form" in self.request.session:
             del self.request.session["login_form"]
 
@@ -250,7 +248,6 @@ class Login_POST_View(Base_LoginView):
         }
 
         return redirect(settings.LOGIN_URL)
-
 
 # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
 

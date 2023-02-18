@@ -1,7 +1,8 @@
 """
     core URL Configuration.
 """
-
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path, reverse
 from django.views.generic.base import RedirectView
@@ -36,7 +37,7 @@ class Admin_Docs_Redirect_View(RedirectView):
         return url
 
 
-urlpatterns = [
+_urlpatterns_list = [
     path("avatar/", include("avatar.urls")),
     path("admin/doc/", include("django.contrib.admindocs.urls")),
     path("admin/docs/", Admin_Docs_Redirect_View.as_view(), name="admindocs_redirect"),
@@ -46,3 +47,5 @@ urlpatterns = [
     path("", include("pulsifi.urls")),
     path("", RedirectView.as_view(pattern_name="pulsifi:home"), name="default")
 ]
+
+urlpatterns = _urlpatterns_list + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

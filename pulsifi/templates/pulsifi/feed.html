@@ -2,6 +2,7 @@
 <html lang="en-GB">
 
     {% load static %}
+    {% load avatar_tags %}
 
     <head>  <!--TODO: favicons-->
         <meta charset="utf-8"/>
@@ -27,13 +28,13 @@
                 </div>
                 </div>
                 <div class="right">
-                    <form method="post" action="{% url 'account_logout' %}">
-                      {% csrf_token %}
-                      {% if redirect_field_value %}
-                      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
-                      {% endif %}
-                      <button type="submit" class="btn w3-purple" style="float: right;" >Sign Out</button>
-                    </form>
+                <form method="post" action="{% url 'account_logout' %}">
+                    {% csrf_token %}
+                    {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+                    {% endif %}
+                    <button type="submit" class="btn w3-purple" style="float: right;">Sign Out</button>
+                </form>
                 </div>
             </nav>
             <!--TODO: add search bar for accounts-->
@@ -64,7 +65,8 @@
                 <li class="clearfix">
                     <div class="float-left">
                     <div class="flex-shrink-0">
-                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">
+                    {#                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image" class="img-fluid" style="width: 100px; border-radius: 100px;">#}
+                    {% avatar user %}
                     <!--TODO: add avatar-->
                     </div>
                     </div>
@@ -151,7 +153,7 @@
                     <a href="#" class="btn btn-sm btn-danger">Dislike</a>
                     <a href="#" class="btn btn-sm btn-secondary">Reply</a>
 
-            </li>
+                </li>
             </ul>
             </div>
             </div>
@@ -219,6 +221,7 @@
                             start = Date.now() + 1000;
                         }
                     }
+
                     // we don't want to wait a full second before the timer starts
                     timer();
                     setInterval(timer, 1000);
@@ -243,4 +246,4 @@
                     crossorigin="anonymous"></script>
             <script src="{% static 'pulsifi/js/feed.js' %}"></script>
         </body>
-            </main>
+    </main>

@@ -112,6 +112,7 @@ ACCOUNT_FORMS = {
     "signup": "pulsifi.forms.Signup_Form"
 }
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
+AVATAR_AUTO_GENERATE_SIZES = (100, 150)
 # noinspection SpellCheckingInspection
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
