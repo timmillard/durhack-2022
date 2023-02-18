@@ -26,6 +26,15 @@
                 <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
                 </div>
                 </div>
+                <div class="right">
+                    <form method="post" action="{% url 'account_logout' %}">
+                      {% csrf_token %}
+                      {% if redirect_field_value %}
+                      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+                      {% endif %}
+                      <button type="submit" class="btn w3-purple" style="float: right;" >Sign Out</button>
+                    </form>
+                </div>
             </nav>
             <!--TODO: add search bar for accounts-->
             <div class="mx-auto" style="width: 900px;">

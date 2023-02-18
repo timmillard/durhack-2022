@@ -20,9 +20,18 @@
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
                 <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
-                <a class="nav-link px-3 text-white" href="">Profile</a>
+                <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
                 </div>
                 </div>   <!--TODO: add avatar-->
+                <div class="right">
+                    <form method="post" action="{% url 'account_logout' %}">
+                      {% csrf_token %}
+                      {% if redirect_field_value %}
+                      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+                      {% endif %}
+                      <button type="submit" class="btn w3-purple" style="float: right;" >Sign Out</button>
+                    </form>
+                </div>
             </nav>
 
 
@@ -37,11 +46,9 @@
                  style="width: 180px; border-radius: 100px;">
             </div>
             <div class="flex-grow-1 justify-content-end rounded-3">
-            <h5 class="mb-1">@padgriffin</h5>   <!--TODO: use get_absolute_url()-->
+            <h5 class="mb-1">@{{ user.get_username }}</h5>   <!--TODO: use get_absolute_url()-->
             <div class="p-4" style="background-color: #ffff;">   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
-            <p class="small text-muted mb-1">He/Him | Avatar by @itssugarmorning
-                                             | ADHD | Birds! </p>
-            <p class="small text-muted mb-1"># righttorepair</p>
+            <p class="small text-muted mb-1">{{ user.bio }}</p>
             </div>
             <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                  style="background-color: #ffff;">
