@@ -399,7 +399,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
             self.is_staff = self.is_superuser
 
         query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
-        restricted_admin_users_count: int = get_user_model().objects.filter(reduce(operator.or_, query_restricted_admin_usernames)).count()
+        restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
+            reduce(
+                operator.or_,
+                query_restricted_admin_usernames
+            )
+        ).count()
         restricted_admin_username_in_username = any(restricted_admin_username in self.username.lower() for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
         if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
@@ -431,7 +436,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
             else:
                 query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
-                restricted_admin_users_count: int = get_user_model().objects.filter(reduce(operator.or_, query_restricted_admin_usernames)).count()
+                restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
+                    reduce(
+                        operator.or_,
+                        query_restricted_admin_usernames
+                    )
+                ).count()
                 restricted_admin_username_in_username = any(restricted_admin_username in extracted_domain.domain for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
                 if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The email domain can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
                     raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")

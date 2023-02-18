@@ -10,7 +10,9 @@ from .models import Pulse, Reply, User, _User_Generated_Content_Model
 logger = logging.getLogger(__name__)
 
 
-def ready():
+def ready() -> None:
+    """ Initialise this module when importing & starting signal listeners. """
+
     pass
 
 
@@ -18,6 +20,8 @@ def ready():
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.liked_by.through)
 @receiver(m2m_changed, sender=_User_Generated_Content_Model.disliked_by.through)
 def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: set[int], **kwargs) -> None:
+    """  """
+
     if isinstance(instance, _User_Generated_Content_Model) and not reverse:
         user: User
         for user in model.objects.filter(id__in=pk_set):
