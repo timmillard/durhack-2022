@@ -42,7 +42,14 @@
             <div class="card-body p-2 justify-content-start">
             <div class="d-flex text-black">
             <div class="flex-shrink-0">
-                {% avatar user class="img-fluid" style="width: 100px; border-radius: 100px;" %}
+                {%  if request.user == user %}
+                      <form enctype="multipart/form-data" method="POST" action="{% url 'avatar_add' %}">
+                        {{ upload_avatar_form.as_p }}
+                        <p>{% csrf_token %}<input type="submit" value="update pfp" /></p>
+                    </form>
+                {%  else %}
+                    {% avatar user class="img-fluid" style="width: 100px; border-radius: 100px;" %}
+                {% endif %}
             </div>
             <div class="flex-grow-1 justify-content-end rounded-3">
             <h5 class="mb-1">@{{ user.get_username }}</h5>   <!--TODO: use get_absolute_url()-->

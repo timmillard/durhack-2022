@@ -208,6 +208,26 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailVie
         else:
             return HttpResponseBadRequest()
 
+    def get_context_data(self, **kwargs):
+        context = super(Specific_Account_View, self).get_context_data(**kwargs)
+
+        if "avatar_form" not in kwargs and "avatar_form" not in self.request.session:
+            context["avatar_form"] = Login_Form(prefix="login")
+
+        elif "avatar_form" in kwargs:
+            context["avatar_form"] = kwargs["avatar_form"]
+
+        elif "avatar_form" in self.request.session:
+            login_form = Login_Form(
+                data=self.request.session["avatar_form"]["data"],
+                request=self.request,
+                prefix="avatar"
+            )
+            login_form.is_valid()
+
+            context["avatar_form"] = login_form
+
+            del self.request.session["avatar_form"]
 
 # TODO: profile search view, leaderboard view, report views & moderator views
 
