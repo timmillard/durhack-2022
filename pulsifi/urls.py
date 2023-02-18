@@ -1,14 +1,15 @@
 """
     pulsifi URL configuration.
 """
+from typing import Sequence
 
-from django.urls import path
+from django.urls import URLPattern, path
 
 from . import views
 
 app_name = "pulsifi"
 
-urlpatterns = [
+urlpatterns: Sequence[URLPattern] = [
     path("", views.Home_View.as_view(), name="home"),
     path("feed/", views.Feed_View.as_view(), name="feed"),
     # TODO: user search url, leaderboard url
