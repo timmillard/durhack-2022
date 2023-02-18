@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import RedirectURLMixin
-from django.contrib.sites.shortcuts import get_current_site
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
 from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
@@ -132,14 +131,7 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
             if self.request.GET["action"] in ("login", "signup") and self.redirect_field_name in self.request.GET:
                 context["redirect_field_value"] = self.request.GET[self.redirect_field_name]
 
-        current_site = get_current_site(self.request)
-        context.update(
-            {
-                "redirect_field_name": self.redirect_field_name,
-                "site": current_site,
-                "site_name": current_site.name
-            }
-        )  # TODO: check whether these values are needed in template rendering & remove them if unnecessary
+        context["redirect_field_name"] = self.redirect_field_name
 
         return context
 
@@ -249,7 +241,7 @@ class Login_POST_View(Base_LoginView):
 
         return redirect(settings.LOGIN_URL)
 
-# TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
+# TODO: password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view, logout confirmation popup (toast)
 
 # TODO: 2fa stuff!
 

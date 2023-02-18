@@ -251,7 +251,7 @@ class FreeEmailValidator:
 
     def __init__(self, free_email_domains: Collection[str] = None) -> None:
         if free_email_domains is None:
-            free_email_domains: set[str] = self.FREE_EMAIL_DOMAINS
+            free_email_domains: set[str] = self.DEFAULT_FREE_EMAIL_DOMAINS
         else:
             free_email_domains = set(free_email_domains)
 
