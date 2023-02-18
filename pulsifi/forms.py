@@ -5,6 +5,7 @@
 from allauth.account.forms import LoginForm as Base_LoginForm, SignupForm as Base_SignupForm
 from django import forms
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 from pulsifi.models import Pulse, Reply
 
@@ -82,6 +83,23 @@ class Signup_Form(Base_SignupForm):
         )
 
         self.label_suffix = ""
+
+    def clean(self):
+        super().clean()
+        try:
+            get_user_model()(
+                username=self.cleaned_data.get("username"),
+                password=self.cleaned_data.get("password1"),
+                email=self.cleaned_data.get("email")
+            ).full_clean()
+        except ValidationError as e:
+            for field_name, errors in e.error_dict.items():
+                if field_name == "__all__":
+                    self.add_error(errors)
+                else:
+                    self.add_error(field_name, errors)
+
+        return self.cleaned_data
 
 
 class Pulse_Form(forms.ModelForm):
