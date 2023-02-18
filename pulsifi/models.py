@@ -1,7 +1,6 @@
 """
     Models in pulsifi app.
 """
-
 import logging
 import operator
 from abc import abstractmethod
@@ -26,8 +25,6 @@ from tldextract.tldextract import ExtractResult
 
 from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_moderator_id
 from .validators import ConfusableEmailValidator, ConfusableStringValidator, ExampleEmailValidator, FreeEmailValidator, HTML5EmailValidator, PreexistingEmailTLDValidator, ReservedNameValidator
-
-logger = logging.getLogger(__name__)
 
 
 class _Visible_Reportable_Model(Custom_Base_Model):
@@ -507,7 +504,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 if Group.objects.get(name=self.STAFF_GROUP_NAMES[index]) in self.groups.all():
                     self.update(is_staff=True)
             except Group.DoesNotExist:
-                logger.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
+                logging.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
             finally:
                 index += 1
 
@@ -522,7 +519,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             try:
                 admin_group = Group.objects.get(name="Admins")
             except Group.DoesNotExist:
-                logger.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
+                logging.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
             else:
                 if admin_group not in self.groups.all():
                     self.groups.add(admin_group)
