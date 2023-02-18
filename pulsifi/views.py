@@ -2,7 +2,7 @@
     Views in pulsifi app.
 """
 
-from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView
+from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView, LogoutView as Base_LogoutView
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -250,6 +250,7 @@ class Login_POST_View(Base_LoginView):
         }
 
         return redirect(settings.LOGIN_URL)
+
 
 # TODO: logout view, password change view, confirm email view, manage emails view, password set after not having one because of social login view, forgotten password reset view, forgotten password reset success view
 
