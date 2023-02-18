@@ -46,11 +46,9 @@
                  style="width: 180px; border-radius: 100px;">
             </div>
             <div class="flex-grow-1 justify-content-end rounded-3">
-            <h5 class="mb-1">@padgriffin</h5>   <!--TODO: use get_absolute_url()-->
+            <h5 class="mb-1">@{{ user.get_username }}</h5>   <!--TODO: use get_absolute_url()-->
             <div class="p-4" style="background-color: #ffff;">   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
-            <p class="small text-muted mb-1">He/Him | Avatar by @itssugarmorning
-                                             | ADHD | Birds! </p>
-            <p class="small text-muted mb-1"># righttorepair</p>
+            <p class="small text-muted mb-1">{{ user.bio }}</p>
             </div>
             <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                  style="background-color: #ffff;">
