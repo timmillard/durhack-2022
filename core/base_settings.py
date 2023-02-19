@@ -113,9 +113,9 @@ ACCOUNT_FORMS = {
 }
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
 AVATAR_PROVIDERS = (
-    'avatar.providers.PrimaryAvatarProvider',
-    'pulsifi.avatar_providers.DiscordAvatarProvider',
-    'avatar.providers.GravatarAvatarProvider'
+    "avatar.providers.PrimaryAvatarProvider",
+    "pulsifi.avatar_providers.DiscordAvatarProvider",
+    "avatar.providers.GravatarAvatarProvider"
 )
 AVATAR_AUTO_GENERATE_SIZES = (100, 150)
 # noinspection SpellCheckingInspection
