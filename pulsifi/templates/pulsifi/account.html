@@ -1,6 +1,7 @@
 <!DOCTYPE html>  <!--TODO: load from base.html-->
 <html lang="en-GB">
     {% load static %}
+    {%  load avatar_tags %}
     <head>  <!--TODO: favicons-->
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -42,9 +43,7 @@
                         <div class="card-body p-2 justify-content-start">
                             <div class="d-flex text-black">
                                 <div class="flex-shrink-0">
-                                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}"
-                                         alt="Generic placeholder image" class="img-fluid"
-                                         style="width: 180px; border-radius: 100px;">
+                                    {% avatar user 100 style="border-radius: 100px;"  %}
                                 </div>
                                 <div class="flex-grow-1 justify-content-end rounded-3">
                                     <h5 class="mb-1">@{{ user.get_username }}</h5>   <!--TODO: use get_absolute_url()-->
