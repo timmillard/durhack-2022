@@ -142,10 +142,25 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TOD
     context_object_name = "pulse_list"
     page_template = "pulsifi/feed_pagination_snippet.html"
     model = Pulse
+    object_list: QuerySet[Pulse]
 
     def get(self, request, *args, **kwargs):
+        self.object_list = self.get_queryset()
+
+        allow_empty = self.get_allow_empty()
+        if not allow_empty and len(self.object_list) == 0:
+            msg = _('Empty list and ``%(class_name)s.allow_empty`` is False.')
+            raise Http404(msg % {'class_name': self.__class__.__name__})
+
+        context = self.get_context_data(
+            **{
+                self.context_object_name: self.object_list,
+                "pagination_snippet": self.page_template
+            }
+        )
+
         try:
-            return super().get(request, *args, **kwargs)
+            return self.render_to_response(context)
         except GetParameterError:
             return HttpResponseBadRequest()
 

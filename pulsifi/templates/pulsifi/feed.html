@@ -56,44 +56,14 @@
                     </div>
                 </div>
 
-                {% include page_template %}
+                {% if not pulse_list %}
+                    No followers
+                {% else %}
+                    {% include pagination_snippet %}
+                {% endif %}
 
 
-                {#                <div class="container-fluid p-5 text-center">#}
-                {#                    <div class="card flex-x5-nowrap">#}
-                {#                        <div class="tab-content admin-tab-content pt30">#}
-                {#                            <div role="tabpanel" class="tab-pane active show" id="t1">#}
-                {#                                <ul class="activity-list list-unstyled">#}
-                {#                                    <li class="clearfix">#}
-                {#                                        <div class="float-left">#}
-                {#                                            <div class="flex-shrink-0">#}
-                {#                                                <img src="{% static 'pulsifi\brand\cropped-Desk-Logo.png' %}" alt="Generic placeholder image" class="img-fluid"#}
-                {#                                                     style="width: 100px; border-radius: 100px;">#}
-                {#                                                <!--TODO: add avatar-->#}
-                {#                                            </div>#}
-                {#                                        </div>#}
-                {#                                        <div class="act-content">#}
-                {#                                            <div class="font400">#}
-                {#                                                <a href="http://127.0.0.1:8000/profile/1" class="font600">Craig 'n' Dave</a> Posted   <!--TODO: use get_absolute_url()-->#}
-                {#                                            </div>#}
-                {#                                            <span class="text-small">11 Min Ago</span>#}
-                {#                                            <p class="text-danger">Post will be deleted in 00:00</p>#}
-                {#                                        </div>#}
-                {#                                        <p>[Whoops! This pulse ran out of time and has been removed.]</p>#}
-                {#                                        <span class="text-small">0 Likes</span>#}
-                {#                                        <a href="#" class="btn btn-sm btn-success">Like</a>#}
-                {#                                        <a href="#" class="btn btn-sm btn-danger">Dislike</a>#}
-                {#                                        <a href="#" class="btn btn-sm btn-secondary">Reply</a>#}
-                {#                                    </li>#}
-                {#                                </ul>#}
-                {#                            </div>#}
-                {#                        </div>#}
-                {#                    </div>#}
-                {#                </div>#}
-                {#            </div>#}
-
-
-                <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
+                    <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
                 <div class="modal fade" id="pulse-create-modal" tabindex="-1">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
