@@ -9,10 +9,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import RedirectURLMixin
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
-from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
-from django.shortcuts import redirect, resolve_url
+from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, resolve_url
 from django.urls import reverse
-from django.views.generic import CreateView, DetailView, RedirectView
+from django.views.generic import CreateView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
 from el_pagination.views import AjaxListView
 
@@ -139,28 +139,24 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
 
 class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
     template_name = "pulsifi/feed.html"
-    context_object_name = "pulse_list"
-    page_template = "pulsifi/feed_pagination_snippet.html"
-    model = Pulse
     object_list: QuerySet[Pulse]
 
-    def get(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
         self.object_list = self.get_queryset()
 
-        allow_empty = self.get_allow_empty()
-        if not allow_empty and len(self.object_list) == 0:
-            msg = "Empty list and ``%(class_name)s.allow_empty`` is False."
-            raise Http404(msg % {'class_name': self.__class__.__name__})
-
-        context = self.get_context_data(
-            **{
-                self.context_object_name: self.object_list,
-                "pagination_snippet": self.page_template
+        context.update(
+            {
+                "pulse_list": self.object_list,
+                "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
             }
         )
+        return context
 
+    def get(self, request, *args, **kwargs):
         try:
-            return self.render_to_response(context)
+            return self.render_to_response(self.get_context_data())
         except GetParameterError:
             return HttpResponseBadRequest()
 
@@ -195,18 +191,32 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
         )
 
 
-class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, DetailView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
+class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
 
-    def get_object(self, queryset: QuerySet[User] = None):
-        if queryset is None:
-            queryset = get_user_model().objects.all()
-        try:  # TODO: Replace with get object or 404
-            obj: User = queryset.filter(is_active=True).get(username=self.kwargs.get("username"))
-        except queryset.model.DoesNotExist:
-            # noinspection PyProtectedMember
-            raise Http404(f"That {queryset.model._meta.verbose_name} does not exist.")
-        return obj
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context.update(
+            {
+                "specific_account": get_object_or_404(
+                    get_user_model(),
+                    is_active=True,
+                    username=self.kwargs.get("username")
+                ),
+                "pulse_list": self.object_list,
+                "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
+            }
+        )
+
+        return context
+
+    def get_queryset(self):
+        return get_object_or_404(
+            get_user_model(),
+            is_active=True,
+            username=self.kwargs.get("username")
+        ).created_pulse_set.all()
 
     def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username(not already in use & using a form)) if view is for logged-in user
         if response := self.check_action_in_post_request():

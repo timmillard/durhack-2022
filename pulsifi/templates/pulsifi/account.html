@@ -1,6 +1,7 @@
 <!DOCTYPE html>  <!--TODO: load from base.html-->
 <html lang="en-GB">
     {% load static %}
+    {% load avatar_tags %}
     <head>  <!--TODO: favicons-->
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -42,25 +43,34 @@
                         <div class="card-body p-2 justify-content-start">
                             <div class="d-flex text-black">
                                 <div class="flex-shrink-0">
-                                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}"
-                                         alt="Generic placeholder image" class="img-fluid"
-                                         style="width: 180px; border-radius: 100px;">
+                                    {% if request.user == specific_account %}
+                                        <form enctype="multipart/form-data" method="POST" action="{% url 'avatar_add' %}">
+                                            {% avatar specific_account 100 class="img-fluid" style="border-radius: 100px;" %}
+                                            {{ upload_avatar_form.as_p }}
+                                            {% csrf_token %}
+                                            <input type="submit" value="update pfp"/>
+                                        </form>
+                                    {% else %}
+                                        {% avatar specific_account class="img-fluid" style="width: 100px; border-radius: 100px;" %}
+                                    {% endif %}
                                 </div>
                                 <div class="flex-grow-1 justify-content-end rounded-3">
-                                    <h5 class="mb-1">@{{ user.get_username }}</h5>   <!--TODO: use get_absolute_url()-->
+                                    <h5 class="mb-1">{{ specific_account }}</h5>
                                     <div class="p-4" style="background-color: #ffff;">   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
-                                        <p class="small text-muted mb-1">{{ user.bio }}</p>
+                                        <p class="small text-muted mb-1">{{ specific_account.bio }}</p>
                                     </div>
                                     <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                                          style="background-color: #ffff;">
                                         <div class="px-3">
                                             <p class="small text-muted mb-1">Followers</p>
-                                            <p class="mb-0">29</p>
+                                            <p class="mb-0">{{ specific_account.followers.count }}</p>
                                         </div>
                                     </div>
-                                    <div class="d-flex pt-1">
-                                        <!-- <button type="button" class="btn btn-primary flex-grow-1 w3-purple">Follow</button> -->
-                                    </div>
+                                    {% if specific_account != request.user %}
+                                        <div class="d-flex pt-1">
+                                            <button type="button" class="btn btn-primary flex-grow-1 w3-purple">Follow</button>
+                                        </div>
+                                    {% endif %}
 
                                 </div>
                             </div>
@@ -71,49 +81,17 @@
                 <div class="mx-auto">
                     <div class="row">
                         <div class="col-sm">
-                            <h1 style="color:#ba03fc">Your Posts</h1>
+                            <h1 style="color:#ba03fc">{% if specific_account == request.user %}Your{% else %}{{ specific_account }}'s{% endif %} Pulses</h1>
                         </div>
                         <div class="col-sm-2 pt-3">
                             <button type="button" class="btn w3-purple" style="float: right;" id="post-create">New Pulse</button>
                         </div>
                     </div>
-                    <div class="container-fluid p-5 text-center">
-                        <div class="card flex-x5-nowrap">
-                            <div class="tab-content admin-tab-content pt30">
-                                <div role="tabpanel" class="tab-pane active show" id="t1">
-                                    <ul class="activity-list list-unstyled">
-                                        <li class="clearfix">
-                                            <div class="float-left">
-                                                <div class="flex-shrink-0">
-                                                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image"
-                                                         class="img-fluid" style="width: 100px; border-radius: 100px;">
-                                                </div>
-                                            </div>
-                                            <div class="act-content">
-                                                <div class="font400">
-
-                                                    <a href="#" class="font600">@padgriffin</a> Posted   <!--TODO: use get_absolute_url()-->
-                                                </div>
-                                                <span class="text-small">11 Min Ago</span>
-                                                <div>Post will be deleted in <p id="time">00:00</p>
-                                                </div>   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
-
-                                                <p>
-                                                    I slept terribly last night - turns out lecture theatre chairs aren't the best beds, eh.
-                                                </p>
-                                                <span class="text-small">0 Likes</span>   <!--TODO: like counter-->
-                                                <a href="#" class="btn btn-sm btn-success">Like</a>   <!--TODO: POST actions-->
-                                                <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                                                <a href="#" class="btn btn-sm btn-secondary">Reply</a>
-                                            </div>
-
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
+                    {% if not pulse_list %}
+                        No Pulses
+                    {% else %}
+                        {% include pagination_snippet %}
+                    {% endif %}
                 </div>
             </div>
 
