@@ -211,6 +211,7 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
 
 class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
+    object_list = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -222,7 +223,7 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListV
                     is_active=True,
                     username=self.kwargs.get("username")
                 ),
-                "pulse_list": self.object_list,
+                "pulse_list": self.get_queryset(),
                 "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
             }
         )
