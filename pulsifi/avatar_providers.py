@@ -19,4 +19,4 @@ class DiscordAvatarProvider:
         except SocialAccount.DoesNotExist:
             return
         else:
-            return f"{discord_SocialAccount.get_avatar_url()}/?size={size}"
+            return f"{discord_SocialAccount.get_avatar_url()}?size={size}"
