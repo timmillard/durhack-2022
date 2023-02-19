@@ -152,6 +152,8 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+# noinspection SpellCheckingInspection
+SOCIALACCOUNT_ADAPTER = "pulsifi.adapters.Custom_Pulsifi_SocialAccountAdapter"
 
 # Email settings to configure how Django should send emails
 EMAIL_HOST = env("EMAIL_HOST")
