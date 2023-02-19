@@ -110,8 +110,8 @@
                             {% csrf_token %}
                             <div class="modal-body">
                                 <div class="form-group">
-                                    <label>What do you want to share today?</label>
-                                    <input type="textarea" class="form-control" id="new-post-content" placeholder="What are you thinking...?">
+                                    <label for="new-post-content">What do you want to share today?</label>
+                                    <input type="text" required class="form-control" id="new-post-content" placeholder="What are you thinking...?">
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -127,7 +127,7 @@
 
             <script>
                 function startTimer(duration, display) {
-                    var start = Date.now(),
+                    let start = Date.now(),
                         diff,
                         minutes,
                         seconds;
