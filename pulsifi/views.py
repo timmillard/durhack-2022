@@ -1,15 +1,17 @@
 """
     Views in pulsifi app.
 """
+from typing import Type
 
 from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView
+from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import RedirectURLMixin
 from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import QuerySet
-from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, resolve_url
 from django.urls import reverse
 from django.views.generic import CreateView, RedirectView
@@ -24,24 +26,42 @@ from .models import Pulse, Reply, User
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
     request: WSGIRequest
 
-    def check_like_or_dislike_in_post_request(self):
-        if "action" in self.request.POST:
+    def check_like_or_dislike_in_post_request(self) -> bool | tuple[str, Pulse | Reply]:
+        try:
             action: str = self.request.POST["action"]
-            if action == "like" and "likeable_object" in self.request.POST:
-                actionable_object = self.request.POST["likeable_object"]
-                actionable_object.like()
-            elif action == "dislike" and "dislikeable_object" in self.request.POST:
-                actionable_object = self.request.POST["dislikeable_object"]
-                actionable_object.dislike()
-            else:
-                return False
-            return action, actionable_object
-        else:
+        except KeyError:
             return False
+        else:
+            try:
+                model: Type[Pulse | Reply] = apps.get_model(app_label="pulsifi", model_name=self.request.POST["actionable_model_name"])
+            except KeyError:
+                return False
+            else:
+                if action == "like":
+                    try:
+                        actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["likeable_object_id"])
+                    except KeyError or model.DoesNotExist:
+                        return False
+                    else:
+                        actionable_object.liked_by.add(self.request.user)
+                        return action, actionable_object
+                elif action == "dislike":
+                    try:
+                        actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["dislikeable_object_id"])
+                    except KeyError or model.DoesNotExist:
+                        return False
+                    else:
+                        actionable_object.disliked_by.add(self.request.user)
+                        return action, actionable_object
+                else:
+                    return False
 
-    def check_reply_in_post_request(self):
-        if "action" in self.request.POST:
+    def check_reply_in_post_request(self) -> bool | Reply | Reply_Form:
+        try:
             action: str = self.request.POST["action"]
+        except KeyError:
+            return False
+        else:
             if action == "reply":
                 form = Reply_Form(self.request.POST)
                 if form.is_valid():
@@ -51,18 +71,16 @@ class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
                     return form
             else:
                 return False
-        else:
-            return False
 
     def check_report_in_post_request(self):  # TODO: Create check_report_in_post_request functionality
         pass
 
-    def check_action_in_post_request(self):
+    def check_action_in_post_request(self) -> bool | HttpResponse:
         if self.check_like_or_dislike_in_post_request():
-            return redirect(self.request.path_info)
+            return self.render_to_response(self.get_context_data())
         elif reply := self.check_reply_in_post_request():
             if isinstance(reply, Reply):
-                return redirect(f"""{reverse("pulsifi:feed")}?highlight={reply.replied_content.id}""")
+                return redirect(reply)
             elif isinstance(reply, Reply_Form):
                 return self.render_to_response(self.get_context_data(form=reply))
         # TODO: what to do if a post is reported

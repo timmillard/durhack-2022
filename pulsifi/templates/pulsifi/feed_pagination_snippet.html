@@ -21,9 +21,24 @@
                                 <div>Post will be deleted in <p id="time">??:??</p></div>
                                 <p>{{ pulse.message }}</p>
                                 <span class="text-small">{{ pulse.liked_by.count }} Likes</span>
-                                <a href="#" class="btn btn-sm btn-success">Like</a>
-                                <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                                <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                <form style="display:inline;" method="post">  {# like action in backgroud with ajax to prevent page refresh #}
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn btn-sm btn-success" value="Like">
+                                    <input type="hidden" name="action" value="like">
+                                    <input type="hidden" name="likeable_object_id" value="{{ pulse.id }}">
+                                    <input type="hidden" name="actionable_model_name" value="pulse">
+                                </form>
+                                <form style="display:inline;" method="post">  {# dislike action in backgroud with ajax to prevent page refresh #}
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn btn-sm btn-danger" value="Dislike">
+                                    <input type="hidden" name="action" value="dislike">
+                                    <input type="hidden" name="dislikeable_object_id" value="{{ pulse.id }}">
+                                    <input type="hidden" name="actionable_model_name" value="pulse">
+                                </form>
+                                <form style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
+                                </form>
                                 <span class="text-small">{{ pulse.disliked_by.count }} Dislikes</span>
                             </div>
                         </li>
