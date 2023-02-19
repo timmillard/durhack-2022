@@ -1,0 +1,35 @@
+{% load avatar_tags %}
+{% for pulse in object_list %}
+    <div class="container-fluid p-5 text-center">
+        <div class="card flex-x5-nowrap">
+            <div class="tab-content admin-tab-content pt30">
+                <div role="tabpanel" class="tab-pane active show">
+                    <ul class="activity-list list-unstyled">
+                        <li class="clearfix">
+                            <div class="float-left">
+                                <div class="flex-shrink-0">
+                                    <a href="{{ pulse.creator.get_absolute_url }}">
+                                        {% avatar pulse.creator 100 %}
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="act-content">
+                                <div class="font400">
+                                    <a href="{{ pulse.creator.get_absolute_url }}" class="font600">{{ pulse.creator }}</a> Posted
+                                </div>
+                                <span class="text-small">{{ pulse.date_time_created|timesince }} Ago</span>
+                                <div>Post will be deleted in <p id="time">??:??</p></div>
+                                <p>{{ pulse.message }}</p>
+                                <span class="text-small">{{ pulse.liked_by.count }} Likes</span>
+                                <a href="#" class="btn btn-sm btn-success">Like</a>
+                                <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                <span class="text-small">{{ pulse.disliked_by.count }} Dislikes</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}

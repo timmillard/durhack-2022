@@ -12,8 +12,9 @@ from django.db.models import QuerySet
 from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import redirect, resolve_url
 from django.urls import reverse
-from django.views.generic import CreateView, DetailView, ListView, RedirectView
+from django.views.generic import CreateView, DetailView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
+from el_pagination.views import AjaxListView
 
 from .exceptions import GetParameterError, RedirectionLoopError
 from .forms import Login_Form, Reply_Form, Signup_Form
@@ -136,9 +137,10 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
         return context
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, ListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
+class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
     template_name = "pulsifi/feed.html"
     context_object_name = "pulse_list"
+    page_template = "pulsifi/feed_pagination_snippet.html"
     model = Pulse
 
     def get(self, request, *args, **kwargs):
