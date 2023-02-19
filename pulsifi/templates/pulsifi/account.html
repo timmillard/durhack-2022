@@ -19,18 +19,19 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-                <div class="navbar-nav">
-                <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
-                <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
-                </div>
+                    <div class="navbar-nav">
+                        <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
+                        <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
+                        {% if request.user.is_staff %}<a class="nav-link px-3 text-white" href="{% url 'admin:index' %}">Admin</a>{% endif %}
+                    </div>
                 </div>   <!--TODO: add avatar-->
                 <div class="right">
                     <form method="post" action="{% url 'account_logout' %}">
-                      {% csrf_token %}
-                      {% if redirect_field_value %}
-                      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
-                      {% endif %}
-                      <button type="submit" class="btn w3-purple" style="float: right;" >Sign Out</button>
+                        {% csrf_token %}
+                        {% if redirect_field_value %}
+                            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+                        {% endif %}
+                        <button type="submit" class="btn w3-purple" style="float: right;">Sign Out</button>
                     </form>
                 </div>
             </nav>
@@ -68,85 +69,85 @@
             <!-- <button type="button" class="btn btn-primary flex-grow-1 w3-purple">Follow</button> -->
             </div>
 
-            </div>
-            </div>
-            </div>
-            </div>
-            </div>
-
-            <div class="mx-auto">
-            <div class="row">
-            <div class="col-sm">
-            <h1 style="color:#ba03fc">Your Posts</h1>
-            </div>
-            <div class="col-sm-2 pt-3">
-            <button type="button" class="btn w3-purple" style="float: right;" id="post-create">New Pulse</button>
-            </div>
-            </div>
-            <div class="container-fluid p-5 text-center">
-            <div class="card flex-x5-nowrap">
-            <div class="tab-content admin-tab-content pt30">
-            <div role="tabpanel" class="tab-pane active show" id="t1">
-            <ul class="activity-list list-unstyled">
-                <li class="clearfix">
-                    <div class="float-left">
-                    <div class="flex-shrink-0">
-                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image"
-                         class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <div class="mx-auto">
+                    <div class="row">
+                        <div class="col-sm">
+                            <h1 style="color:#ba03fc">Your Posts</h1>
+                        </div>
+                        <div class="col-sm-2 pt-3">
+                            <button type="button" class="btn w3-purple" style="float: right;" id="post-create">New Pulse</button>
+                        </div>
                     </div>
-                    <div class="act-content">
-                    <div class="font400">
+                    <div class="container-fluid p-5 text-center">
+                        <div class="card flex-x5-nowrap">
+                            <div class="tab-content admin-tab-content pt30">
+                                <div role="tabpanel" class="tab-pane active show" id="t1">
+                                    <ul class="activity-list list-unstyled">
+                                        <li class="clearfix">
+                                            <div class="float-left">
+                                                <div class="flex-shrink-0">
+                                                    <img src="{% static 'pulsifi/brand/Example_Profile_Pic.jpg' %}" alt="Generic placeholder image"
+                                                         class="img-fluid" style="width: 100px; border-radius: 100px;">
+                                                </div>
+                                            </div>
+                                            <div class="act-content">
+                                                <div class="font400">
 
-                    <a href="#" class="font600">@padgriffin</a> Posted   <!--TODO: use get_absolute_url()-->
+                                                    <a href="#" class="font600">@padgriffin</a> Posted   <!--TODO: use get_absolute_url()-->
+                                                </div>
+                                                <span class="text-small">11 Min Ago</span>
+                                                <div>Post will be deleted in <p id="time">00:00</p>
+                                                </div>   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
+
+                                                <p>
+                                                    I slept terribly last night - turns out lecture theatre chairs aren't the best beds, eh.
+                                                </p>
+                                                <span class="text-small">0 Likes</span>   <!--TODO: like counter-->
+                                                <a href="#" class="btn btn-sm btn-success">Like</a>   <!--TODO: POST actions-->
+                                                <a href="#" class="btn btn-sm btn-danger">Dislike</a>
+                                                <a href="#" class="btn btn-sm btn-secondary">Reply</a>
+                                            </div>
+
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                    <span class="text-small">11 Min Ago</span>
-                    <div>Post will be deleted in <p id="time">00:00</p>
-                    </div>   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
-
-                    <p>
-                        I slept terribly last night - turns out lecture theatre chairs aren't the best beds, eh.
-                    </p>
-                    <span class="text-small">0 Likes</span>   <!--TODO: like counter-->
-                    <a href="#" class="btn btn-sm btn-success">Like</a>   <!--TODO: POST actions-->
-                    <a href="#" class="btn btn-sm btn-danger">Dislike</a>
-                    <a href="#" class="btn btn-sm btn-secondary">Reply</a>
-                    </div>
-
-                </li>
-            </ul>
-            </div>
-            </div>
-            </div>
-
-            </div>
-            </div>
+                </div>
             </div>
 
 
             <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
             <div class="modal fade" id="post-create-modal" tabindex="-1">
-            <div class="modal-dialog" role="document">
-            <div class="modal-content">
-            <div class="modal-header">
-            <h5 class="modal-title">New Pulse</h5>
-            <button type="button" class="close" id="close-create-new-post" aria-label="Close" onclick="closeModal('post-create-modal');">
-                <span aria-hidden="true">x</span>
-            </button>
-            </div>
-            <div class="modal-body">
-            <form>
-                <div class="form-group">
-                <label>What do you want to share today?</label>
-                <input type="textarea" class="form-control" id="new-post-content" placeholder="What are you thinking...?">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">New Pulse</h5>
+                            <button type="button" class="close" id="close-create-new-post" aria-label="Close" onclick="closeModal('post-create-modal');">
+                                <span aria-hidden="true">x</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form>
+                                <div class="form-group">
+                                    <label>What do you want to share today?</label>
+                                    <input type="textarea" class="form-control" id="new-post-content" placeholder="What are you thinking...?">
+                                </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn text-white" id="new-post-submit" style="background-color: #ba03fc;">Post to Pulsifi</button>
+                        </div>
+                        </form>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-            <button type="button" class="btn text-white" id="new-post-submit" style="background-color: #ba03fc;">Post to Pulsifi</button>
-            </div>
-            </form>
-            </div>
-            </div>
             </div>
             <div class="modal-backdrop fade show" id="backdrop" style="display: none;"></div>
 
