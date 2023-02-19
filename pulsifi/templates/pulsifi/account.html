@@ -106,16 +106,18 @@
                                 <span aria-hidden="true">x</span>
                             </button>
                         </div>
-                        <div class="modal-body">
-                            <form>
+                        <form method="post"> {# Move to snippet html #}
+                            {% csrf_token %}
+                            <div class="modal-body">
                                 <div class="form-group">
                                     <label>What do you want to share today?</label>
                                     <input type="textarea" class="form-control" id="new-post-content" placeholder="What are you thinking...?">
                                 </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn text-white" id="new-post-submit" style="background-color: #ba03fc;">Post to Pulsifi</button>
-                        </div>
+                            </div>
+                            <div class="modal-footer">
+                                <input type="submit" class="btn text-white" id="new-post-submit" style="background-color: #ba03fc;" value="Post to Pulsifi">
+                            </div>
+                            <input type="hidden" name="creator_id" value="{{ request.user.id }}">
                         </form>
                     </div>
                 </div>
