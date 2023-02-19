@@ -12,6 +12,6 @@ function closeModal(modal_id) {
 }
 
 // Get the modal
-let newpost_modal = document.getElementById("post-create");
-newpost_modal.addEventListener("click", () => { openModal("post-create-modal") });
+let newpost_modal = document.getElementById("pulse-create");
+newpost_modal.addEventListener("click", () => { openModal("pulse-create-modal") });
 
