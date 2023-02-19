@@ -84,7 +84,7 @@
                             <h1 style="color:#ba03fc">{% if specific_account == request.user %}Your{% else %}{{ specific_account }}'s{% endif %} Pulses</h1>
                         </div>
                         <div class="col-sm-2 pt-3">
-                            <button type="button" class="btn w3-purple" style="float: right;" id="post-create">New Pulse</button>
+                            <button type="button" class="btn w3-purple" style="float: right;" id="pulse-create">New Pulse</button>
                         </div>
                     </div>
                     {% if not pulse_list %}
@@ -97,12 +97,12 @@
 
 
             <!--CREATE POST MODAL; WILL DISPLAY POST CREATE FORM-->
-            <div class="modal fade" id="post-create-modal" tabindex="-1">
+            <div class="modal fade" id="pulse-create-modal" tabindex="-1">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">New Pulse</h5>
-                            <button type="button" class="close" id="close-create-new-post" aria-label="Close" onclick="closeModal('post-create-modal');">
+                            <button type="button" class="close" id="close-create-new-post" aria-label="Close" onclick="closeModal('pulse-create-modal');">
                                 <span aria-hidden="true">x</span>
                             </button>
                         </div>
