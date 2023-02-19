@@ -149,7 +149,7 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TOD
 
         allow_empty = self.get_allow_empty()
         if not allow_empty and len(self.object_list) == 0:
-            msg = _('Empty list and ``%(class_name)s.allow_empty`` is False.')
+            msg = "Empty list and ``%(class_name)s.allow_empty`` is False."
             raise Http404(msg % {'class_name': self.__class__.__name__})
 
         context = self.get_context_data(
