@@ -258,6 +258,12 @@ class User(_Visible_Reportable_Model, AbstractUser):
         The set of :model:`pulsifi.report` objects that this user has
         submitted.
     """
+    # noinspection SpellCheckingInspection
+    socialaccount_set: Manager
+    """
+        The set of :model:`socialaccount:socialaccount` objects that can be
+        used to log in this user.
+    """
 
     username = models.CharField(
         "Username",

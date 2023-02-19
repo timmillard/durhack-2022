@@ -112,6 +112,11 @@ ACCOUNT_FORMS = {
     "signup": "pulsifi.forms.Signup_Form"
 }
 AVATAR_GRAVATAR_DEFAULT = env("AVATAR_GRAVATAR_DEFAULT")
+AVATAR_PROVIDERS = (
+    'avatar.providers.PrimaryAvatarProvider',
+    'pulsifi.avatar_providers.DiscordAvatarProvider',
+    'avatar.providers.GravatarAvatarProvider'
+)
 AVATAR_AUTO_GENERATE_SIZES = (100, 150)
 # noinspection SpellCheckingInspection
 SOCIALACCOUNT_PROVIDERS = {
@@ -152,8 +157,6 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
-# noinspection SpellCheckingInspection
-SOCIALACCOUNT_ADAPTER = "pulsifi.adapters.Custom_Pulsifi_SocialAccountAdapter"
 
 # Email settings to configure how Django should send emails
 EMAIL_HOST = env("EMAIL_HOST")
