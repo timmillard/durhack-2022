@@ -689,7 +689,7 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         """
 
         try:
-            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")): #BUG: causes error when making reply to a pulse
+            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):  # BUG: causes error when making reply to a pulse
                 raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
 
             if self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id == self.id:

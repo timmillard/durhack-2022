@@ -18,9 +18,44 @@ from django.views.generic import CreateView, RedirectView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
 from el_pagination.views import AjaxListView
 
-from .exceptions import GetParameterError, RedirectionLoopError
+from .exceptions import GetParameterError, RedirectionLoopError, UserAlreadyInSetError, UserAlreadyNotInSetError
 from .forms import Login_Form, Reply_Form, Signup_Form
 from .models import Pulse, Reply, User
+
+
+class FollowUserMixin(TemplateResponseMixin, ContextMixin):
+    request: WSGIRequest
+
+    def check_follow_or_unfollow_in_post_request(self) -> bool | HttpResponse:
+        try:
+            action: str = self.request.POST["action"].lower()
+        except KeyError:
+            return False
+        else:
+            if action == "follow":
+                try:
+                    follow_user: User = get_user_model().objects.get(id=self.request.POST["follow_user_id"])
+                except KeyError or get_user_model().DoesNotExist:
+                    return False
+                else:
+                    if self.request.user not in follow_user.followers.all():
+                        follow_user.followers.add(self.request.user)
+                        return self.render_to_response(self.get_context_data())
+                    else:
+                        raise UserAlreadyInSetError(user=self.request.user, user_set=follow_user.followers.all())
+            elif action == "unfollow":
+                try:
+                    unfollow_user: User = get_user_model().objects.get(id=self.request.POST["unfollow_user_id"])
+                except KeyError or get_user_model().DoesNotExist:
+                    return False
+                else:
+                    if self.request.user in unfollow_user.followers.all():
+                        unfollow_user.followers.remove(self.request.user)
+                        return self.render_to_response(self.get_context_data())
+                    else:
+                        raise UserAlreadyNotInSetError(user=self.request.user, user_set=unfollow_user.followers.all())
+            else:
+                return False
 
 
 class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
@@ -209,7 +244,7 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
         )
 
 
-class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
+class Specific_Account_View(EditPulseOrReplyMixin, FollowUserMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
     object_list = None
 
@@ -239,6 +274,8 @@ class Specific_Account_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListV
 
     def post(self, request, *args, **kwargs):  # TODO: only allow profile change actions (pic, bio, username(not already in use & using a form)) if view is for logged-in user
         if response := self.check_action_in_post_request():
+            return response
+        elif response := self.check_follow_or_unfollow_in_post_request():
             return response
         # TODO: what to do if a post is deleted
         # elif self.check_delete_in_post_request():

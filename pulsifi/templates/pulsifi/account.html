@@ -45,14 +45,15 @@
                             <div class="d-flex text-black">
                                 <div class="flex-shrink-0">
                                     {% if request.user == specific_account %}
-                                        <form enctype="multipart/form-data" method="POST" action="{% url 'avatar_add' %}">
+                                        <form enctype="multipart/form-data" method="POST" action="{% url "avatar_add" %}">
                                             {% avatar specific_account 100 class="img-fluid" style="border-radius: 100px;" %}
-                                            {{ upload_avatar_form.as_p }}
+                                            <input type="file" name="avatar" accept="image/*" required id="id_avatar">
                                             {% csrf_token %}
-                                            <input type="submit" value="update pfp"/>
+                                            <input type="submit" value="add pfp"/>
+                                            <a href="{% url "avatar_delete" %}" class="btn btn-info">Delete avatars</a>
                                         </form>
                                     {% else %}
-                                        {% avatar specific_account class="img-fluid" style="width: 100px; border-radius: 100px;" %}
+                                        {% avatar specific_account class="img-fluid" style="border-radius: 100px;" %}
                                     {% endif %}
                                 </div>
                                 <div class="flex-grow-1 justify-content-end rounded-3">
@@ -60,6 +61,13 @@
                                     <div class="p-4" style="background-color: #ffff;">   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
                                         <p class="small text-muted mb-1">{{ specific_account.bio }}</p>
                                     </div>
+                                    {% if request.user == specific_account %}
+                                        <p><a href="{% provider_login_url "discord" process="connect" %}">Connect a discord account</a></p>
+                                        <p><a href="{% provider_login_url "github" process="connect" %}">Connect a github account</a></p>
+                                        <p><a href="{% provider_login_url "google" process="connect" %}">Connect a google account</a></p>
+                                        <p><a href="{% provider_login_url "microsoft" process="connect" %}">Connect a microsoft account</a></p>
+                                    {% endif %}
+
                                     <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                                          style="background-color: #ffff;">
                                         <div class="px-3">
@@ -69,7 +77,18 @@
                                     </div>
                                     {% if specific_account != request.user %}
                                         <div class="d-flex pt-1">
-                                            <button type="button" class="btn btn-primary flex-grow-1 w3-purple">Follow</button>
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                {% if request.user not in specific_account.followers.all %}
+                                                    <input type="submit" class="btn btn-primary flex-grow-1 w3-purple" value="Follow">
+                                                    <input type="hidden" name="action" value="follow">
+                                                    <input type="hidden" name="follow_user_id" value="{{ specific_account.id }}">
+                                                {% else %}
+                                                    <input type="submit" class="btn btn-primary flex-grow-1 w3-purple" value="Unfollow">
+                                                    <input type="hidden" name="action" value="unfollow">
+                                                    <input type="hidden" name="unfollow_user_id" value="{{ specific_account.id }}">
+                                                {% endif %}
+                                            </form>
                                         </div>
                                     {% endif %}
 
@@ -78,11 +97,6 @@
                         </div>
                     </div>
                 </div>
-
-                <p><a href="{% provider_login_url "discord" process="connect" %}">Connect a discord account</a></p>
-                <p><a href="{% provider_login_url "github" process="connect" %}">Connect a github account</a></p>
-                <p><a href="{% provider_login_url "google" process="connect" %}">Connect a google account</a></p>
-                <p><a href="{% provider_login_url "microsoft" process="connect" %}">Connect a microsoft account</a></p>
 
                 <div class="mx-auto">
                     <div class="row">

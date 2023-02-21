@@ -9,7 +9,7 @@
                             <div class="float-left">
                                 <div class="flex-shrink-0">
                                     <a href="{{ pulse.creator.get_absolute_url }}">
-                                        {% avatar pulse.creator 100 class="img-fluid" style="border-radius: 100px;" %}
+                                        {% avatar pulse.creator 100 class="img-fluid m-2" style="border-radius: 100px;" %}
                                     </a>
                                 </div>
                             </div>
@@ -36,7 +36,6 @@
                                     <input type="hidden" name="actionable_model_name" value="pulse">
                                 </form>
                                 <form style="display:inline;">
-                                    {% csrf_token %}
                                     <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
                                 </form>
                                 <span class="text-small">{{ pulse.disliked_by.count }} Dislikes</span>

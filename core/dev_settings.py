@@ -24,13 +24,32 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 # noinspection SpellCheckingInspection
 LOGGING = {
     "version": 1,
-    "formatters": {"default": {
-        "format": "{levelname} - {module}: {message}",
-        "style": "{"
-    }},
-    "handlers": {"console": {
-        "class": "logging.StreamHandler",
-        "formatter": "default"
-    }},
-    "root": {"handlers": ["console"], "level": env("LOG_LEVEL").upper()}
+    "formatters": {
+        "pulsifi": {
+            "format": "{levelname} - {module}: {message}",
+            "style": "{"
+        },
+        "web_server": {
+            "format": "[{asctime}] {message}",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
+            "style": "{"
+        }
+    },
+    "handlers": {
+        "pulsifi": {
+            "class": "logging.StreamHandler",
+            "formatter": "pulsifi"
+        },
+        "web_server": {
+            "class": "logging.StreamHandler",
+            "formatter": "web_server"
+        }
+    },
+    "loggers": {
+        "django.server": {
+            "handlers": ["web_server"],
+            "level": env("LOG_LEVEL").upper()
+        }
+    },
+    "root": {"handlers": ["pulsifi"], "level": env("LOG_LEVEL").upper()}
 }

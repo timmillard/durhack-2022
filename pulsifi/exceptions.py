@@ -1,6 +1,6 @@
 from typing import Collection
 
-from django.db.models import Field
+from django.db.models import Field, QuerySet
 
 
 class RedirectionLoopError(ValueError):
@@ -93,3 +93,51 @@ class ReportableContentTypeNamesSettingError(ValueError):
         """ Returns formatted message & properties of the GetParameterError. """
 
         return f"{self.message} (reportable_content_type_name={repr(self.reportable_content_type_name)})"
+
+
+class UserAlreadyInSetError(Exception):
+    """
+        Provided :model:`pulsifi.user` object instance already exists within
+        the provided set of :model:`pulsifi.user` object instances.
+    """
+
+    DEFAULT_MESSAGE = "The provided user object already exists within the provided set."
+
+    def __init__(self, message: str = None, user=None, user_set: QuerySet = None) -> None:
+        self.message: str = message or self.DEFAULT_MESSAGE
+        self.user = user
+        self.user_set = user_set
+
+        super().__init__(message or self.DEFAULT_MESSAGE)
+
+    def __str__(self) -> str:
+        """
+            Returns formatted message & properties of the
+            UserAlreadyInSetError.
+        """
+
+        return f"{self.message} (user={repr(self.user)}, user_set={repr(self.user_set)})"
+
+
+class UserAlreadyNotInSetError(Exception):
+    """
+        Provided :model:`pulsifi.user` object instance already doesn't exist
+        within the provided set of :model:`pulsifi.user` object instances.
+    """
+
+    DEFAULT_MESSAGE = "The provided user object already does not exist within the provided set."
+
+    def __init__(self, message: str = None, user=None, user_set: QuerySet = None) -> None:
+        self.message: str = message or self.DEFAULT_MESSAGE
+        self.user = user
+        self.user_set = user_set
+
+        super().__init__(message or self.DEFAULT_MESSAGE)
+
+    def __str__(self) -> str:
+        """
+            Returns formatted message & properties of the
+            UserAlreadyNotInSetError.
+        """
+
+        return f"{self.message} (user={repr(self.user)}, user_set={repr(self.user_set)})"
