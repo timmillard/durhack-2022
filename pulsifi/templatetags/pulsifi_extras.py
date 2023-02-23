@@ -2,6 +2,7 @@
     Extra Tags & Filters available for use in the templating engine within the
     pulsifi app.
 """
+
 from re import Match as RegexMatch, sub as regex_sub
 
 from django import template
@@ -24,7 +25,7 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
         def esc_func(x: str) -> str:
             return x
 
-    def valid_mention(possible_mention: RegexMatch) -> str:
+    def is_valid(possible_mention: RegexMatch) -> str:
 
         possible_mention: str = possible_mention.group("mention")
 
@@ -35,5 +36,10 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
 
         return render_to_string("pulsifi/mention_user_snippet.html", {"mentioned_user": mentioned_user}).strip()
 
-    result: str = regex_sub(r"@(?P<mention>[\w.-]+)", valid_mention, esc_func(value))
-    return mark_safe(result)
+    return mark_safe(
+        regex_sub(
+            r"@(?P<mention>[\w.-]+)",
+            is_valid,
+            esc_func(value)
+        )
+    )

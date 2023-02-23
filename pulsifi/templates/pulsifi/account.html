@@ -59,7 +59,7 @@
                                 </div>
                                 <div class="flex-grow-1 justify-content-end rounded-3">
                                     <h5 class="mb-1">{{ specific_account }}</h5>
-                                    <div class="p-4" style="background-color: #ffff;">   <!--TODO: replace mentions with correct HTML links using regex: @[\w.-]+\b-->
+                                    <div class="p-4" style="background-color: #ffff;">
                                         <p class="small text-muted mb-1">{{ specific_account.bio|format_mentions }}</p>
                                     </div>
                                     {% if request.user == specific_account %}
