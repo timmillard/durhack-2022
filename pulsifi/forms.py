@@ -3,7 +3,7 @@
 """
 import logging
 from inspect import isclass
-from typing import Iterable
+from typing import Callable, Iterable
 
 from allauth.account.forms import LoginForm as Base_LoginForm, SignupForm as Base_SignupForm
 from django import forms
@@ -115,6 +115,7 @@ class Signup_Form(Base_SignupForm):
     def run_field_validator(self, form_field_name: str, model_field_name: str = None) -> None:
         errors = set()
 
+        validator: Callable[[], Callable[[str], None]] | Callable[[str], None]
         # noinspection PyProtectedMember
         for validator in get_user_model()._meta.get_field(model_field_name or form_field_name).validators:
             try:

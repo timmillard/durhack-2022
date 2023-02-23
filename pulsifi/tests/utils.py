@@ -224,7 +224,7 @@ class CreateTestUserGeneratedContentHelper:
         """
 
         if model_name not in cls.GENERATABLE_OBJECTS:
-            raise ValueError(f"""{model_name} is not a valid choice for parameter "model", choose one of: "pulse", "reply".""")
+            raise ValueError(f"{model_name} is not a valid choice for parameter \"model\", choose one of: \"pulse\", \"reply\".")
 
         if model_name == "pulse":
             return cls._create_test_pulse(save, **kwargs)

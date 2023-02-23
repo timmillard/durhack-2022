@@ -510,7 +510,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 if Group.objects.get(name=self.STAFF_GROUP_NAMES[index]) in self.groups.all():
                     self.update(is_staff=True)
             except Group.DoesNotExist:
-                logging.error(f"""Could not check whether User: {self} is in "{self.STAFF_GROUP_NAMES[index]}" group because it does not exist.""")
+                logging.error(f"Could not check whether User: {self} is in \"{self.STAFF_GROUP_NAMES[index]}\" group because it does not exist.")
             finally:
                 index += 1
 
@@ -525,7 +525,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             try:
                 admin_group = Group.objects.get(name="Admins")
             except Group.DoesNotExist:
-                logging.error(f"""User: {self} is superuser but could not be added to "Admins" group because it does not exist.""")
+                logging.error(f"User: {self} is superuser but could not be added to \"Admins\" group because it does not exist.")
             else:
                 if admin_group not in self.groups.all():
                     self.groups.add(admin_group)

@@ -1,4 +1,5 @@
 {% load avatar_tags %}
+{% load pulsifi_extras %}
 {% for pulse in pulse_list %}
     <div class="container-fluid p-5 text-center">
         <div class="card flex-x5-nowrap">
@@ -19,7 +20,7 @@
                                 </div>
                                 <span class="text-small">{{ pulse.date_time_created|timesince }} Ago</span>
                                 <div>Post will be deleted in <p id="time">??:??</p></div>
-                                <p>{{ pulse.message }}</p>
+                                <p>{{ pulse.message|format_mentions }}</p>
                                 <span class="text-small">{{ pulse.liked_by.count }} Likes</span>
                                 <form style="display:inline;" method="post">  {# like action in backgroud with ajax to prevent page refresh #}
                                     {% csrf_token %}
