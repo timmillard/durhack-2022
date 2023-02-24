@@ -49,8 +49,7 @@
                                             {% avatar specific_account 100 class="img-fluid" style="border-radius: 100px;" %}
                                             <input type="file" name="avatar" accept="image/*" required id="id_avatar">
                                             {% csrf_token %}
-                                            <input type="submit" value="add pfp"/>
-                                            <a href="{% url "avatar_delete" %}" class="btn btn-info">Delete avatars</a>
+                                            <input class="d-block ml-3" type="submit" value="add pfp"/>
                                         </form>
                                     {% else %}
                                         {% avatar specific_account class="img-fluid" style="border-radius: 100px;" %}
@@ -61,12 +60,6 @@
                                     <div class="p-4" style="background-color: #ffff;">
                                         <p class="small text-muted mb-1">{{ specific_account.bio|format_mentions }}</p>
                                     </div>
-                                    {% if request.user == specific_account %}
-                                        <p><a href="{% provider_login_url "discord" process="connect" %}">Connect a Discord account</a></p>
-                                        <p><a href="{% provider_login_url "github" process="connect" %}">Connect a GitHub account</a></p>
-                                        <p><a href="{% provider_login_url "google" process="connect" %}">Connect a Google account</a></p>
-                                        <p><a href="{% provider_login_url "microsoft" process="connect" %}">Connect a Microsoft account</a></p>
-                                    {% endif %}
 
                                     <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                                          style="background-color: #ffff;">
@@ -91,8 +84,29 @@
                                             </form>
                                         </div>
                                     {% endif %}
-
                                 </div>
+                            </div>
+
+                            <div>
+                                {% if request.user == specific_account %}
+                                    <a href="{% url "avatar_delete" %}">Delete avatars</a>
+                                    <form method="post" action="{% provider_login_url "discord" %}">
+                                        {% csrf_token %}
+                                        <input type="submit" value="Connect a Discord account">
+                                    </form>
+                                    <form method="post" action="{% provider_login_url "github" %}">
+                                        {% csrf_token %}
+                                        <input type="submit" value="Connect a GitHub account">
+                                    </form>
+                                    <form method="post" action="{% provider_login_url "google" %}">
+                                        {% csrf_token %}
+                                        <input type="submit" value="Connect a Google account">
+                                    </form>
+                                    <form method="post" action="{% provider_login_url "microsoft" %}">
+                                        {% csrf_token %}
+                                        <input type="submit" value="Connect a Microsoft account">
+                                    </form>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -191,3 +205,10 @@
             integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
             crossorigin="anonymous"></script>
     <script src="{% static 'pulsifi/js/modal_controller.js' %}"></script>
+    <script>
+        // Get the modal
+        let new_post_modal = document.getElementById("pulse-create");
+        new_post_modal.addEventListener("click", () => {
+            openModal("pulse-create-modal")
+        });
+    </script>

@@ -163,6 +163,19 @@
                 integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
                 crossorigin="anonymous"></script>
         <script src="{% static 'pulsifi/js/modal_controller.js' %}"></script>
+        <script>
+            // Get the modal
+            let signup_modal = document.getElementById("sign-up");
+            signup_modal.addEventListener("click", () => {
+                openModal("sign-up-modal")
+            });
+
+            // Get the modal
+            let signin_modal = document.getElementById("sign-in");
+            signin_modal.addEventListener("click", () => {
+                openModal("sign-in-modal")
+            });
+        </script>
         {% if request.GET.action == "login" %}
             <script>
                 openModal("sign-in-modal");

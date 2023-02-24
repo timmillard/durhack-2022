@@ -11,9 +11,3 @@ function closeModal(modal_id) {
     document.getElementById(modal_id).style.display = "none"
     document.getElementById(modal_id).classList.remove("show")
 }
-
-// Get the modal
-let new_post_modal = document.getElementById("pulse-create");
-new_post_modal.addEventListener("click", () => {
-    openModal("pulse-create-modal")
-});
