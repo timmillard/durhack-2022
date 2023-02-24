@@ -2,7 +2,6 @@
     Utility classes & functions provided for all models within this app.
 """
 
-import logging
 from random import choice as random_choice
 from typing import Collection, Iterable
 
@@ -111,8 +110,8 @@ class Custom_Base_Model(Model):
                     if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: It is only possible to refresh related objects from one of these hard-coded field types
                         setattr(self, field.name, getattr(updated_model, field.name))
 
-                    elif field.is_relation and logging.getLogger().getEffectiveLevel() == logging.DEBUG:
-                        logging.warning(f"Field {field.name}{repr(field)} could not be refreshed from {repr(updated_model)} to {repr(self)}.")
+                    elif field.is_relation:  # BUG: Relation fields not of acceptable type are not refreshed
+                        pass
 
     def save(self, *args, **kwargs) -> None:
         """

@@ -451,7 +451,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
             self.email = "@".join([local, extracted_domain.fqdn])  # NOTE: Replace the cleaned email address
 
-        if EmailAddress.objects.filter(email=self.email).exclude(user=self).exists():
+        if EmailAddress.objects.filter(email=self.email).exclude(user_id=self.id).exists():
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
 
         if self.verified:
