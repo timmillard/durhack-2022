@@ -13,7 +13,7 @@ function closeModal(modal_id) {
 }
 
 // Get the modal
-let newpost_modal = document.getElementById("pulse-create");
-newpost_modal.addEventListener("click", () => {
+let new_post_modal = document.getElementById("pulse-create");
+new_post_modal.addEventListener("click", () => {
     openModal("pulse-create-modal")
 });

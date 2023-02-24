@@ -19,13 +19,24 @@ register = template.Library()
 @register.filter(needs_autoescape=True)
 @stringfilter
 def format_mentions(value: str, autoescape=True) -> SafeString:
+    """
+        Formats the given string value, with any mentions of a user
+        (E.g. @pulsifi) turned into the rendered HTML template of linking to
+        that user (E.g. <a href="/user/@pulsifi">@pulsifi</a>)
+    """
+
     if autoescape:
         esc_func = conditional_escape
     else:
+        # noinspection PyMissingOrEmptyDocstring
         def esc_func(x: str) -> str:
             return x
 
     def is_valid(possible_mention: RegexMatch) -> str:
+        """
+            Returns the HTML formatted mention if the regex match was a valid
+            user, otherwise returns the original text.
+        """
 
         possible_mention: str = possible_mention.group("mention")
 

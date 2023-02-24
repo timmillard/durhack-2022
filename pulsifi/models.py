@@ -188,7 +188,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     def __str__(self) -> str:
         """
-            Returns the stingified version of this content's creator and the
+            Returns the stringified version of this content's creator and the
             message within this content if it is still visible, otherwise
             returns the crossed out message within this content.
         """
@@ -258,8 +258,10 @@ class User(_Visible_Reportable_Model, AbstractUser):
         The set of :model:`pulsifi.report` objects that this user has
         submitted.
     """
+
     # noinspection SpellCheckingInspection
     socialaccount_set: Manager
+    # noinspection SpellCheckingInspection
     """
         The set of :model:`socialaccount:socialaccount` objects that can be
         used to log in this user.
@@ -412,7 +414,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
         if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
             raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
-        if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all of the usernames except for this user
+        if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all the usernames except for this user
             username_check_list: Iterable[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
         else:
             username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)

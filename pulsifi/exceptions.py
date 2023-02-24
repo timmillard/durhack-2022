@@ -1,3 +1,5 @@
+""" Custom exceptions for use within the pulsifi app. """
+
 from typing import Collection
 
 from django.db.models import Field, QuerySet

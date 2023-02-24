@@ -1,3 +1,5 @@
+""" Handles signals sent within the pulsifi app. """
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.db.models.signals import m2m_changed

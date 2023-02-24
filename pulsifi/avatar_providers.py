@@ -6,8 +6,14 @@ from pulsifi.models import User
 
 
 class DiscordAvatarProvider:
+    """ Avatar URL provider for when users have linked a Discord account. """
+
     @staticmethod
     def get_avatar_url(user: User, width: int, height: int) -> str | None:
+        """
+            Returns the URL of Discord's avatar API, corresponding to this account.
+        """
+
         size = 1 << (int((width * height) / 2) - 1).bit_length()
         if size > 4096:
             size = 4096
@@ -23,8 +29,15 @@ class DiscordAvatarProvider:
 
 
 class GithubAvatarProvider:
+    """ Avatar URL provider for when users have linked a GitHub account. """
+
     @staticmethod
     def get_avatar_url(user: User, width: int, height: int) -> str | None:
+        """
+            Returns the URL of GitHub's avatar API, corresponding to this
+            account.
+        """
+
         size = int((width * height) / 2)
         if size > 460:
             size = 460

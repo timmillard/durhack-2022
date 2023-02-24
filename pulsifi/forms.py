@@ -108,11 +108,17 @@ class Signup_Form(Base_SignupForm):
                 )
                 user.full_clean()
             except ValidationError as e:
-                self.add_errors_from_ValidationError_exception(e)
+                self.add_errors_from_ValidationError_exceptions((e,))
 
         return self.cleaned_data
 
     def run_field_validator(self, form_field_name: str, model_field_name: str = None) -> None:
+        """
+            Runs all model field's validators on the value provided to the
+            corresponding form field, to ensure validity of the data, when
+            submitting.
+        """
+
         errors = set()
 
         validator: Callable[[], Callable[[str], None]] | Callable[[str], None]
@@ -130,6 +136,11 @@ class Signup_Form(Base_SignupForm):
         self.add_errors_from_ValidationError_exceptions(errors, model_field_name or form_field_name)
 
     def add_errors_from_ValidationError_exceptions(self, errors: Iterable[ValidationError], model_field_name: str = None) -> None:
+        """
+            Adds the error message(s) from any caught ValidationError exceptions
+            to the forms errors dictionary/list.
+        """
+
         for exception in errors:
             if not hasattr(exception, "error_dict") and hasattr(exception, "error_list"):
                 for error in exception.error_list:
