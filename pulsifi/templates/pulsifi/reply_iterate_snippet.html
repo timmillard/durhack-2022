@@ -1,0 +1,51 @@
+{% load avatar_tags %}
+{% load pulsifi_extras %}
+<div class="container-fluid p-5 text-center">
+    <div class="card flex-x5-nowrap">
+        <div class="tab-content admin-tab-content pt30">
+            <div role="tabpanel" class="tab-pane active show">
+                <ul class="activity-list list-unstyled">
+                    <li class="clearfix">
+                        <div class="float-left">
+                            <div class="flex-shrink-0">
+                                <a href="{{ reply.creator.get_absolute_url }}">
+                                    {% avatar reply.creator 100 class="img-fluid m-2" style="border-radius: 100px;" %}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="act-content">
+                            <div class="font400">
+                                <a href="{{ reply.creator.get_absolute_url }}" class="font600">{{ reply.creator }}</a> replied
+                            </div>
+                            <p>{{ reply.message|format_mentions }}</p>
+                            <span class="text-small">{{ reply.liked_by.count }} Likes</span>
+                            <form style="display:inline;" method="post">  {# like action in backgroud with ajax to prevent page refresh #}
+                                {% csrf_token %}
+                                <input type="submit" class="btn btn-sm btn-success" value="Like">
+                                <input type="hidden" name="action" value="like">
+                                <input type="hidden" name="likeable_object_id" value="{{ reply.id }}">
+                                <input type="hidden" name="actionable_model_name" value="reply">
+                            </form>
+                            <form style="display:inline;" method="post">  {# dislike action in backgroud with ajax to prevent page refresh #}
+                                {% csrf_token %}
+                                <input type="submit" class="btn btn-sm btn-danger" value="Dislike">
+                                <input type="hidden" name="action" value="dislike">
+                                <input type="hidden" name="dislikeable_object_id" value="{{ reply.id }}">
+                                <input type="hidden" name="actionable_model_name" value="reply">
+                            </form>
+                            <form style="display:inline;">
+                                <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
+                            </form>
+                            <span class="text-small">{{ reply.disliked_by.count }} Dislikes</span>
+                            {% for inner_reply in reply.reply_set.all %}
+                                {% with reply=inner_reply %}
+                                    {% include "pulsifi/reply_iterate_snippet.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

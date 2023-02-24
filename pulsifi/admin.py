@@ -85,7 +85,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
     search_help_text = "Search for a creator, message content or liked/disliked by user"
     list_editable = ("visible",)
     inlines = (Direct_Reply_Inline, About_Object_Report_Inline)
-    list_display_links = ("creator", "message")
+    list_display_links = ("message",)
 
     def get_queryset(self, request) -> QuerySet[Pulse | Reply]:
         """
@@ -160,7 +160,8 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
                 "display_likes",
                 "display_dislikes",
                 "display_direct_replies_count",
-                "display_full_depth_replies_count"
+                "display_full_depth_replies_count",
+                "id"
             )
         )
 
@@ -211,7 +212,7 @@ class Pulse_Admin(_User_Content_Admin):
 
     fieldsets = (
         (None, {
-            "fields": ("creator", "message")
+            "fields": ("creator", "message", "id")
         }),
         ("Likes & Dislikes", {
             "fields": (
@@ -297,7 +298,7 @@ class Reply_Admin(_User_Content_Admin):
 
     fieldsets = (
         (None, {
-            "fields": ("creator", "message")
+            "fields": ("creator", "message", "id")
         }),
         ("Replied Content", {
             "fields": (

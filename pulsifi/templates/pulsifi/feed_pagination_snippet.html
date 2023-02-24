@@ -40,6 +40,9 @@
                                     <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
                                 </form>
                                 <span class="text-small">{{ pulse.disliked_by.count }} Dislikes</span>
+                                {% for reply in pulse.reply_set.all %}
+                                    {% include "pulsifi/reply_iterate_snippet.html" %}
+                                {% endfor %}
                             </div>
                         </li>
                     </ul>
