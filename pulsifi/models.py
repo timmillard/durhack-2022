@@ -116,7 +116,9 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name="Creator",
-        related_name="created_%(class)s_set"
+        related_name="created_%(class)s_set",
+        null=False,
+        blank=False
     )
     liked_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -185,6 +187,9 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
     class Meta:
         abstract = True
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.creator}, \"{self.message[:settings.MESSAGE_DISPLAY_LENGTH]}\">"
 
     def __str__(self) -> str:
         """
@@ -541,7 +546,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
         """
             Returns the set of :model:`pulsifi.pulse` objects that should be
             displayed on the :view:`pulsifi.views.Feed_View` for this user.
-        """  # BUG: Admindocs does not generate link to view correctly
+        """  # ISSUE: Admindocs does not generate link to view correctly
 
         return Pulse.objects.filter(
             creator__in=self.following.exclude(is_active=False)
@@ -631,7 +636,9 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         on_delete=models.CASCADE,
         limit_choices_to={"app_label": "pulsifi", "model__in": ("pulse", "reply")},
         verbose_name="Replied Content Type",
-        help_text="Link to the content type of the replied_content instance (either :model:`pulsifi.pulse` or :model:`pulsifi.reply`)."
+        help_text="Link to the content type of the replied_content instance (either :model:`pulsifi.pulse` or :model:`pulsifi.reply`).",
+        null=False,
+        blank=False
     )
     """
         Link to the content type of the replied_content instance (either
@@ -690,19 +697,23 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
             on every field by self.clean_fields().
         """
 
-        try:
-            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):  # BUG: causes error when making reply to a pulse
-                raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
+        if self._content_type_id and self._object_id:  # HACK: Don't clean the generic content relation if the values are not set (prevents error in AdminInlines where dummy objects are cleaned without values in _content_type and _object_id)
+            try:
+                if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=("pulse", "reply")):
+                    raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: Pulse, Reply."}, code="invalid")
 
-            if self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id == self.id:
-                raise ValidationError({"_object_id": "Replied content cannot be this Reply."}, code="invalid")
+                if self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id == self.id:
+                    raise ValidationError({"_object_id": "Replied content cannot be this Reply."}, code="invalid")
 
-            if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
-                raise ValidationError("Replied content must be valid object.")
+                if (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
+                    raise ValidationError("Replied content must be valid object.")
 
-        except ContentType.DoesNotExist as e:
-            e.args = ("Replied object could not be correctly verified because content types for Pulses or Replies do not exist.",)
-            raise e
+            except ContentType.DoesNotExist as e:
+                e.args = ("Replied object could not be correctly verified because content types for Pulses or Replies do not exist.",)
+                raise e
+
+        else:
+            logging.warning(f"Replied object of {repr(self)[:100]} could not be correctly verified because _content_type and _object_id fields were not set, when cleaning. It is likely that this happened within an AdminInline, so it can be assumed that the input data is valid anyway.")
 
         super().clean()
 
@@ -715,8 +726,11 @@ class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
 
         self.full_clean()
 
-        if not self.original_pulse.visible:
-            self.visible = False
+        if self.original_pulse:  # HACK: Don't try to retrieve the original_pulse for visibility updates (prevents error in AdminInlines where dummy objects are created without values in _content_type and _object_id)
+            if not self.original_pulse.visible:
+                self.visible = False
+        else:
+            logging.warning(f"Visibility of original_pulse could not be correctly retrieved because _content_type and _object_id fields were not set, when updating reply visibility to match original_pulse's visibility. It is likely that this happened within an AdminInline.")
 
         self.base_save(clean=False, *args, **kwargs)
 
@@ -766,7 +780,9 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         on_delete=models.CASCADE,
         limit_choices_to={"app_label": "pulsifi", "model__in": settings.REPORTABLE_CONTENT_TYPE_NAMES},
         verbose_name="Reported Object Type",
-        help_text="Link to the content type of the reported_object instance (either :model:`pulsifi.user`, :model:`pulsifi.pulse` or :model:`pulsifi.reply`)."
+        help_text="Link to the content type of the reported_object instance (either :model:`pulsifi.user`, :model:`pulsifi.pulse` or :model:`pulsifi.reply`).",
+        null=False,
+        blank=False
     )
     """
         Link to the content type of the reported_object instance (either
@@ -791,7 +807,9 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         on_delete=models.CASCADE,
         verbose_name="Reporter",
         related_name="submitted_report_set",
-        help_text="Link to the :model:`pulsifi.user` object instance that created this report."
+        help_text="Link to the :model:`pulsifi.user` object instance that created this report.",
+        null=False,
+        blank=False
     )
     """
         Link to the :model:`pulsifi.user` object instance that created this
@@ -805,7 +823,9 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         related_name="moderator_assigned_report_set",
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
         default=get_random_moderator_id,
-        help_text="Link to the :model:`pulsifi.user` object instance (from the set of moderators) that has been assigned to moderate this report."
+        help_text="Link to the :model:`pulsifi.user` object instance (from the set of moderators) that has been assigned to moderate this report.",
+        null=False,
+        blank=False
     )
     """
         Link to the :model:`pulsifi.user` object instance (from the set of
@@ -868,6 +888,9 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
 
         super().__init__(*args, **kwargs)
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self.reporter}, {self.category}, {self.get_status_display()} (Assigned Moderator - {self.assigned_moderator})>"
+
     def __str__(self) -> str:
         return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Moderator - {self.assigned_moderator})"
 
@@ -877,46 +900,49 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
             on every field by self.clean_fields().
         """
 
-        try:
-            if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=settings.REPORTABLE_CONTENT_TYPE_NAMES):
-                raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
+        if self._content_type_id and self._object_id:  # HACK: Don't clean the generic content relation if the values are not set (prevents error in AdminInlines where dummy objects are cleaned without values in _content_type and _object_id)
+            try:
+                if self._content_type not in ContentType.objects.filter(app_label="pulsifi", model__in=settings.REPORTABLE_CONTENT_TYPE_NAMES):
+                    raise ValidationError({"_content_type": f"The Content Type: {self._content_type} is not one of the allowed options: User, Pulse, Reply."}, code="invalid")
 
-            elif (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
-                raise ValidationError("Reported object must be valid object.")
+                elif (self._content_type == ContentType.objects.get(app_label="pulsifi", model="user") and self._object_id not in get_user_model().objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") and self._object_id not in Pulse.objects.all().values_list("id", flat=True)) or (self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply") and self._object_id not in Reply.objects.all().values_list("id", flat=True)):
+                    raise ValidationError("Reported object must be valid object.")
 
-            elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
-                REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
-
-                if Group.objects.filter(name="Admins").exists():
-                    if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
-                        raise REPORT_ADMIN_CONTENT_ERROR
-
-                elif self.reported_object.creator in get_user_model().objects.filter(is_superuser=True):
-                    raise REPORT_ADMIN_CONTENT_ERROR
-
-            elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
-                if self._object_id == self.reporter_id:
-                    raise ValidationError({"_object_id": f"The reporter cannot create a report about themself."}, code="invalid")  # TODO: Better error message
-
-                else:
-                    REPORT_ADMIN_ERROR = ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+                elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="pulse") or self._content_type == ContentType.objects.get(app_label="pulsifi", model="reply"):
+                    REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
 
                     if Group.objects.filter(name="Admins").exists():
-                        if self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
+                        if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
+                            raise REPORT_ADMIN_CONTENT_ERROR
+
+                    elif self.reported_object.creator in get_user_model().objects.filter(is_superuser=True):
+                        raise REPORT_ADMIN_CONTENT_ERROR
+
+                elif self._content_type == ContentType.objects.get(app_label="pulsifi", model="user"):
+                    if self._object_id == self.reporter_id:
+                        raise ValidationError({"_object_id": f"The reporter cannot create a report about themself."}, code="invalid")  # TODO: Better error message
+
+                    else:
+                        REPORT_ADMIN_ERROR = ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
+
+                        if Group.objects.filter(name="Admins").exists():
+                            if self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
+                                raise REPORT_ADMIN_ERROR
+
+                        elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
                             raise REPORT_ADMIN_ERROR
 
-                    elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
-                        raise REPORT_ADMIN_ERROR
+                    if self.assigned_moderator_id == self._object_id:  # NOTE: Attempt to pick a different moderator if the default is the reported user
+                        try:
+                            self.assigned_moderator_id = get_random_moderator_id([self._object_id])
+                        except get_user_model().DoesNotExist as e:
+                            raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid") from e
 
-                if self.assigned_moderator_id == self._object_id:  # NOTE: Attempt to pick a different moderator if the default is the reported user
-                    try:
-                        self.assigned_moderator_id = get_random_moderator_id([self._object_id])
-                    except get_user_model().DoesNotExist as e:
-                        raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid") from e
-
-        except ContentType.DoesNotExist as e:
-            e.args = ("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.",)
-            raise e
+            except ContentType.DoesNotExist as e:
+                e.args = ("Reported object could not be correctly verified because content types for Pulses, Replies or Users do not exist.",)
+                raise e
+        else:
+            logging.warning(f"Reported object of {repr(self)[:100]} could not be correctly verified because _content_type and _object_id fields were not set, when cleaning. It is likely that this happened within an AdminInline, so it can be assumed that the input data is valid anyway.")
 
         if self.assigned_moderator == self.reporter:  # NOTE: Attempt to pick a different moderator if the default is the reporter
             try:

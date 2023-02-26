@@ -80,7 +80,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
         "visible"
     )
     actions = None
-    search_fields = ("creator", "message", "liked_by", "disliked_by")
+    search_fields = ("creator__username", "message", "liked_by__username", "disliked_by__username")
     autocomplete_fields = ("liked_by", "disliked_by")
     search_help_text = "Search for a creator, message content or liked/disliked by user"
     list_editable = ("visible",)
@@ -306,7 +306,7 @@ class Reply_Admin(_User_Content_Admin):
                 "display_original_pulse"
             )
         }),
-        ("Likes", {
+        ("Likes & Dislikes", {
             "fields": (
                 ("liked_by", "display_likes"),
                 ("disliked_by", "display_dislikes")
