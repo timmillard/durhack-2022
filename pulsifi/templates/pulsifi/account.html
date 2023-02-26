@@ -47,7 +47,7 @@
                                 <div class="flex-shrink-0">
                                     {% if request.user == specific_account %}
                                         <form enctype="multipart/form-data" method="POST" action="{% url "avatar_add" %}">
-                                            {% avatar specific_account 100 class="img-fluid" style="border-radius: 100px;" %}
+                                            {% avatar specific_account 100 class="img-fluid mr-2 mb-2" style="border-radius: 100px;" %}
                                             <input type="file" name="avatar" accept="image/*" required id="id_avatar">
                                             {% csrf_token %}
                                             <input class="d-block ml-3" type="submit" value="add pfp"/>

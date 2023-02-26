@@ -116,6 +116,7 @@ AVATAR_PROVIDERS = (
     "avatar.providers.PrimaryAvatarProvider",
     "pulsifi.avatar_providers.DiscordAvatarProvider",
     "pulsifi.avatar_providers.GithubAvatarProvider",
+    "pulsifi.avatar_providers.GoogleAvatarProvider",
     "avatar.providers.GravatarAvatarProvider"
 )
 AVATAR_AUTO_GENERATE_SIZES = (100, 150)

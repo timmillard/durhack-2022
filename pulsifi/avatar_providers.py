@@ -50,3 +50,21 @@ class GithubAvatarProvider:
             return
         else:
             return f"{github_SocialAccount.get_avatar_url()}?size={size}"
+
+
+class GoogleAvatarProvider:
+    """ Avatar URL provider for when users have linked a Google account. """
+
+    @staticmethod
+    def get_avatar_url(user: User, width: int, height: int) -> str | None:
+        """
+            Returns the URL of Google's avatar API, corresponding to this
+            account.
+        """
+
+        try:
+            google_SocialAccount: SocialAccount = user.socialaccount_set.get(provider="google")
+        except SocialAccount.DoesNotExist:
+            return
+        else:
+            return f"""{google_SocialAccount.get_avatar_url().rsplit("=", maxsplit=1)[0]}=w{width}-h{height}-c"""
