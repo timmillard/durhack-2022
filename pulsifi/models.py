@@ -286,7 +286,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
         ],
         error_messages={
             "unique": "A user with that username already exists."
-        }
+        },
+        null=False,
+        blank=False
     )
     email = models.EmailField(
         "Email Address",
@@ -300,7 +302,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
         ],
         error_messages={
             "unique": f"That Email Address is already in use by another user."
-        }
+        },
+        null=False,
+        blank=False
     )
     bio = models.TextField(
         "Bio",
@@ -408,16 +412,17 @@ class User(_Visible_Reportable_Model, AbstractUser):
         if self.is_superuser:  # NOTE: is_staff should be True if is_superuser is True
             self.is_staff = self.is_superuser
 
-        query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
-        restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
-            reduce(
-                operator.or_,
-                query_restricted_admin_usernames
-            )
-        ).count()
-        restricted_admin_username_in_username = any(restricted_admin_username in self.username.lower() for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
-        if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
-            raise ValidationError({"username": "That username is not allowed."}, code="invalid")
+        if self.username:  # NOTE: Only compare the username similarity if the value is valid for all other conditions
+            query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
+            restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
+                reduce(
+                    operator.or_,
+                    query_restricted_admin_usernames
+                )
+            ).count()
+            restricted_admin_username_in_username = any(restricted_admin_username in self.username.lower() for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
+            if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
+                raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
         if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all the usernames except for this user
             username_check_list: Iterable[str] = get_user_model().objects.exclude(id=self.id).values_list("username", flat=True)
