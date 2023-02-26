@@ -281,8 +281,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 r"^[\w.-]+\Z",
                 "Enter a valid username. This value may contain only letters, digits and ./_ characters."
             ),
-            ReservedNameValidator,
-            ConfusableStringValidator
+            ReservedNameValidator(),
+            ConfusableStringValidator()
         ],
         error_messages={
             "unique": "A user with that username already exists."
@@ -292,11 +292,11 @@ class User(_Visible_Reportable_Model, AbstractUser):
         "Email Address",
         unique=True,
         validators=[
-            HTML5EmailValidator,
-            FreeEmailValidator,
-            ConfusableEmailValidator,
-            PreexistingEmailTLDValidator,
-            ExampleEmailValidator
+            HTML5EmailValidator(),
+            FreeEmailValidator(),
+            ConfusableEmailValidator(),
+            PreexistingEmailTLDValidator(),
+            ExampleEmailValidator()
         ],
         error_messages={
             "unique": f"That Email Address is already in use by another user."
@@ -425,7 +425,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
 
         for username in username_check_list:  # NOTE: Check this username is not too similar to any other username
-            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
+            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:  # TODO: Move to a validator
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
 
         if self.email.count("@") == 1:

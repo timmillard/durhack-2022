@@ -2,8 +2,6 @@
     Forms in pulsifi app.
 """
 import logging
-from inspect import isclass
-from typing import Callable, Iterable
 
 from allauth.account.forms import LoginForm as Base_LoginForm, SignupForm as Base_SignupForm
 from django import forms
@@ -92,70 +90,39 @@ class Signup_Form(Base_SignupForm):
 
         super().clean()
 
-        if "username" in self.cleaned_data:
-            self.run_field_validator("username")
-        if "password1" in self.cleaned_data:
-            self.run_field_validator(form_field_name="password1", model_field_name="password")
-        if "email" in self.cleaned_data:
-            self.run_field_validator("email")
-
-        if "username" in self.cleaned_data and "password1" in self.cleaned_data and "email" in self.cleaned_data:
-            try:
-                user = get_user_model()(
-                    username=self.cleaned_data["username"],
-                    password=self.cleaned_data["password1"],
-                    email=self.cleaned_data["email"]
-                )
-                user.full_clean()
-            except ValidationError as e:
-                self.add_errors_from_ValidationError_exceptions((e,))
+        # if "username" in self.cleaned_data and "password1" in self.cleaned_data and "email" in self.cleaned_data:
+        try:
+            get_user_model()(  # TODO: perform model clean with out all input values
+                username=self.cleaned_data.get("username") or "???",
+                password=self.cleaned_data.get("password1") or "???",
+                email=self.cleaned_data.get("email") or "???"
+            ).full_clean()
+        except ValidationError as e:
+            self.add_errors_from_ValidationError_exception(e)
 
         return self.cleaned_data
 
-    def run_field_validator(self, form_field_name: str, model_field_name: str = None) -> None:
-        """
-            Runs all model field's validators on the value provided to the
-            corresponding form field, to ensure validity of the data, when
-            submitting.
-        """
-
-        errors = set()
-
-        validator: Callable[[], Callable[[str], None]] | Callable[[str], None]
-        # noinspection PyProtectedMember
-        for validator in get_user_model()._meta.get_field(model_field_name or form_field_name).validators:
-            try:
-                if isclass(validator):
-                    validator()(self.cleaned_data[form_field_name])
-                else:
-                    validator(self.cleaned_data[form_field_name])
-
-            except ValidationError as e:
-                errors.add(e)
-
-        self.add_errors_from_ValidationError_exceptions(errors, model_field_name or form_field_name)
-
-    def add_errors_from_ValidationError_exceptions(self, errors: Iterable[ValidationError], model_field_name: str = None) -> None:
+    def add_errors_from_ValidationError_exception(self, exception: ValidationError, model_field_name: str = None) -> None:
         """
             Adds the error message(s) from any caught ValidationError exceptions
             to the forms errors dictionary/list.
         """
 
-        for exception in errors:
-            if not hasattr(exception, "error_dict") and hasattr(exception, "error_list"):
-                for error in exception.error_list:
-                    if model_field_name:
-                        self.add_error(model_field_name, error)
-                    else:
-                        self.add_error(None, error)
-            elif hasattr(exception, "error_dict"):
-                for field_name, errors in exception.error_dict.items():
-                    if field_name == "__all__":
-                        self.add_error(None, errors)
-                    else:
-                        self.add_error(field_name, errors)
-            else:
-                logging.error(f"Validation error {repr(exception)} raised without a field name supplied.")
+        if not hasattr(exception, "error_dict") and hasattr(exception, "error_list"):
+            for error in exception.error_list:
+                if model_field_name:
+                    self.add_error(model_field_name, error)
+                else:
+                    self.add_error(None, error)
+        elif hasattr(exception, "error_dict"):
+            for field_name, errors in exception.error_dict.items():
+                if field_name == "__all__":
+                    self.add_error(None, errors)
+                else:
+                    self.add_error(field_name, errors)
+        else:
+            logging.error(f"Validation error {repr(exception)} raised without a field name supplied.")
+        logging.debug([self.errors])
 
 
 class Pulse_Form(forms.ModelForm):
