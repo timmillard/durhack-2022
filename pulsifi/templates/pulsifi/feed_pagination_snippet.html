@@ -29,9 +29,12 @@
                                     <input type="hidden" name="likeable_object_id" value="{{ pulse.id }}">
                                     <input type="hidden" name="actionable_model_name" value="pulse">
                                 </form>
-                                <form style="display:inline;">
-                                    <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
-                                </form>
+                                <button type="button" class="btn btn-sm btn-secondary"
+                                        onclick="addModalData('reply-create-modal', 'pulse', '{{ pulse.id }}');openModal('reply-create-modal')">Reply to this Pulse
+                                </button>
+                                <button type="button" class="btn btn-sm btn-info"
+                                        onclick="addModalData('report-create-modal', 'pulse', '{{ pulse.id }}');openModal('report-create-modal')">Report Pulse
+                                </button>
                                 <form style="display:inline;" method="post">  {# dislike action in backgroud with ajax to prevent page refresh #}
                                     {% csrf_token %}
                                     <input type="submit" class="btn btn-sm btn-danger" {% if request.user in pulse.disliked_by.all %}disabled{% endif %} value="Dislike">

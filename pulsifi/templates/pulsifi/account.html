@@ -10,6 +10,7 @@
         <title>Pulsifi</title>
         <link href="{% static 'pulsifi/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css">
         <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <script src="{% static 'pulsifi/js/modal_controller.js' %}"></script>
     </head>
 
     <body>
@@ -107,7 +108,12 @@
                                                     <input type="hidden" name="unfollow_user_id" value="{{ specific_account.id }}">
                                                 {% endif %}
                                             </form>
+                                            <button type="button" class="btn btn-sm btn-info"
+                                                    onclick="addModalData('report-create-modal', 'user', '{{ specific_account.id }}');openModal('report-create-modal')">Report User
+                                            </button>
                                         </div>
+                                    {% else %}
+                                        <p>Email <a href="mailto:verification@pulsifi.tech">verification@pulsifi.tech</a> to request verification.</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -160,7 +166,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">New Pulse</h5>
-                        <button type="button" class="close" id="close-create-new-post" aria-label="Close" onclick="closeModal('pulse-create-modal');">
+                        <button type="button" class="close" id="close-pulse-create-modal" aria-label="Close" onclick="closeModal('pulse-create-modal');">
                             <span aria-hidden="true">x</span>
                         </button>
                     </div>
@@ -176,6 +182,71 @@
                             <input type="submit" class="btn text-white" id="new-post-submit" style="background-color: #ba03fc;" value="Post to Pulsifi">
                         </div>
                         <input type="hidden" name="creator_id" value="{{ request.user.id }}">
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="reply-create-modal" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New Reply</h5>
+                        <button type="button" class="close" id="close-reply-create-modal" aria-label="Close" onclick="closeModal('reply-create-modal');">
+                            <span aria-hidden="true">x</span>
+                        </button>
+                    </div>
+                    <form method="post"> {# Move to snippet html #}
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="new-reply-content">Reply message...</label>
+                                <input type="text" required class="form-control" name="new_reply_content" id="new-reply-content" placeholder="Reply message...">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <input type="submit" class="btn text-white" id="new-reply-submit" style="background-color: #ba03fc;" value="Reply to this Content">
+                        </div>
+                        <input type="hidden" name="creator_id" value="{{ request.user.id }}">
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="report-create-modal" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New Report</h5>
+                        <button type="button" class="close" id="close-report-create-modal" aria-label="Close" onclick="closeModal('report-create-modal');">
+                            <span aria-hidden="true">x</span>
+                        </button>
+                    </div>
+                    <form method="post"> {# Move to snippet html #}
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="new-report-content">Report reason...</label>
+                                <input type="text" required class="form-control" name="reason" id="reason" placeholder="Report reason...">
+                                <select name="category" required id="category">
+                                    <option value="" selected="">---------</option>
+                                    <option value="SPM">Spam</option>
+                                    <option value="SEX">Nudity or sexual activity</option>
+                                    <option value="HAT">Hate speech or symbols</option>
+                                    <option value="VIO">Violence or dangerous organisations</option>
+                                    <option value="IGL">Sale of illegal or regulated goods</option>
+                                    <option value="BUL">Bullying or harassment</option>
+                                    <option value="INP">Intellectual property violation or impersonation</option>
+                                    <option value="INJ">Suicide or self-injury</option>
+                                    <option value="SCM">Scam or fraud</option>
+                                    <option value="FLS">False or misleading information</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <input type="submit" class="btn text-white" id="new-report-submit" style="background-color: #ba03fc;" value="Submit Report">
+                        </div>
+                        <input type="hidden" name="reporter_id" value="{{ request.user.id }}">
                     </form>
                 </div>
             </div>
@@ -229,11 +300,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
             crossorigin="anonymous"></script>
-    <script src="{% static 'pulsifi/js/modal_controller.js' %}"></script>
     <script>
-        // Get the modal
-        let new_post_modal = document.getElementById("pulse-create");
-        new_post_modal.addEventListener("click", () => {
+        let pulse_create_button = document.getElementById("pulse-create");
+        pulse_create_button.addEventListener("click", () => {
             openModal("pulse-create-modal")
         });
     </script>

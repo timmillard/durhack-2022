@@ -317,7 +317,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
         user.
     """
 
-    verified = models.BooleanField(  # TODO: Add verification process
+    verified = models.BooleanField(
         "Is verified?",
         default=False,
         help_text="Boolean flag to indicate whether this user is a noteable person/organisation."
@@ -430,7 +430,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
 
         for username in username_check_list:  # NOTE: Check this username is not too similar to any other username
-            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:  # TODO: Move to a validator
+            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
 
         if self.email.count("@") == 1:
@@ -572,7 +572,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
         return extra_property_fields
 
 
-class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
+class Pulse(_User_Generated_Content_Model):
     """
         Model to define pulses (posts) that are made by users and are visible
         on the main website.
@@ -628,7 +628,7 @@ class Pulse(_User_Generated_Content_Model):  # TODO: disable the like & dislike 
         return {reply for reply in Reply.objects.all() if reply.original_pulse is self}
 
 
-class Reply(_User_Generated_Content_Model):  # TODO: disable the like & dislike buttons if profile already in set
+class Reply(_User_Generated_Content_Model):
     """
         Model to define replies (posts assigned to a parent
         :model:`pulsifi.pulse` object) that are made by a :model:`pulsifi.user`
