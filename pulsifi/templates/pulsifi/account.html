@@ -23,7 +23,6 @@
                 <div class="navbar-nav">
                     <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
                     <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
-                    <a class="nav-link px-3 text-white" href="{% url 'pulsifi:following' %}">Following</a>
                     {% if request.user.is_staff %}<a class="nav-link px-3 text-white" href="{% url 'admin:index' %}">Admin</a>{% endif %}
                 </div>
             </div>
@@ -74,8 +73,24 @@
                                     <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                                          style="background-color: #ffff;">
                                         <div class="px-3">
+                                            {% if specific_account == request.user %}
+                                                <a href="{% url 'pulsifi:followers' %}">
+                                            {% endif %}
                                             <p class="small text-muted mb-1">Followers</p>
                                             <p class="mb-0">{{ specific_account.followers.count }}</p>
+                                            {% if specific_account == request.user %}
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        <div class="px-3">
+                                            {% if specific_account == request.user %}
+                                                <a href="{% url 'pulsifi:following' %}">
+                                            {% endif %}
+                                            <p class="small text-muted mb-1">Following</p>
+                                            <p class="mb-0">{{ specific_account.following.count }}</p>
+                                            {% if specific_account == request.user %}
+                                                </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     {% if specific_account != request.user %}

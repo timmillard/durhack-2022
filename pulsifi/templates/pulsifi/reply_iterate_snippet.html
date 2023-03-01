@@ -21,20 +21,20 @@
                             <span class="text-small">{{ reply.liked_by.count }} Likes</span>
                             <form style="display:inline;" method="post">  {# like action in backgroud with ajax to prevent page refresh #}
                                 {% csrf_token %}
-                                <input type="submit" class="btn btn-sm btn-success" value="Like">
+                                <input type="submit" class="btn btn-sm btn-success" {% if request.user in reply.liked_by.all %}disabled{% endif %} value="Like">
                                 <input type="hidden" name="action" value="like">
                                 <input type="hidden" name="likeable_object_id" value="{{ reply.id }}">
                                 <input type="hidden" name="actionable_model_name" value="reply">
                             </form>
+                            <form style="display:inline;">
+                                <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
+                            </form>
                             <form style="display:inline;" method="post">  {# dislike action in backgroud with ajax to prevent page refresh #}
                                 {% csrf_token %}
-                                <input type="submit" class="btn btn-sm btn-danger" value="Dislike">
+                                <input type="submit" class="btn btn-sm btn-danger" {% if request.user in reply.disliked_by.all %}disabled{% endif %} value="Dislike">
                                 <input type="hidden" name="action" value="dislike">
                                 <input type="hidden" name="dislikeable_object_id" value="{{ reply.id }}">
                                 <input type="hidden" name="actionable_model_name" value="reply">
-                            </form>
-                            <form style="display:inline;">
-                                <input type="submit" class="btn btn-sm btn-secondary" value="Reply">
                             </form>
                             <span class="text-small">{{ reply.disliked_by.count }} Dislikes</span>
                             {% for inner_reply in reply.reply_set.all %}

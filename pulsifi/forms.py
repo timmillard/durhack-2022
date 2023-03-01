@@ -147,7 +147,6 @@ class Signup_Form(Base_SignupForm):
                     self.add_error(field_name, errors)
         else:
             logging.error(f"Validation error {repr(exception)} raised without a field name supplied.")
-        logging.debug([self.errors])
 
 
 class Pulse_Form(forms.ModelForm):
@@ -165,7 +164,7 @@ class Reply_Form(forms.ModelForm):
     # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = Reply
-        fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field), add parent object field
+        fields = ("creator", "message", "_content_type", "_object_id")  # TODO: creator should be automatically assigned (not be a selectable field)
 
 
 class Bio_Form(forms.ModelForm):

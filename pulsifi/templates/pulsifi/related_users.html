@@ -23,7 +23,6 @@
                 <div class="navbar-nav">
                     <a class="nav-link px-3 text text-white" href="{% url 'pulsifi:feed' %}">Feed</a>
                     <a class="nav-link px-3 text-white" href="{% url 'pulsifi:self_account' %}">Profile</a>
-                    <a class="nav-link px-3 text-white" href="{% url 'pulsifi:following' %}">Following</a>
                     {% if request.user.is_staff %}<a class="nav-link px-3 text-white" href="{% url 'admin:index' %}">Admin</a>{% endif %}
                 </div>
             </div>
@@ -40,6 +39,9 @@
 
         <main>
             <div class="container py-5">
+                {% if not related_user_list %}
+                    <h2>No related users</h2>
+                {% endif %}
                 {% for related_user in related_user_list %}
                     <div class="card h-100">
                         <div class="card">
