@@ -1,7 +1,7 @@
 """
     Views in pulsifi app.
 """
-from typing import Type
+from typing import Callable, Iterable, Protocol, Type
 
 from allauth.account.views import LoginView as Base_LoginView, SignupView as Base_SignupView
 from django.apps import apps
@@ -9,120 +9,143 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import RedirectURLMixin
-from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Count, QuerySet
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, resolve_url
 from django.urls import reverse
 from django.views.generic import CreateView, ListView, RedirectView
-from django.views.generic.base import ContextMixin, TemplateResponseMixin, TemplateView
+from django.views.generic.base import ContextMixin, TemplateView
+from django.views.generic.list import MultipleObjectMixin
 from el_pagination.views import AjaxListView
 
-from .exceptions import GetParameterError, RedirectionLoopError, UserAlreadyInSetError, UserAlreadyNotInSetError
-from .forms import Login_Form, Reply_Form, Signup_Form
+from .exceptions import GETParameterError, RedirectionLoopError
+from .forms import Login_Form, Signup_Form
 from .models import Pulse, Reply, User
 
 
-class FollowUserMixin(TemplateResponseMixin, ContextMixin):
-    request: WSGIRequest
+class _GenericViewMixin(Protocol):
+    request: HttpRequest
 
-    def check_follow_or_unfollow_in_post_request(self) -> bool | HttpResponse:
-        try:
-            action: str = self.request.POST["action"].lower()
-        except KeyError:
+
+def _check_follow_or_unfollow_in_POST_request(self: _GenericViewMixin) -> bool | HttpResponse:
+    try:
+        action: str = self.request.POST["action"].lower()
+    except KeyError:
+        return False
+    else:
+        if action != "follow" and action != "unfollow":
             return False
-        else:
-            if action == "follow":
-                try:
-                    follow_user: User = get_user_model().objects.get(id=self.request.POST["follow_user_id"])
-                except (KeyError, get_user_model().DoesNotExist):
-                    return False
-                else:
-                    if self.request.user not in follow_user.followers.all():
-                        follow_user.followers.add(self.request.user)
-                        return redirect(self.request.path_info)
-                    else:
-                        raise UserAlreadyInSetError(user=self.request.user, user_set=follow_user.followers.all())
-            elif action == "unfollow":
-                try:
-                    unfollow_user: User = get_user_model().objects.get(id=self.request.POST["unfollow_user_id"])
-                except (KeyError, get_user_model().DoesNotExist):
-                    return False
-                else:
-                    if self.request.user in unfollow_user.followers.all():
-                        unfollow_user.followers.remove(self.request.user)
-                        return redirect(self.request.path_info)
-                    else:
-                        raise UserAlreadyNotInSetError(user=self.request.user, user_set=unfollow_user.followers.all())
-            else:
-                return False
 
-
-class EditPulseOrReplyMixin(TemplateResponseMixin, ContextMixin):
-    request: WSGIRequest
-
-    def check_like_or_dislike_in_post_request(self) -> bool | tuple[str, Pulse | Reply]:
-        try:
-            action: str = self.request.POST["action"]
-        except KeyError:
-            return False
-        else:
+        if action == "follow":
             try:
-                model: Type[Pulse | Reply] = apps.get_model(app_label="pulsifi", model_name=self.request.POST["actionable_model_name"])
-            except KeyError:
-                return False
+                follow_user: User = get_user_model().objects.get(id=self.request.POST["follow_user_id"])
+            except (KeyError, get_user_model().DoesNotExist):
+                return HttpResponseBadRequest()
             else:
-                if action == "like":
-                    try:
-                        actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["likeable_object_id"])
-                    except (KeyError, model.DoesNotExist):
-                        return False
-                    else:
-                        actionable_object.liked_by.add(self.request.user)
-                        return action, actionable_object
-                elif action == "dislike":
-                    try:
-                        actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["dislikeable_object_id"])
-                    except (KeyError, model.DoesNotExist):
-                        return False
-                    else:
-                        actionable_object.disliked_by.add(self.request.user)
-                        return action, actionable_object
+                if self.request.user not in follow_user.followers.all():
+                    follow_user.followers.add(self.request.user)
+                    return redirect(self.request.path_info)
                 else:
-                    return False
+                    return HttpResponseBadRequest()
+        elif action == "unfollow":
+            try:
+                unfollow_user: User = get_user_model().objects.get(id=self.request.POST["unfollow_user_id"])
+            except (KeyError, get_user_model().DoesNotExist):
+                return HttpResponseBadRequest()
+            else:
+                if self.request.user in unfollow_user.followers.all():
+                    unfollow_user.followers.remove(self.request.user)
+                    return redirect(self.request.path_info)
+                else:
+                    return HttpResponseBadRequest()
 
-    def check_reply_in_post_request(self) -> bool | Reply | Reply_Form:
+
+def _check_like_or_dislike_in_POST_request(self: _GenericViewMixin) -> bool | HttpResponse:
+    try:
+        action: str = self.request.POST["action"].lower()
+    except KeyError:
+        return False
+    else:
+        if action != "like" and action != "dislike":
+            return False
+
         try:
-            action: str = self.request.POST["action"]
+            model: Type[Pulse | Reply] = apps.get_model(app_label="pulsifi", model_name=self.request.POST["actionable_model_name"])
         except KeyError:
-            return False
+            return HttpResponseBadRequest()
         else:
-            if action == "reply":
-                form = Reply_Form(self.request.POST)
-                if form.is_valid():
-                    reply: Reply = form.save()
-                    return reply
+            if action == "like":
+                try:
+                    actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["likeable_object_id"])
+                except (KeyError, model.DoesNotExist):
+                    return HttpResponseBadRequest()
                 else:
-                    return form
-            else:
-                return False
+                    actionable_object.liked_by.add(self.request.user)
+                    return redirect(self.request.path_info)
+            elif action == "dislike":
+                try:
+                    actionable_object: Pulse | Reply = model.objects.get(id=self.request.POST["dislikeable_object_id"])
+                except (KeyError, model.DoesNotExist):
+                    return HttpResponseBadRequest()
+                else:
+                    actionable_object.disliked_by.add(self.request.user)
+                    return redirect(self.request.path_info)
 
-    def check_report_in_post_request(self):  # TODO: Create check_report_in_post_request functionality
-        pass
 
-    def check_action_in_post_request(self) -> bool | HttpResponse:
-        if self.check_like_or_dislike_in_post_request():
-            return redirect(self.request.path_info)
-        elif reply := self.check_reply_in_post_request():
-            if isinstance(reply, Reply):
-                return redirect(reply)
-            elif isinstance(reply, Reply_Form):
-                return self.render_to_response(self.get_context_data(form=reply))
-        # TODO: what to do if a post is reported
-        # elif self.check_report_in_post_request():
-        #     if isinstance()
+# def check_reply_in_post_request(self) -> bool | Reply | Reply_Form:
+#     try:
+#         action: str = self.request.POST["action"]
+#     except KeyError:
+#         return HttpResponseBadRequest()
+#     else:
+#         if action == "reply":
+#             form = Reply_Form(self.request.POST)
+#             if form.is_valid():
+#                 reply: Reply = form.save()
+#                 return redirect(reply)
+#             else:
+#                 return self.render_to_response(self.get_context_data(form=form))
+#         else:
+#             return HttpResponseBadRequest()
+
+
+class POSTRequestCheckerMixin:
+    POST_request_checker_functions: Iterable[Callable[[_GenericViewMixin], bool | HttpResponse]] = ()
+
+    def post(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        # noinspection PyUnresolvedReferences
+        if hasattr(super(), "post") and callable(super().post):
+            # noinspection PyUnresolvedReferences
+            return super().post(request, *args, **kwargs)
+
+        for POST_request_checker_function in self.POST_request_checker_functions:
+            # noinspection PyTypeChecker
+            if response := POST_request_checker_function(self):
+                return response
         else:
-            return False
+            return HttpResponseBadRequest()
+
+
+class PulseListMixin(POSTRequestCheckerMixin, MultipleObjectMixin, ContextMixin):
+    POST_request_checker_functions = (_check_like_or_dislike_in_POST_request,)
+    object_list: QuerySet[Pulse] = None
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        self.object_list = self.get_queryset()
+
+        context.update(
+            {
+                "pulse_list": self.object_list,
+                "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
+            }
+        )
+        return context
+
+
+class FollowUserMixin(POSTRequestCheckerMixin):
+    POST_request_checker_functions = (_check_follow_or_unfollow_in_POST_request,)
 
 
 class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account deletion, show admin link for super-users, ask to log in when redirecting here (show modal), prevent users with >3 in progress reports or >0 completed reports from logging in (with reason page)
@@ -190,27 +213,13 @@ class Home_View(RedirectURLMixin, TemplateView):  # TODO: toast for account dele
         return context
 
 
-class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TODO: lookup how constant scroll pulses, POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
+class Feed_View(PulseListMixin, LoginRequiredMixin, AjaxListView):  # TODO: POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, show replies, toast for successful redirect after login, highlight pulse/reply (from get parameters) at top of page or message if not visible
     template_name = "pulsifi/feed.html"
-    object_list: QuerySet[Pulse]
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        self.object_list = self.get_queryset()
-
-        context.update(
-            {
-                "pulse_list": self.object_list,
-                "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
-            }
-        )
-        return context
 
     def get(self, request, *args, **kwargs):
         try:
             return self.render_to_response(self.get_context_data())
-        except GetParameterError:
+        except GETParameterError:
             return HttpResponseBadRequest()
 
     def get_queryset(self):
@@ -223,15 +232,9 @@ class Feed_View(EditPulseOrReplyMixin, LoginRequiredMixin, AjaxListView):  # TOD
             try:
                 return queryset.exclude(id=int(highlight))
             except ValueError as e:
-                raise GetParameterError(get_parameters={"highlight": highlight}) from e
+                raise GETParameterError(get_parameters={"highlight": highlight}) from e
 
         return queryset
-
-    def post(self, request, *args, **kwargs):
-        if response := self.check_action_in_post_request():
-            return response
-        else:
-            return HttpResponseBadRequest()
 
 
 class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast for users that have just signed up to edit their bio/avatar
@@ -244,23 +247,18 @@ class Self_Account_View(LoginRequiredMixin, RedirectView):  # TODO: Show toast f
         )
 
 
-class Specific_Account_View(EditPulseOrReplyMixin, FollowUserMixin, LoginRequiredMixin, AjaxListView):  # TODO: POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
+class Specific_Account_View(FollowUserMixin, PulseListMixin, LoginRequiredMixin, AjaxListView):  # TODO: POST actions for pulses & replies, only show pulses/replies if within time & visible & creator is active+visible & not in any non-rejected reports, change profile parts (if self profile), delete account with modal or view all finished pulses (if self profile), show replies, toast for account creation, prevent create new pulses/replies if >3 in progress or >1 completed reports on user or pulse/reply of user
     template_name = "pulsifi/account.html"
+    POST_request_checker_functions = (_check_follow_or_unfollow_in_POST_request, _check_like_or_dislike_in_POST_request)
     object_list = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context.update(
-            {
-                "specific_account": get_object_or_404(
-                    get_user_model(),
-                    is_active=True,
-                    username=self.kwargs.get("username")
-                ),
-                "pulse_list": self.get_queryset(),
-                "pagination_snippet": "pulsifi/feed_pagination_snippet.html"
-            }
+        context["specific_account"] = get_object_or_404(
+            get_user_model(),
+            is_active=True,
+            username=self.kwargs.get("username")
         )
 
         return context
@@ -272,17 +270,6 @@ class Specific_Account_View(EditPulseOrReplyMixin, FollowUserMixin, LoginRequire
             username=self.kwargs.get("username")
         ).created_pulse_set.all()
 
-    def post(self, request, *args, **kwargs):
-        if response := self.check_action_in_post_request():
-            return response
-        elif response := self.check_follow_or_unfollow_in_post_request():
-            return response
-        # TODO: what to do if a post is deleted
-        # elif self.check_delete_in_post_request():
-        #     return redirect("pulsifi:feed")
-        else:
-            return HttpResponseBadRequest()
-
 
 class Following_View(FollowUserMixin, LoginRequiredMixin, ListView):  # TODO: Inherit from combined following/followers view
     template_name = "pulsifi/related_users.html"
@@ -293,17 +280,6 @@ class Following_View(FollowUserMixin, LoginRequiredMixin, ListView):  # TODO: In
     def get_queryset(self):
         return get_user_model().objects.annotate(Count("followers")).filter(followers=self.request.user).order_by("-followers__count")
 
-    def post(self, request, *args, **kwargs):  # TODO: simplify this code
-        try:
-            response = self.check_follow_or_unfollow_in_post_request()
-        except (UserAlreadyInSetError, UserAlreadyNotInSetError):
-            return HttpResponseBadRequest()
-        else:
-            if response:
-                return response
-            else:
-                return HttpResponseBadRequest()
-
 
 class Followers_View(FollowUserMixin, LoginRequiredMixin, ListView):  # TODO: Inherit from combined following/followers view
     template_name = "pulsifi/related_users.html"
@@ -312,17 +288,6 @@ class Followers_View(FollowUserMixin, LoginRequiredMixin, ListView):  # TODO: In
 
     def get_queryset(self):
         return get_user_model().objects.annotate(Count("followers")).filter(following=self.request.user).order_by("-followers__count")
-
-    def post(self, request, *args, **kwargs):  # TODO: simplify this code
-        try:
-            response = self.check_follow_or_unfollow_in_post_request()
-        except (UserAlreadyInSetError, UserAlreadyNotInSetError):
-            return HttpResponseBadRequest()
-        else:
-            if response:
-                return response
-            else:
-                return HttpResponseBadRequest()
 
 
 # TODO: profile search view, leaderboard view, report views
