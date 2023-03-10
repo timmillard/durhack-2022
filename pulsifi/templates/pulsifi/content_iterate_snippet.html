@@ -1,0 +1,60 @@
+{% load avatar_tags %}
+{% load pulsifi_extras %}
+<div class="container-fluid p-5 text-center">
+    <div class="card flex-x5-nowrap">
+        <div class="tab-content admin-tab-content pt30">
+            <div role="tabpanel" class="tab-pane active show">
+                <ul class="activity-list list-unstyled">
+                    <li class="clearfix">
+                        <div class="float-left">
+                            <div class="flex-shrink-0">
+                                <a href="{{ content.creator.get_absolute_url }}">
+                                    {% avatar content.creator 100 class="img-fluid m-2" style="border-radius: 100px;" %}
+                                </a>
+                            </div>
+                        </div>
+                        <div class="act-content">
+                            <div class="font400">
+                                <a href="{{ content.creator.get_absolute_url }}" class="font600">{{ content.creator }}</a> replied
+                            </div>
+                            {% if content|classname == "pulse" %}
+                                <span class="text-small">{{ content.date_time_created|timesince }} Ago</span>
+                                <div>{{ content|verbosename }} will be deleted in <p id="time">??:??</p></div>
+                            {% endif %}
+                            <p>{{ content.message|format_mentions }}</p>
+                            <span class="text-small">{{ content.liked_by.count }} Likes</span>
+                            <form style="display:inline;" method="post">  {# like action in backgroud with ajax to prevent page refresh #}
+                                {% csrf_token %}
+                                <input type="submit" class="btn btn-sm btn-success" {% if request.user in content.liked_by.all %}disabled{% endif %} value="Like">
+                                <input type="hidden" name="action" value="like">
+                                <input type="hidden" name="likeable_object_id" value="{{ content.id }}">
+                                <input type="hidden" name="actionable_model_name" value="{{ content|classname }}">
+                            </form>
+                            <button type="button" class="btn btn-sm btn-secondary"
+                                    onclick="addModalData('reply-create-modal', '{{ content|classname }}', '{{ content.id }}');openModal('reply-create-modal')">Reply to this
+                                                                                                                                                                Reply
+                            </button>
+                            <button type="button" class="btn btn-sm btn-info"
+                                    onclick="addModalData('report-create-modal', '{{ content|classname }}', '{{ content.id }}');openModal('report-create-modal')">Report This
+                                                                                                                                                                  Reply
+                            </button>
+                            <form style="display:inline;" method="post">  {# dislike action in backgroud with ajax to prevent page refresh #}
+                                {% csrf_token %}
+                                <input type="submit" class="btn btn-sm btn-danger" {% if request.user in content.disliked_by.all %}disabled{% endif %} value="Dislike">
+                                <input type="hidden" name="action" value="dislike">
+                                <input type="hidden" name="dislikeable_object_id" value="{{ content.id }}">
+                                <input type="hidden" name="actionable_model_name" value="{{ content|classname }}">
+                            </form>
+                            <span class="text-small">{{ content.disliked_by.count }} Dislikes</span>
+                            {% for reply in content.reply_set.all %}
+                                {% with content=reply %}
+                                    {% include "pulsifi/content_iterate_snippet.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

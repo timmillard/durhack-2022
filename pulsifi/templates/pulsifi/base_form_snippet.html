@@ -1,0 +1,9 @@
+{% for hidden_field in form.hidden_fields %}
+    {{ hidden_field }}
+{% endfor %}
+{% for visible_field in form.visible_fields %}
+    <div class="form-group">
+        {{ visible_field.label_tag }}
+        {{ visible_field }}
+    </div>
+{% endfor %}

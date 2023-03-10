@@ -11,79 +11,60 @@ from django.core.exceptions import ValidationError
 from pulsifi.models import Pulse, Reply
 
 
-class Login_Form(Base_LoginForm):
-    """ Form to customise the HTML & CSS generated for the login form. """
+class _Base_Form_Config(forms.Form):
+    """
+        Config class to provide the base attributes for how to configure a
+        form.
+    """
 
-    template_name = "pulsifi/auth_form_snippet.html"
+    template_name = "pulsifi/base_form_snippet.html"
     """
         Link to a HTML snippet, which describes how the form should be rendered
         (see https://docs.djangoproject.com/en/4.1/topics/forms/#reusable-form-templates).
     """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        visible_field: forms.BoundField
+        for visible_field in self.visible_fields():
+            if visible_field.widget_type not in ("checkbox", "radio"):
+                visible_field.field.widget.attrs["class"] = "form-control"
+
+        self.label_suffix = ""
+
+
+class Login_Form(_Base_Form_Config, Base_LoginForm):
+    """ Form to customise the HTML & CSS generated for the login form. """
+
+    prefix = "login"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.fields["login"].label = "Username / Email Address"
-        self.fields["login"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Enter your Username / Email Address"
-            }
-        )
+        self.fields["login"].widget.attrs["placeholder"] = "Enter your Username / Email Address"
 
-        self.fields["password"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Enter your Password"
-            }
-        )
-
-        self.label_suffix = ""
+        self.fields["password"].widget.attrs["placeholder"] = "Enter your Password"
 
 
-class Signup_Form(Base_SignupForm):
+class Signup_Form(_Base_Form_Config, Base_SignupForm):
     """ Form to customise the HTML & CSS generated for the signup form. """
 
-    template_name = "pulsifi/auth_form_snippet.html"
-    """
-        Link to a HTML snippet, which describes how the form should be rendered
-        (see https://docs.djangoproject.com/en/4.1/topics/forms/#reusable-form-templates).
-    """
+    prefix = "signup"
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.fields["email"].label = "Email Address"
-        self.fields["email"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Enter your Email Address"
-            }
-        )
+        self.fields["email"].widget.attrs["placeholder"] = "Enter your Email Address"
 
-        self.fields["username"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Choose a Username"
-            }
-        )
+        self.fields["username"].widget.attrs["placeholder"] = "Choose a Username"
 
-        self.fields["password1"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Choose a Password"
-            }
-        )
+        self.fields["password1"].widget.attrs["placeholder"] = "Choose a Password"
 
         self.fields["password2"].label = "Confirm Password"
-        self.fields["password2"].widget.attrs.update(
-            {
-                "class": "form-control",
-                "placeholder": "Re-enter your Password, to check that you can spell"
-            }
-        )
-
-        self.label_suffix = ""
+        self.fields["password2"].widget.attrs["placeholder"] = "Re-enter your Password, to check that you can spell"
 
     def clean(self) -> dict[str]:
         """ Validate inserted form data using temporary in-memory user object. """
@@ -149,26 +130,50 @@ class Signup_Form(Base_SignupForm):
             logging.error(f"Validation error {repr(exception)} raised without a field name supplied.")
 
 
-class Pulse_Form(forms.ModelForm):
+class Pulse_Form(_Base_Form_Config, forms.ModelForm):
     """ Form for creating a new Pulse """
+
+    prefix = "create_pulse"
 
     # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = Pulse
-        fields = ("creator", "message")  # TODO: creator should be automatically assigned (not be a selectable field)
+        fields = ("creator", "message")
+        widgets = {"creator": forms.HiddenInput}
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.fields["message"].label = "What are you thinking...?"
+        self.fields["message"].widget.attrs["placeholder"] = "What are you thinking...?"
 
 
-class Reply_Form(forms.ModelForm):
+class Reply_Form(_Base_Form_Config, forms.ModelForm):
     """ Form for creating a new reply. """
+
+    prefix = "create_pulse"
 
     # noinspection PyMissingOrEmptyDocstring
     class Meta:
         model = Reply
         fields = ("creator", "message", "_content_type", "_object_id")  # TODO: creator should be automatically assigned (not be a selectable field)
+        widgets = {
+            "creator": forms.HiddenInput,
+            "_content_type": forms.HiddenInput,
+            "_object_id": forms.HiddenInput
+        }
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.fields["message"].label = "Reply message..."
+        self.fields["message"].widget.attrs["placeholder"] = "Reply message..."
 
 
-class Bio_Form(forms.ModelForm):
+class Bio_Form(_Base_Form_Config, forms.ModelForm):
     """ Form for updating a user's bio. """
+
+    prefix = "update_bio"
 
     # noinspection PyMissingOrEmptyDocstring
     class Meta:

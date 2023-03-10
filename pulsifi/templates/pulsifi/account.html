@@ -155,7 +155,11 @@
                     {% if not pulse_list %}
                         No Pulses
                     {% else %}
-                        {% include pagination_snippet %}
+                        {% for pulse in pulse_list %}
+                            {% with content=pulse %}
+                                {% include content_iterate_snippet %}
+                            {% endwith %}
+                        {% endfor %}
                     {% endif %}
                 </div>
             </div>
@@ -208,6 +212,8 @@
                             <input type="submit" class="btn text-white" id="new-reply-submit" style="background-color: #ba03fc;" value="Reply to this Content">
                         </div>
                         <input type="hidden" name="creator_id" value="{{ request.user.id }}">
+                        <input type="hidden" id="content_type_input" name="_content_type">
+                        <input type="hidden" id="object_id_input" name="_object_id">
                     </form>
                 </div>
             </div>
@@ -226,9 +232,9 @@
                         {% csrf_token %}
                         <div class="modal-body">
                             <div class="form-group">
-                                <label for="new-report-content">Report reason...</label>
+                                <label for="reason">Report reason...</label>
                                 <input type="text" required class="form-control" name="reason" id="reason" placeholder="Report reason...">
-                                <select name="category" required id="category">
+                                <select name="category" class="m-2" required id="reason">
                                     <option value="" selected="">---------</option>
                                     <option value="SPM">Spam</option>
                                     <option value="SEX">Nudity or sexual activity</option>
@@ -247,6 +253,8 @@
                             <input type="submit" class="btn text-white" id="new-report-submit" style="background-color: #ba03fc;" value="Submit Report">
                         </div>
                         <input type="hidden" name="reporter_id" value="{{ request.user.id }}">
+                        <input type="hidden" id="content_type_input" name="_content_type">
+                        <input type="hidden" id="object_id_input" name="_object_id">
                     </form>
                 </div>
             </div>
