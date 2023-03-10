@@ -7,6 +7,7 @@ from re import Match as RegexMatch, sub as regex_sub
 
 from django import template
 from django.contrib.auth import get_user_model
+from django.db.models import Model
 from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils.html import conditional_escape
@@ -54,3 +55,26 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
             esc_func(value)
         )
     )
+
+
+@register.filter()
+def classname(value):
+    try:
+        if isinstance(value, Model) or issubclass(value, Model):
+            return value._meta.model_name
+    except TypeError:
+        pass
+    return str(type(value)).title()
+
+
+@register.filter()
+def verbosename(value, plural=False):
+    try:
+        if isinstance(value, Model) or issubclass(value, Model):
+            if plural:
+                return value._meta.verbose_name_plural
+            else:
+                return value._meta.verbose_name
+    except TypeError:
+        pass
+    return str(type(value)).title()
