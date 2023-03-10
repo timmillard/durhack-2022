@@ -189,7 +189,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
         abstract = True
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.creator}, \"{self.message[:settings.MESSAGE_DISPLAY_LENGTH]}\">"
+        return f"<{self._meta.verbose_name}: {self.creator}, \"{self.message[:settings.MESSAGE_DISPLAY_LENGTH]}\">"
 
     def __str__(self) -> str:
         """
@@ -203,7 +203,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     def get_absolute_url(self) -> str:
         """ Returns the canonical URL for this object instance. """
 
-        return f"""{reverse("pulsifi:feed")}?{type(self).__name__.lower()}={self.id}"""
+        return f"""{reverse("pulsifi:feed")}?{self._meta.model_name}={self.id}"""
 
 
 class User(_Visible_Reportable_Model, AbstractUser):
@@ -895,10 +895,10 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}: {self.reporter}, {self.category}, {self.get_status_display()} (Assigned Moderator - {self.assigned_moderator})>"
+        return f"<{self._meta.verbose_name}: {self.reporter}, {self.category}, {self.get_status_display()} (Assigned Moderator - {self.assigned_moderator})>"
 
     def __str__(self) -> str:
-        return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {type(self.reported_object).__name__.upper()[0]} | {self.reported_object})(Assigned Moderator - {self.assigned_moderator})"
+        return f"{self.reporter}, {self.category}, {self.get_status_display()} (For object - {self._content_type.name} | {self.reported_object})(Assigned Moderator - {self.assigned_moderator})"
 
     def clean(self) -> None:
         """

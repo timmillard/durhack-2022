@@ -59,7 +59,7 @@ class get_random_moderator_id_Util_Function_Tests(Base_TestCase):
         user = CreateTestUserHelper.create_test_user()
         user.groups.add(Group.objects.get(name="Moderators"))
 
-        self.assertEqual(get_random_moderator_id(), user.id)
+        self.assertEqual(user.id, get_random_moderator_id())
 
 
 class Custom_Base_Model_Tests(Base_TestCase):

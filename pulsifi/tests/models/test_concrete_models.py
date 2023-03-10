@@ -40,8 +40,8 @@ class User_Model_Tests(Base_TestCase):
             )
             user.refresh_from_db()
             self.assertEqual(
-                getattr(user, field.name),
-                getattr(old_user, field.name)
+                getattr(old_user, field.name),
+                getattr(user, field.name)
             )
 
     def test_delete_makes_not_active(self):
@@ -79,13 +79,13 @@ class User_Model_Tests(Base_TestCase):
     def test_stringify_displays_in_correct_format(self):
         user = CreateTestUserHelper.create_test_user()
 
-        self.assertEqual(str(user), f"@{user.username}")
+        self.assertEqual(f"@{user.username}", str(user))
 
         user.update(is_active=False)
 
         self.assertEqual(
-            str(user),
-            "".join(letter + "\u0336" for letter in f"@{user.username}")
+            "".join(letter + "\u0336" for letter in f"@{user.username}"),
+            str(user)
         )
 
     def test_user_becomes_superuser_put_in_admin_group(self):
@@ -197,8 +197,8 @@ class User_Model_Tests(Base_TestCase):
         for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES:
             with self.assertRaises(ValidationError) as e:
                 CreateTestUserHelper.create_test_user(username=restricted_admin_username)
-            self.assertEqual(len(e.exception.error_dict), 1)
-            self.assertEqual(e.exception.error_dict.popitem()[0], "username")
+            self.assertEqual(1, len(e.exception.error_dict))
+            self.assertEqual("username", e.exception.error_dict.popitem()[0])
 
     def test_staff_cannot_have_restricted_admin_username_when_already_max_admin_count(self):
         for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES:
@@ -212,29 +212,29 @@ class User_Model_Tests(Base_TestCase):
                     username=restricted_admin_username,
                     is_staff=True
                 )
-            self.assertEqual(len(e.exception.error_dict), 1)
-            self.assertEqual(e.exception.error_dict.popitem()[0], "username")
+            self.assertEqual(1, len(e.exception.error_dict))
+            self.assertEqual("username", e.exception.error_dict.popitem()[0])
 
     def test_dots_removed_from_local_part_of_email(self):
         local_email = "test.local.email"
         domain_email = "test.domain.email.com"
         user = CreateTestUserHelper.create_test_user(email="@".join([local_email, domain_email]))
 
-        self.assertEqual(user.email, "@".join([local_email.replace(".", ""), domain_email]))
+        self.assertEqual("@".join([local_email.replace(".", ""), domain_email]), user.email)
 
     def test_plus_alias_removed_from_local_part_of_email(self):
         local_email = "test+local+email"
         domain_email = "test.domain.email.com"
         user = CreateTestUserHelper.create_test_user(email="@".join([local_email, domain_email]))
 
-        self.assertEqual(user.email, "@".join([local_email.split("+", maxsplit=1)[0], domain_email]))
+        self.assertEqual("@".join([local_email.split("+", maxsplit=1)[0], domain_email]), user.email)
 
     def test_google_email_alias_replaced(self):
         local_email = "test"
         domain_email = "googlemail.com"
         user = CreateTestUserHelper.create_test_user(email="@".join([local_email, domain_email]))
 
-        self.assertEqual(user.email, "@".join([local_email, "gmail.com"]))
+        self.assertEqual("@".join([local_email, "gmail.com"]), user.email)
 
     def test_email_address_object_from_user_primary_email(self):
         user = CreateTestUserHelper.create_test_user()
@@ -346,26 +346,26 @@ class _User_Generated_Content_Model_Tests(Base_TestCase):  # TODO: test validati
 
             if model == "pulse":
                 self.assertEqual(
-                    str(content),
-                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]}"
+                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]}",
+                    str(content)
                 )
             if model == "reply":
                 self.assertEqual(
-                    str(content),
-                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {type(content.replied_content).__name__.upper()[0]} | {content.replied_content})"[:100]
+                    f"{content.creator}, {content.message[:settings.MESSAGE_DISPLAY_LENGTH]} (For object - {content._content_type.name} | {content.replied_content})"[:100],
+                    str(content)
                 )
 
             content.update(visible=False)
 
             if model == "pulse":
                 self.assertEqual(
-                    str(content),
-                    f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH])
+                    f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH]),
+                    str(content)
                 )
             if model == "reply":
                 self.assertEqual(
-                    str(content),
-                    (f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {type(content.replied_content).__name__.upper()[0]} | {content.replied_content})")[:100]
+                    (f"{content.creator}, " + "".join(letter + "\u0336" for letter in content.message[:settings.MESSAGE_DISPLAY_LENGTH]) + f" (For object - {content._content_type.name} | {content.replied_content})")[:100],
+                    str(content)
                 )
 
 
@@ -383,8 +383,8 @@ class Report_Model_Tests(Base_TestCase):
                 reason="test reason message",
                 category=Report.SPAM
             )
-        self.assertEqual(len(e.exception.error_dict), 1)
-        self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
+        self.assertEqual(1, len(e.exception.error_dict))
+        self.assertEqual("_object_id", e.exception.error_dict.popitem()[0])
 
     def test_content_created_by_admin_cannot_be_reported(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -403,8 +403,8 @@ class Report_Model_Tests(Base_TestCase):
                     reason="test reason message",
                     category=Report.SPAM
                 )
-            self.assertEqual(len(e.exception.error_dict), 1)
-            self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
+            self.assertEqual(1, len(e.exception.error_dict))
+            self.assertEqual("_object_id", e.exception.error_dict.popitem()[0])
 
     def test_reported_user_is_not_the_only_moderator(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -419,8 +419,8 @@ class Report_Model_Tests(Base_TestCase):
                 reason="test reason message",
                 category=Report.SPAM
             )
-        self.assertEqual(len(e.exception.error_dict), 1)
-        self.assertEqual(e.exception.error_dict.popitem()[0], "_object_id")
+        self.assertEqual(1, len(e.exception.error_dict))
+        self.assertEqual("_object_id", e.exception.error_dict.popitem()[0])
 
     def test_reporter_is_not_the_only_moderator(self):
         user1 = CreateTestUserHelper.create_test_user()
@@ -437,5 +437,5 @@ class Report_Model_Tests(Base_TestCase):
                     reason="test reason message",
                     category=Report.SPAM
                 )
-            self.assertEqual(len(e.exception.error_dict), 1)
-            self.assertEqual(e.exception.error_dict.popitem()[0], "reporter")
+            self.assertEqual(1, len(e.exception.error_dict))
+            self.assertEqual("reporter", e.exception.error_dict.popitem()[0])
