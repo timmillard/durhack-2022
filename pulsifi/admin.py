@@ -463,7 +463,7 @@ class Report_Admin(_Display_Date_Time_Created_Admin):
     )
     search_help_text = "Search for a reporter, reported object type, reason, category, assigned moderator or status"
 
-    @admin.display(description="Report", ordering=["_content_type", "_object_id"])
+    @admin.display(description="Report", ordering=("_content_type", "_object_id"))
     def display_report(self, obj: Report) -> str:
         """
             Returns the stringified version of the given

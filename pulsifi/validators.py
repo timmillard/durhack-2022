@@ -264,10 +264,7 @@ class FreeEmailValidator:
         if value.count("@") != 1:
             return
 
-        domain: str
-        _, domain = value.split("@", maxsplit=1)
-
-        if domain in self.free_email_domains:
+        if value.rpartition("@")[2] in self.free_email_domains:
             raise ValidationError("Registration using free email addresses is prohibited. Please supply a different email address.", code="invalid")
 
     def __eq__(self, other) -> bool:
@@ -295,10 +292,7 @@ class ExampleEmailValidator:
         if value.count("@") != 1:
             return
 
-        domain: str
-        _, domain = value.split("@", maxsplit=1)
-
-        if tldextract.extract(domain).domain in self.example_email_domains:
+        if tldextract.extract(value.rpartition("@")[2]).domain in self.example_email_domains:
             raise ValidationError("Registration using unresolvable example email addresses is prohibited. Please supply a different email address.", code="invalid")
 
 
@@ -318,10 +312,11 @@ class PreexistingEmailTLDValidator:
             return
 
         local: str
+        seperator: str
         domain: str
-        local, domain = value.split("@", maxsplit=1)
+        local, seperator, domain = value.rpartition("@")
 
-        if get_user_model().objects.exclude(email=value).filter(email__icontains=f"{local}@{tldextract.extract(domain).domain}").exists():
+        if get_user_model().objects.exclude(email=value).filter(email__icontains=seperator.join((local, tldextract.extract(domain).domain))).exists():
             raise ValidationError(f"The Email Address: {value} is already in use by another user.", code="unique")
 
 
@@ -362,7 +357,7 @@ class ConfusableEmailValidator:
 
         local: str
         domain: str
-        local, domain = value.split("@", maxsplit=1)
+        local, _, domain = value.rpartition("@")
 
         if confusables.is_dangerous(local) or confusables.is_dangerous(domain):
             raise ValidationError("This email address cannot be registered. Please supply a different email address.", code="invalid")

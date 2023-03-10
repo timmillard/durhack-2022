@@ -378,7 +378,7 @@ class Report_Model_Tests(Base_TestCase):
         with self.assertRaises(ValidationError) as e:
             Report.objects.create(
                 reporter=user1,
-                _content_type=ContentType.objects.get_for_model(type(user2)),
+                _content_type=ContentType.objects.get_for_model(user2),
                 _object_id=user2.id,
                 reason="test reason message",
                 category=Report.SPAM
@@ -398,7 +398,7 @@ class Report_Model_Tests(Base_TestCase):
             with self.assertRaises(ValidationError) as e:
                 Report.objects.create(
                     reporter=user1,
-                    _content_type=ContentType.objects.get_for_model(type(content)),
+                    _content_type=ContentType.objects.get_for_model(content),
                     _object_id=content.id,
                     reason="test reason message",
                     category=Report.SPAM
@@ -414,7 +414,7 @@ class Report_Model_Tests(Base_TestCase):
         with self.assertRaises(ValidationError) as e:
             Report.objects.create(
                 reporter=user1,
-                _content_type=ContentType.objects.get_for_model(get_user_model()),
+                _content_type=ContentType.objects.get_for_model(user2),
                 _object_id=user2.id,
                 reason="test reason message",
                 category=Report.SPAM
@@ -432,7 +432,7 @@ class Report_Model_Tests(Base_TestCase):
             with self.assertRaises(ValidationError) as e:
                 Report.objects.create(
                     reporter=user2,
-                    _content_type=ContentType.objects.get_for_model(type(content)),
+                    _content_type=ContentType.objects.get_for_model(content),
                     _object_id=content.id,
                     reason="test reason message",
                     category=Report.SPAM

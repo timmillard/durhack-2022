@@ -435,15 +435,16 @@ class User(_Visible_Reportable_Model, AbstractUser):
 
         if self.email.count("@") == 1:
             local: str
+            seperator: str
             whole_domain: str
-            local, whole_domain = self.email.split("@", maxsplit=1)
+            local, seperator, whole_domain = self.email.rpartition("@")
 
-            extracted_domain = tldextract.extract(whole_domain)
+            extracted_domain: ExtractResult = tldextract.extract(whole_domain)
 
             local = local.replace(".", "")  # NOTE: Format the local part of the email address to remove dots
 
             if "+" in local:
-                local = local.split("+", maxsplit=1)[0]  # NOTE: Format the local part of the email address to remove any part after a plus symbol
+                local = local.partition("+")[0]  # NOTE: Format the local part of the email address to remove any part after a plus symbol
 
             if extracted_domain.domain == "googlemail":  # NOTE: Rename alias email domains (E.g. googlemail == gmail)
                 # noinspection PyArgumentList
@@ -461,7 +462,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The email domain can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
                     raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
 
-            self.email = "@".join([local, extracted_domain.fqdn])  # NOTE: Replace the cleaned email address
+            self.email = seperator.join((local, extracted_domain.fqdn))  # NOTE: Replace the cleaned email address
 
         if EmailAddress.objects.filter(email=self.email).exclude(user_id=self.id).exists():
             raise ValidationError({"email": f"The Email Address: {self.email} is already in use by another user."}, code="unique")
@@ -694,7 +695,7 @@ class Reply(_User_Generated_Content_Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {type(self.replied_content).__name__.upper()[0]} | {self.replied_content})"[:100]
+        return f"{self.creator}, {self.string_when_visible(self.message[:settings.MESSAGE_DISPLAY_LENGTH])} (For object - {self._content_type.name} | {self.replied_content})"[:100]
 
     def clean(self) -> None:
         """

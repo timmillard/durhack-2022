@@ -51,8 +51,7 @@ if not tldextract.extract(env("EMAIL_HOST")).domain or not tldextract.extract(en
     raise ImproperlyConfigured("EMAIL_HOST must be a a valid email host name with a valid domain name & suffix.")
 if not 0 < env("EMAIL_PORT") <= 65535:
     raise ImproperlyConfigured("EMAIL_PORT must be a valid port number (an integer between 0 and 65536).")
-_EMAIL_HOST_USER_domain: str
-_, _EMAIL_HOST_USER_domain = env("EMAIL_HOST_USER").split("@")
+_EMAIL_HOST_USER_domain: str = env("EMAIL_HOST_USER").rpartition("@")[2]
 if env("EMAIL_HOST_USER").count("@") != 1 or (env("EMAIL_HOST_USER").count("@") == 1 and (not tldextract.extract(_EMAIL_HOST_USER_domain).domain or not tldextract.extract(_EMAIL_HOST_USER_domain).suffix)):
     raise ImproperlyConfigured("EMAIL_HOST_USER must be a valid email address.")
 if not env("PULSIFI_ADMIN_COUNT") > 0:

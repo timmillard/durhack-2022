@@ -67,4 +67,4 @@ class GoogleAvatarProvider:
         except SocialAccount.DoesNotExist:
             return
         else:
-            return f"""{google_SocialAccount.get_avatar_url().rsplit("=", maxsplit=1)[0]}=w{width}-h{height}-c"""
+            return f"""{google_SocialAccount.get_avatar_url().rpartition("=")[0]}=w{width}-h{height}-c"""
