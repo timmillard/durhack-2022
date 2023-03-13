@@ -6,20 +6,20 @@
 from re import Match as RegexMatch, sub as regex_sub
 
 from django import template
-from django.contrib.auth import get_user_model
-from django.db.models import Model
-from django.template.defaultfilters import stringfilter
-from django.template.loader import render_to_string
-from django.utils.html import conditional_escape
-from django.utils.safestring import SafeString, mark_safe
+from django.contrib import auth
+from django.db import models
+from django.template import defaultfilters, loader as template_utils
+from django.utils import html as html_utils, safestring
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
 
 register = template.Library()
 
 
 # noinspection SpellCheckingInspection
 @register.filter(needs_autoescape=True)
-@stringfilter
-def format_mentions(value: str, autoescape=True) -> SafeString:
+@defaultfilters.stringfilter
+def format_mentions(value: str, autoescape=True) -> safestring.SafeString:
     """
         Formats the given string value, with any mentions of a user
         (E.g. @pulsifi) turned into the rendered HTML template of linking to
@@ -27,7 +27,7 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
     """
 
     if autoescape:
-        esc_func = conditional_escape
+        esc_func = html_utils.conditional_escape
     else:
         # noinspection PyMissingOrEmptyDocstring
         def esc_func(x: str) -> str:
@@ -46,9 +46,9 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
         except get_user_model().DoesNotExist:
             return f"@{possible_mention}"
 
-        return render_to_string("pulsifi/mention_user_snippet.html", {"mentioned_user": mentioned_user}).strip()
+        return template_utils.render_to_string("pulsifi/mention_user_snippet.html", {"mentioned_user": mentioned_user}).strip()
 
-    return mark_safe(
+    return safestring.mark_safe(
         regex_sub(
             r"@(?P<mention>[\w.-]+)",
             is_valid,
@@ -60,17 +60,18 @@ def format_mentions(value: str, autoescape=True) -> SafeString:
 @register.filter()
 def classname(value):
     try:
-        if isinstance(value, Model) or issubclass(value, Model):
+        if isinstance(value, models.Model) or issubclass(value, models.Model):
             return value._meta.model_name
     except TypeError:
         pass
     return str(type(value)).title()
 
 
+# noinspection SpellCheckingInspection
 @register.filter()
 def verbosename(value, plural=False):
     try:
-        if isinstance(value, Model) or issubclass(value, Model):
+        if isinstance(value, models.Model) or issubclass(value, models.Model):
             if plural:
                 return value._meta.verbose_name_plural
             else:

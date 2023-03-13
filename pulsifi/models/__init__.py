@@ -1,33 +1,34 @@
 """
     Models in pulsifi app.
 """
+
+import abc
 import logging
-import operator
-from abc import abstractmethod
-from functools import reduce
 from typing import Final, Iterable
 
+import tldextract
 from allauth.account.models import EmailAddress
+from django import urls as django_urls_utils
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib import auth
 from django.contrib.auth.models import AbstractUser, Group
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models import Manager, Q, QuerySet
-from django.urls import reverse
 from django.utils import timezone
-from thefuzz.fuzz import token_sort_ratio as get_string_similarity
-from tldextract import tldextract
-from tldextract.tldextract import ExtractResult
+from thefuzz import fuzz as thefuzz
+from tldextract.tldextract import ExtractResult as TLD_ExtractResult
 
-from .models_utils import Custom_Base_Model, Date_Time_Created_Base_Model, get_random_moderator_id
-from .validators import ConfusableEmailValidator, ConfusableStringValidator, ExampleEmailValidator, FreeEmailValidator, HTML5EmailValidator, PreexistingEmailTLDValidator, ReservedNameValidator
+from pulsifi.models import utils as pulsifi_models_utils
+from pulsifi.validators import ConfusableEmailValidator, ConfusableStringValidator, ExampleEmailValidator, FreeEmailValidator, HTML5EmailValidator, PreexistingEmailTLDValidator, ReservedNameValidator
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
+abstractmethod = abc.abstractmethod
 
 
-class _Visible_Reportable_Model(Custom_Base_Model):
+class _Visible_Reportable_Model(pulsifi_models_utils.Custom_Base_Model):
     """
         Base model that prevents objects from actually being deleted (making
         them invisible instead), as well as allowing all objects of this type
@@ -51,6 +52,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         are reporting this object.
     """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         abstract = True
 
@@ -69,7 +71,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
     def visible(self, value: bool) -> None:
         raise NotImplementedError
 
-    def delete(self, using: str = None, *args, **kwargs) -> tuple[int, dict[str, int]]:
+    def delete(self, *_args, **_kwargs) -> tuple[int, dict[str, int]]:
         """
             Sets this instances visible field to False instead of deleting this
             instance's data from the database.
@@ -100,7 +102,7 @@ class _Visible_Reportable_Model(Custom_Base_Model):
         return "".join(f"{char}\u0336" for char in string)
 
 
-class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement (decide {just likes}, {likes & {likes of replies}} or {likes, {likes of replies} & replies}) & creator follower count
+class User_Generated_Content_Model(_Visible_Reportable_Model, pulsifi_models_utils.Date_Time_Created_Base_Model):  # TODO: calculate time remaining based on engagement (decide {just likes}, {likes & {likes of replies}} or {likes, {likes of replies} & replies}) & creator follower count
     """
         Base model that defines fields for all types of user generated content,
         as well as extra instance methods for retrieving commonly computed
@@ -185,6 +187,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
 
         raise NotImplementedError
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         abstract = True
 
@@ -203,7 +206,7 @@ class _User_Generated_Content_Model(_Visible_Reportable_Model, Date_Time_Created
     def get_absolute_url(self) -> str:
         """ Returns the canonical URL for this object instance. """
 
-        return f"""{reverse("pulsifi:feed")}?{self._meta.model_name}={self.id}"""
+        return f"""{django_urls_utils.reverse("pulsifi:feed")}?{self._meta.model_name}={self.id}"""
 
 
 class User(_Visible_Reportable_Model, AbstractUser):
@@ -220,52 +223,52 @@ class User(_Visible_Reportable_Model, AbstractUser):
     get_full_name = None
     get_short_name = None
 
-    moderator_assigned_report_set: Manager
+    moderator_assigned_report_set: models.Manager
     """
         The set of :model:`pulsifi.report` objects that this user (if they are
         a moderator) has been assigned to moderate.
     """
 
-    avatar_set: Manager
+    avatar_set: models.Manager
     """
         The set of :model:`avatar.avatar` image objects that this user has
         uploaded.
     """
 
-    disliked_pulse_set: Manager
+    disliked_pulse_set: models.Manager
     """ The set of :model:`pulsifi.pulse` objects that this user has disliked. """
 
-    disliked_reply_set: Manager
+    disliked_reply_set: models.Manager
     """ The set of :model:`pulsifi.reply` objects that this user has disliked. """
 
     # noinspection SpellCheckingInspection
-    emailaddress_set: Manager
+    emailaddress_set: models.Manager
     # noinspection SpellCheckingInspection
     """
         The set of :model:`account.emailaddress` objects that have been
         assigned to this user.
     """
 
-    liked_pulse_set: Manager
+    liked_pulse_set: models.Manager
     """ The set of :model:`pulsifi.pulse` objects that this user has liked. """
 
-    liked_reply_set: Manager
+    liked_reply_set: models.Manager
     """ The set of :model:`pulsifi.reply` objects that this user has liked. """
 
-    created_pulse_set: Manager
+    created_pulse_set: models.Manager
     """ The set of :model:`pulsifi.pulse` objects that this user has created. """
 
-    created_reply_set: Manager
+    created_reply_set: models.Manager
     """ The set of :model:`pulsifi.reply` objects that this user has created. """
 
-    submitted_report_set: Manager
+    submitted_report_set: models.Manager
     """
         The set of :model:`pulsifi.report` objects that this user has
         submitted.
     """
 
     # noinspection SpellCheckingInspection
-    socialaccount_set: Manager
+    socialaccount_set: models.Manager
     # noinspection SpellCheckingInspection
     """
         The set of :model:`socialaccount:socialaccount` objects that can be
@@ -413,15 +416,8 @@ class User(_Visible_Reportable_Model, AbstractUser):
             self.is_staff = self.is_superuser
 
         if self.username:  # NOTE: Only compare the username similarity if the value is valid for all other conditions
-            query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
-            restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
-                reduce(
-                    operator.or_,
-                    query_restricted_admin_usernames
-                )
-            ).count()
             restricted_admin_username_in_username = any(restricted_admin_username in self.username.lower() for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
-            if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
+            if (pulsifi_models_utils.get_restricted_admin_users_count(exclusion_id=self.id) >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The username can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
                 raise ValidationError({"username": "That username is not allowed."}, code="invalid")
 
         if get_user_model().objects.filter(id=self.id).exists():  # NOTE: Get all the usernames except for this user
@@ -430,7 +426,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             username_check_list: Iterable[str] = get_user_model().objects.values_list("username", flat=True)
 
         for username in username_check_list:  # NOTE: Check this username is not too similar to any other username
-            if get_string_similarity(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
+            if thefuzz.token_sort_ratio(self.username, username) >= settings.USERNAME_SIMILARITY_PERCENTAGE:
                 raise ValidationError({"username": "That username is too similar to a username belonging to an existing user."}, code="unique")
 
         if self.email.count("@") == 1:
@@ -439,7 +435,7 @@ class User(_Visible_Reportable_Model, AbstractUser):
             whole_domain: str
             local, seperator, whole_domain = self.email.rpartition("@")
 
-            extracted_domain: ExtractResult = tldextract.extract(whole_domain)
+            extracted_domain: TLD_ExtractResult = tldextract.extract(whole_domain)
 
             local = local.replace(".", "")  # NOTE: Format the local part of the email address to remove dots
 
@@ -447,19 +443,11 @@ class User(_Visible_Reportable_Model, AbstractUser):
                 local = local.partition("+")[0]  # NOTE: Format the local part of the email address to remove any part after a plus symbol
 
             if extracted_domain.domain == "googlemail":  # NOTE: Rename alias email domains (E.g. googlemail == gmail)
-                # noinspection PyArgumentList
-                extracted_domain = ExtractResult(subdomain=extracted_domain.subdomain, domain="gmail", suffix=extracted_domain.suffix)
+                extracted_domain = TLD_ExtractResult(subdomain=extracted_domain.subdomain, domain="gmail", suffix=extracted_domain.suffix)
 
             else:
-                query_restricted_admin_usernames = (Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
-                restricted_admin_users_count: int = get_user_model().objects.exclude(id=self.id).filter(
-                    reduce(
-                        operator.or_,
-                        query_restricted_admin_usernames
-                    )
-                ).count()
                 restricted_admin_username_in_username = any(restricted_admin_username in extracted_domain.domain for restricted_admin_username in settings.RESTRICTED_ADMIN_USERNAMES)
-                if (restricted_admin_users_count >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The email domain can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
+                if (pulsifi_models_utils.get_restricted_admin_users_count(exclusion_id=self.id) >= settings.PULSIFI_ADMIN_COUNT or not self.is_staff) and restricted_admin_username_in_username:  # NOTE: The email domain can only contain a restricted_admin_username if the user is a staff member & the maximum admin count has not been reached
                     raise ValidationError({"email": f"That Email Address cannot be used."}, code="invalid")
 
             self.email = seperator.join((local, extracted_domain.fqdn))  # NOTE: Replace the cleaned email address
@@ -546,9 +534,9 @@ class User(_Visible_Reportable_Model, AbstractUser):
     def get_absolute_url(self) -> str:
         """ Returns the canonical URL for this object instance. """
 
-        return reverse("pulsifi:specific_account", kwargs={"username": self.username})
+        return django_urls_utils.reverse("pulsifi:specific_account", kwargs={"username": self.username})
 
-    def get_feed_pulses(self) -> QuerySet["Pulse"]:
+    def get_feed_pulses(self) -> models.QuerySet["Pulse"]:
         """
             Returns the set of :model:`pulsifi.pulse` objects that should be
             displayed on the :view:`pulsifi.views.Feed_View` for this user.
@@ -573,12 +561,13 @@ class User(_Visible_Reportable_Model, AbstractUser):
         return extra_property_fields
 
 
-class Pulse(_User_Generated_Content_Model):
+class Pulse(User_Generated_Content_Model):
     """
         Model to define pulses (posts) that are made by users and are visible
         on the main website.
     """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         verbose_name = "Pulse"
 
@@ -629,7 +618,7 @@ class Pulse(_User_Generated_Content_Model):
         return {reply for reply in Reply.objects.all() if reply.original_pulse is self}
 
 
-class Reply(_User_Generated_Content_Model):
+class Reply(User_Generated_Content_Model):
     """
         Model to define replies (posts assigned to a parent
         :model:`pulsifi.pulse` object) that are made by a :model:`pulsifi.user`
@@ -687,6 +676,7 @@ class Reply(_User_Generated_Content_Model):
             replies.update(reply.full_depth_replies)  # NOTE: Add the child :model:`pulsifi.reply` objects recursively to the set
         return replies
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         verbose_name = "Reply"
         verbose_name_plural = "Replies"
@@ -741,7 +731,7 @@ class Reply(_User_Generated_Content_Model):
         self.base_save(clean=False, *args, **kwargs)
 
 
-class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
+class Report(pulsifi_models_utils.Custom_Base_Model, pulsifi_models_utils.Date_Time_Created_Base_Model):
     """
         Model to define reports, which flags inappropriate content/users to
         moderators.
@@ -828,7 +818,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         verbose_name="Assigned Moderator",
         related_name="moderator_assigned_report_set",
         limit_choices_to={"groups__name": "Moderators", "is_active": True},
-        default=get_random_moderator_id,
+        default=pulsifi_models_utils.get_random_moderator_id,
         help_text="Link to the :model:`pulsifi.user` object instance (from the set of moderators) that has been assigned to moderate this report.",
         null=False,
         blank=False
@@ -870,6 +860,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
         moderation cycle that this report is within.
     """
 
+    # noinspection PyMissingOrEmptyDocstring
     class Meta:
         verbose_name = "Report"
         indexes = [
@@ -918,7 +909,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                     REPORT_ADMIN_CONTENT_ERROR = ValidationError({"_object_id": "This object ID refers to a Pulse or Reply created by an Admin. These Pulses & Replies cannot be reported."}, code="invalid")
 
                     if Group.objects.filter(name="Admins").exists():
-                        if self.reported_object.creator in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)):
+                        if self.reported_object.creator in get_user_model().objects.filter(models.Q(groups__name="Admins") | models.Q(is_superuser=True)):
                             raise REPORT_ADMIN_CONTENT_ERROR
 
                     elif self.reported_object.creator in get_user_model().objects.filter(is_superuser=True):
@@ -932,7 +923,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
                         REPORT_ADMIN_ERROR = ValidationError({"_object_id": "This object ID refers to an admin. Admins cannot be reported."}, code="invalid")
 
                         if Group.objects.filter(name="Admins").exists():
-                            if self._object_id in get_user_model().objects.filter(Q(groups__name="Admins") | Q(is_superuser=True)).values_list("id", flat=True):
+                            if self._object_id in get_user_model().objects.filter(models.Q(groups__name="Admins") | models.Q(is_superuser=True)).values_list("id", flat=True):
                                 raise REPORT_ADMIN_ERROR
 
                         elif self._object_id in get_user_model().objects.filter(is_superuser=True).values_list("id", flat=True):
@@ -940,7 +931,7 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
 
                     if self.assigned_moderator_id == self._object_id:  # NOTE: Attempt to pick a different moderator if the default is the reported user
                         try:
-                            self.assigned_moderator_id = get_random_moderator_id([self._object_id])
+                            self.assigned_moderator_id = pulsifi_models_utils.get_random_moderator_id([self._object_id])
                         except get_user_model().DoesNotExist as e:
                             raise ValidationError({"_object_id": "This object ID refers to the only moderator available to be assigned to this report. Therefore, this moderator cannot be reported."}, code="invalid") from e
 
@@ -952,8 +943,8 @@ class Report(Custom_Base_Model, Date_Time_Created_Base_Model):
 
         if self.assigned_moderator == self.reporter:  # NOTE: Attempt to pick a different moderator if the default is the reporter
             try:
-                # noinspection PyTypeChecker
-                self.assigned_moderator_id = get_random_moderator_id([self.reporter_id])
+                # noinspection PyAttributeOutsideInit
+                self.assigned_moderator_id = pulsifi_models_utils.get_random_moderator_id([self.reporter_id])
             except get_user_model().DoesNotExist as e:
                 raise ValidationError({"reporter": "This user cannot be the reporter because they are the only moderator available to be assigned to this report"}, code="invalid") from e
 

@@ -4,16 +4,17 @@
 
 from typing import Sequence, Type
 
-from django.contrib import admin
-from django.contrib.auth import get_user_model
+from django.contrib import admin, auth
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.db.models import Count, QuerySet
+from django.db import models
 from django.forms import BaseModelForm
 from rangefilter.filters import DateTimeRangeFilter
 
 from .admin_filters import AssignedModeratorListFilter, CategoryListFilter, CreatedPulsesListFilter, CreatedRepliesListFilter, DirectRepliesListFilter, DislikesListFilter, GroupListFilter, HasReportAboutObjectListFilter, LikesListFilter, RepliedObjectTypeListFilter, ReportedObjectTypeListFilter, StaffListFilter, StatusListFilter, UserContentVisibleListFilter, UserVerifiedListFilter, UserVisibleListFilter
 from .admin_inlines import About_Object_Report_Inline, Avatar_Inline, Created_Pulse_Inline, Created_Reply_Inline, Direct_Reply_Inline, Disliked_Pulse_Inline, Disliked_Reply_Inline, EmailAddress_Inline, Liked_Pulse_Inline, Liked_Reply_Inline, Moderator_Assigned_Report_Inline, Submitted_Report_Inline, _Base_Report_Inline_Config
 from .models import Pulse, Reply, Report, User
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
 
 # admin.site.login = login_required(admin.site.login)
 admin.site.site_header = "Pulsifi Administration"
@@ -28,7 +29,7 @@ class _Custom_Base_Admin(admin.ModelAdmin):
         customises how querysets are deleted.
     """
 
-    def delete_queryset(self, request, queryset: QuerySet[Pulse | Reply | Report]) -> None:
+    def delete_queryset(self, request, queryset: models.QuerySet[Pulse | Reply | Report]) -> None:
         """
             Overrides original queryset deletion by calling delete() on each
             object individually (rather than the bulk delete command), so that
@@ -87,7 +88,7 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
     inlines = (Direct_Reply_Inline, About_Object_Report_Inline)
     list_display_links = ("message",)
 
-    def get_queryset(self, request) -> QuerySet[Pulse | Reply]:
+    def get_queryset(self, request) -> models.QuerySet[Pulse | Reply]:
         """
             Return a QuerySet of all :model:`pulsifi.user` model instances that
             can be edited by the admin site. This is used by changelist_view.
@@ -96,12 +97,12 @@ class _User_Content_Admin(_Display_Date_Time_Created_Admin):
             direct_replies to the queryset.
         """
 
-        queryset: QuerySet[Pulse | Reply] = super().get_queryset(request)
+        queryset: models.QuerySet[Pulse | Reply] = super().get_queryset(request)
 
         queryset = queryset.annotate(
-            _likes=Count("liked_by", distinct=True),
-            _dislikes=Count("disliked_by", distinct=True),
-            _direct_replies=Count("reply_set", distinct=True)
+            _likes=models.Count("liked_by", distinct=True),
+            _dislikes=models.Count("disliked_by", distinct=True),
+            _direct_replies=models.Count("reply_set", distinct=True)
         )
 
         return queryset
@@ -650,7 +651,7 @@ class User_Admin(BaseUserAdmin):
     search_fields = ("username", "email", "bio")
     search_help_text = "Search for a username, email address or bio"
 
-    def get_queryset(self, request) -> QuerySet[User]:
+    def get_queryset(self, request) -> models.QuerySet[User]:
         """
             Return a QuerySet of all :model:`pulsifi.user` model instances that
             can be edited by the admin site. This is used by changelist_view.
@@ -659,11 +660,11 @@ class User_Admin(BaseUserAdmin):
             queryset.
         """
 
-        queryset: QuerySet[User] = super().get_queryset(request)
+        queryset: models.QuerySet[User] = super().get_queryset(request)
 
         queryset = queryset.annotate(
-            _pulses=Count("created_pulse_set", distinct=True),
-            _replies=Count("created_reply_set", distinct=True)
+            _pulses=models.Count("created_pulse_set", distinct=True),
+            _replies=models.Count("created_reply_set", distinct=True)
         )
 
         return queryset
@@ -750,7 +751,7 @@ class User_Admin(BaseUserAdmin):
 
         return tuple(inlines)
 
-    def delete_queryset(self, request, queryset: QuerySet[User]) -> None:
+    def delete_queryset(self, request, queryset: models.QuerySet[User]) -> None:
         """
             Overrides original queryset deletion by calling delete() on each
             object individually (rather than the bulk delete command), so that

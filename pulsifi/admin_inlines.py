@@ -1,13 +1,14 @@
 """
     Admin inlines for models in pulsifi app.
 """
+
 from typing import Sequence
 
 from allauth.account.models import EmailAddress
 from avatar.models import Avatar
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
-from django.db.models import Count, QuerySet
+from django.db import models
 
 from pulsifi.models import Pulse, Reply, Report
 
@@ -96,7 +97,7 @@ class _Created_User_Content_Inline(_Base_User_Content_Inline_Config, admin.Stack
     fk_name = "creator"
     autocomplete_fields = ("liked_by", "disliked_by")
 
-    def get_queryset(self, request) -> QuerySet[Pulse | Reply]:
+    def get_queryset(self, request) -> models.QuerySet[Pulse | Reply]:
         """
             Return a QuerySet of all :model:`pulsifi.pulse` or
             :model:`pulsifi.reply` model instances that can be created/edited
@@ -106,12 +107,12 @@ class _Created_User_Content_Inline(_Base_User_Content_Inline_Config, admin.Stack
             direct_replies to the queryset.
         """
 
-        queryset: QuerySet[Pulse | Reply] = super().get_queryset(request)
+        queryset: models.QuerySet[Pulse | Reply] = super().get_queryset(request)
 
         queryset = queryset.annotate(
-            _likes=Count("liked_by", distinct=True),
-            _dislikes=Count("disliked_by", distinct=True),
-            _direct_replies=Count("reply_set", distinct=True)
+            _likes=models.Count("liked_by", distinct=True),
+            _dislikes=models.Count("disliked_by", distinct=True),
+            _direct_replies=models.Count("reply_set", distinct=True)
         )
 
         return queryset
@@ -124,7 +125,7 @@ class _Related_User_Content_Inline(_Base_User_Content_Inline_Config, admin.Tabul
         etc).
     """
 
-    def _get_queryset(self, request, model: str) -> QuerySet[Pulse | Reply]:
+    def _get_queryset(self, request, model: str) -> models.QuerySet[Pulse | Reply]:
         """
             Return a QuerySet of all :model:`pulsifi.pulse` or
             :model:`pulsifi.reply` model instances that can be created/edited
@@ -137,12 +138,12 @@ class _Related_User_Content_Inline(_Base_User_Content_Inline_Config, admin.Tabul
         if model not in ("pulse", "reply"):
             raise ValueError(f"The argument: model must be on of pulse, reply. {model} is not a valid option.")
 
-        queryset: QuerySet[Pulse | Reply] = super().get_queryset(request)
+        queryset: models.QuerySet[Pulse | Reply] = super().get_queryset(request)
 
         queryset = queryset.annotate(
-            _likes=Count(f"{model}__liked_by", distinct=True),
-            _dislikes=Count(f"{model}__disliked_by", distinct=True),
-            _direct_replies=Count(f"{model}__reply_set", distinct=True)
+            _likes=models.Count(f"{model}__liked_by", distinct=True),
+            _dislikes=models.Count(f"{model}__disliked_by", distinct=True),
+            _direct_replies=models.Count(f"{model}__reply_set", distinct=True)
         )
 
         return queryset
@@ -173,7 +174,7 @@ class _Related_Pulse_Inline(_Related_User_Content_Inline):
 
         return obj.pulse.date_time_created.strftime("%d %b %Y %I:%M:%S %p")
 
-    def get_queryset(self, request) -> QuerySet[Pulse]:
+    def get_queryset(self, request) -> models.QuerySet[Pulse]:
         """
             Return a QuerySet of all :model:`pulsifi.pulse` model instances
             that can be created/edited within this admin inline.
@@ -233,7 +234,7 @@ class _Related_Reply_Inline(_Related_User_Content_Inline):
 
         return obj.reply.original_pulse
 
-    def get_queryset(self, request) -> QuerySet[Reply]:
+    def get_queryset(self, request) -> models.QuerySet[Reply]:
         """
             Return a QuerySet of all :model:`pulsifi.reply` model instances
             that can be created/edited within this admin inline.
@@ -511,7 +512,7 @@ class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_User_Content_Inline_C
     ]
     autocomplete_fields = ["liked_by", "disliked_by"]
 
-    def get_queryset(self, request) -> QuerySet[Reply]:
+    def get_queryset(self, request) -> models.QuerySet[Reply]:
         """
             Return a QuerySet of all :model:`pulsifi.reply` model instances
             that can be created/edited within this admin inline.
@@ -520,12 +521,12 @@ class Direct_Reply_Inline(_Base_Reply_Inline_Config, _Base_User_Content_Inline_C
             direct_replies to the queryset.
         """
 
-        queryset: QuerySet[Reply] = super().get_queryset(request)
+        queryset: models.QuerySet[Reply] = super().get_queryset(request)
 
         queryset = queryset.annotate(
-            _likes=Count("liked_by", distinct=True),
-            _dislikes=Count("disliked_by", distinct=True),
-            _direct_replies=Count("reply_set", distinct=True)
+            _likes=models.Count("liked_by", distinct=True),
+            _dislikes=models.Count("disliked_by", distinct=True),
+            _direct_replies=models.Count("reply_set", distinct=True)
         )
 
         return queryset

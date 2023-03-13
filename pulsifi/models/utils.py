@@ -2,17 +2,21 @@
     Utility classes & functions provided for all models within this app.
 """
 
-from random import choice as random_choice
+import functools
+import operator
+import random
 from typing import Collection, Iterable
 
 from django.apps import apps
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib import auth
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import FieldDoesNotExist
-from django.db.models import DateTimeField, Field, ManyToManyField, ManyToManyRel, ManyToOneRel, Model, QuerySet
+from django.db import models
 
 from pulsifi.exceptions import UpdateFieldNamesError
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
 
 
 def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int | None:
@@ -33,15 +37,15 @@ def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int
 
     if excluded_moderator_ids:
         # noinspection PyProtectedMember
-        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to).exclude(id__in=excluded_moderator_ids)
+        moderator_QS: models.QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to).exclude(id__in=excluded_moderator_ids)
     else:
         # noinspection PyProtectedMember
-        moderator_QS: QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
+        moderator_QS: models.QuerySet = get_user_model().objects.filter(**apps.get_model(app_label="pulsifi", model_name="report")._meta.get_field("assigned_moderator")._limit_choices_to)
 
     NO_MODERATORS_EXIST_ERROR = "Random moderator cannot be chosen, because none exist."
     try:
         return get_user_model().objects.get(
-            id=random_choice(moderator_QS.values_list("id", flat=True))
+            id=random.choice(moderator_QS.values_list("id", flat=True))
         ).id
     except get_user_model().DoesNotExist as e:
         e.args = (NO_MODERATORS_EXIST_ERROR,)
@@ -50,7 +54,17 @@ def get_random_moderator_id(excluded_moderator_ids: Iterable[int] = None) -> int
         raise get_user_model().DoesNotExist(NO_MODERATORS_EXIST_ERROR) from e
 
 
-class Custom_Base_Model(Model):
+def get_restricted_admin_users_count(exclusion_id: int) -> int:
+    query_restricted_admin_usernames = (models.Q(username__icontains=username) for username in settings.RESTRICTED_ADMIN_USERNAMES)
+    return get_user_model().objects.exclude(id=exclusion_id).filter(
+        functools.reduce(
+            operator.or_,
+            query_restricted_admin_usernames
+        )
+    ).count()
+
+
+class Custom_Base_Model(models.Model):
     """
         Base model that provides extra utility methods for all other models to
         use.
@@ -73,7 +87,7 @@ class Custom_Base_Model(Model):
         if clean:
             self.full_clean()
 
-        Model.save(self, *args, **kwargs)
+        models.Model.save(self, *args, **kwargs)
 
     def refresh_from_db(self, using: str = None, fields: Collection[str] = None, deep=True) -> None:
         """
@@ -93,10 +107,10 @@ class Custom_Base_Model(Model):
             fields = set()
 
         if deep:  # NOTE: Refresh any related fields/objects if requested
-            model_fields: set[Field] = {model_field for model_field in self._meta.get_fields() if model_field.name != "+"}
+            model_fields: set[models.Field] = {model_field for model_field in self._meta.get_fields() if model_field.name != "+"}
 
             if fields:  # NOTE: Limit the fields to update by the provided list of field names
-                update_fields: set[Field] = {update_field for update_field in model_fields if update_field.name in fields}
+                update_fields: set[models.Field] = {update_field for update_field in model_fields if update_field.name in fields}
             else:
                 update_fields = model_fields
 
@@ -107,7 +121,7 @@ class Custom_Base_Model(Model):
                 updated_model = self._meta.model.objects.get(id=self.id)
 
                 for field in update_fields:
-                    if field.is_relation and not isinstance(field, ManyToManyField) and not isinstance(field, ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, ManyToOneRel):  # NOTE: It is only possible to refresh related objects from one of these hard-coded field types
+                    if field.is_relation and not isinstance(field, models.ManyToManyField) and not isinstance(field, models.ManyToManyRel) and not isinstance(field, GenericRelation) and not isinstance(field, models.ManyToOneRel):  # NOTE: It is only possible to refresh related objects from one of these hard-coded field types
                         setattr(self, field.name, getattr(updated_model, field.name))
 
                     elif field.is_relation:  # BUG: Relation fields not of acceptable type are not refreshed
@@ -165,7 +179,7 @@ class Custom_Base_Model(Model):
         return set()
 
 
-class Date_Time_Created_Base_Model(Model):
+class Date_Time_Created_Base_Model(models.Model):
     """
         Base model that provides the field date_time_created, which is used by
         some other models in pulsifi app.
@@ -175,7 +189,7 @@ class Date_Time_Created_Base_Model(Model):
         https://docs.djangoproject.com/en/4.1/topics/db/models/#abstract-base-classes).
     """
 
-    _date_time_created = DateTimeField(
+    _date_time_created = models.DateTimeField(
         "Creation Date & Time",
         auto_now=True,
         help_text="Datetime object representing the date & time that this object instance was created."

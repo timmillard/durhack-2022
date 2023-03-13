@@ -2,15 +2,18 @@
     Validators in pulsifi app.
 """
 
-from re import compile as re_compile
+import re as regex
 from typing import Collection
 
+import tldextract
 from confusable_homoglyphs import confusables
-from django.contrib.auth import get_user_model
+from django.contrib import auth
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator, RegexValidator
-from django.utils.deconstruct import deconstructible
-from tldextract import tldextract
+from django.utils import deconstruct
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
+deconstructible = deconstruct.deconstructible
 
 
 @deconstructible
@@ -208,7 +211,7 @@ class HTML5EmailValidator(RegexValidator):
     )  # SOURCE: WHATWG HTML5 spec, section 4.10.5.1.5.
 
     message = EmailValidator.message
-    regex = re_compile(HTML5_EMAIL_RE)
+    regex = regex.compile(HTML5_EMAIL_RE)
 
 
 @deconstructible

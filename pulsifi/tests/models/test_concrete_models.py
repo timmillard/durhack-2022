@@ -4,18 +4,19 @@
 
 from allauth.account.models import EmailAddress
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib import auth
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist, ValidationError
-from django.db.models import BooleanField
+from django.db import models
 
 from pulsifi.models import Report, User
 from pulsifi.tests.utils import Base_TestCase, CreateTestUserGeneratedContentHelper, CreateTestUserHelper, GetFieldsHelper
 
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
+
 
 # TODO: tests docstrings
-
 
 class User_Model_Tests(Base_TestCase):
     def test_refresh_from_database_updates_non_relation_fields(self):  # TODO: test validators & validation errors from clean method
@@ -31,7 +32,7 @@ class User_Model_Tests(Base_TestCase):
                     field.name,
                     CreateTestUserHelper.get_test_unknown_field(field.name)
                 )
-            elif isinstance(field, BooleanField):
+            elif isinstance(field, models.BooleanField):
                 setattr(user, field.name, not getattr(user, field.name))
 
             self.assertNotEqual(

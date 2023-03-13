@@ -1,14 +1,17 @@
 """
     Forms in pulsifi app.
 """
+
 import logging
 
 from allauth.account.forms import LoginForm as Base_LoginForm, SignupForm as Base_SignupForm
 from django import forms
-from django.contrib.auth import get_user_model
+from django.contrib import auth
 from django.core.exceptions import ValidationError
 
 from pulsifi.models import Pulse, Reply
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
 
 
 class _Base_Form_Config(forms.Form):

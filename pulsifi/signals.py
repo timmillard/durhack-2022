@@ -1,11 +1,14 @@
 """ Handles signals sent within the pulsifi app. """
 
-from django.contrib.auth import get_user_model
+from django import dispatch
+from django.contrib import auth
 from django.contrib.auth.models import Group
-from django.db.models.signals import m2m_changed
-from django.dispatch import receiver
+from django.db.models import signals
 
-from .models import Pulse, Reply, User, _User_Generated_Content_Model
+from .models import Pulse, Reply, User, User_Generated_Content_Model
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
+signal_receiver = dispatch.receiver
 
 
 def ready() -> None:
@@ -15,16 +18,16 @@ def ready() -> None:
 
 
 # noinspection PyUnusedLocal
-@receiver(m2m_changed, sender=_User_Generated_Content_Model.liked_by.through)
-@receiver(m2m_changed, sender=_User_Generated_Content_Model.disliked_by.through)
-def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: set[int], **kwargs) -> None:
+@signal_receiver(signals.m2m_changed, sender=User_Generated_Content_Model.liked_by.through)
+@signal_receiver(signals.m2m_changed, sender=User_Generated_Content_Model.disliked_by.through)
+def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance: User | Pulse | Reply, action: str, reverse: bool, model, pk_set: set[int], **_kwargs) -> None:
     """
         Event handler for when a user is added to the like & dislike list of a
         User_Generated_Content or a user is added to the like or dislike list
         of a User_Generated_Content that they are the creator of.
     """
 
-    if isinstance(instance, _User_Generated_Content_Model) and not reverse:
+    if isinstance(instance, User_Generated_Content_Model) and not reverse:
         user: User
         for user in model.objects.filter(id__in=pk_set):
             if action == "pre_add":
@@ -72,8 +75,8 @@ def user_in_liked_and_disliked_or_creator_in_liked_or_disliked(sender, instance:
 
 
 # noinspection PyUnusedLocal
-@receiver(m2m_changed, sender=get_user_model().groups.through)
-def user_in_moderator_group_made_staff_and_superuser_in_admin_group(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: set[int], **kwargs) -> None:
+@signal_receiver(signals.m2m_changed, sender=get_user_model().groups.through)
+def user_in_moderator_group_made_staff_and_superuser_in_admin_group(sender, instance: User | Group, action: str, reverse: bool, model, pk_set: set[int], **_kwargs) -> None:
     """
         Event handler for when a user is added to the Moderators/Admins group.
         All moderators should have the is_staff member set to True. All
@@ -112,8 +115,8 @@ def user_in_moderator_group_made_staff_and_superuser_in_admin_group(sender, inst
 
 
 # noinspection PyUnusedLocal
-@receiver(m2m_changed, sender=get_user_model().following.through)
-def prevent_follow_self(sender, instance: User, action: str, reverse: bool, model, pk_set: set[int], **kwargs) -> None:
+@signal_receiver(signals.m2m_changed, sender=get_user_model().following.through)
+def prevent_follow_self(sender, instance: User, action: str, reverse: bool, model, pk_set: set[int], **_kwargs) -> None:
     """ Event handler for when a user is added to their own following list. """
 
     if action == "pre_add" and instance.id in pk_set:

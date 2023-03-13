@@ -4,15 +4,16 @@
 
 from typing import Container, Sequence
 
-from django.contrib import admin
-from django.contrib.auth import get_user_model
+from django.contrib import admin, auth
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Count, Model, PositiveIntegerField, QuerySet
+from django.db import models
 from django.http import HttpRequest
 from rangefilter.filters import NumericRangeFilter
 
 from pulsifi.models import Pulse, Reply, Report, User
+
+get_user_model = auth.get_user_model  # NOTE: Adding external package functions to the global scope for frequent usage
 
 
 class UserVerifiedListFilter(admin.SimpleListFilter):
@@ -32,7 +33,7 @@ class UserVerifiedListFilter(admin.SimpleListFilter):
 
         return ("1", "Is Verified"), ("0", "Is Not Verified")
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[User]) -> QuerySet[User]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[User]) -> models.QuerySet[User]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         if self.value() == "1":
@@ -58,7 +59,7 @@ class UserVisibleListFilter(admin.SimpleListFilter):
 
         return ("1", "Visible"), ("0", "Not Visible")
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[User]) -> QuerySet[User]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[User]) -> models.QuerySet[User]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         if self.value() == "1":
@@ -84,7 +85,7 @@ class GroupListFilter(admin.SimpleListFilter):
 
         return tuple((str(group.id), str(group.name)) for group in Group.objects.all())
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[User]) -> QuerySet[User]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[User]) -> models.QuerySet[User]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         group_id: int | None = self.value()
@@ -110,7 +111,7 @@ class StaffListFilter(admin.SimpleListFilter):
 
         return ("1", "Is Staff Member"), ("0", "Is Not Staff Member")
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[User]) -> QuerySet[User]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[User]) -> models.QuerySet[User]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         if self.value() == "1":
@@ -127,9 +128,9 @@ class CreatedPulsesListFilter(admin.ListFilter):
         have created.
     """
 
-    def __new__(cls, request: HttpRequest, params: Container, model: Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
+    def __new__(cls, request: HttpRequest, params: Container, model: models.Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
         return NumericRangeFilter(
-            PositiveIntegerField(verbose_name="Number of Created Pulses"),
+            models.PositiveIntegerField(verbose_name="Number of Created Pulses"),
             request,
             params,
             model,
@@ -146,9 +147,9 @@ class CreatedRepliesListFilter(admin.ListFilter):
         have created.
     """
 
-    def __new__(cls, request: HttpRequest, params: Container, model: Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
+    def __new__(cls, request: HttpRequest, params: Container, model: models.Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
         return NumericRangeFilter(
-            PositiveIntegerField(verbose_name="Number of Created Replies"),
+            models.PositiveIntegerField(verbose_name="Number of Created Replies"),
             request,
             params,
             model,
@@ -175,7 +176,7 @@ class ReportedObjectTypeListFilter(admin.SimpleListFilter):
         # noinspection PyProtectedMember
         return [(content_type.model, content_type.name) for content_type in ContentType.objects.filter(**Report._meta.get_field("_content_type")._limit_choices_to)]
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Report]) -> QuerySet[Report]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Report]) -> models.QuerySet[Report]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         content_type_name: str | None = self.value()
@@ -207,7 +208,7 @@ class AssignedModeratorListFilter(admin.SimpleListFilter):
         # noinspection PyProtectedMember
         return [(user.id, str(user)) for user in get_user_model().objects.filter(**Report._meta.get_field("assigned_moderator")._limit_choices_to)]
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Report]) -> QuerySet[Report]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Report]) -> models.QuerySet[Report]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         user_id: int | None = self.value()
@@ -233,7 +234,7 @@ class CategoryListFilter(admin.SimpleListFilter):
 
         return [category_choice for category_choice in Report.category_choices]
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Report]) -> QuerySet[Report]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Report]) -> models.QuerySet[Report]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         category_choice: str | None = self.value()
@@ -259,7 +260,7 @@ class StatusListFilter(admin.SimpleListFilter):
 
         return [status_choice for status_choice in Report.status_choices]
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Report]) -> QuerySet[Report]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Report]) -> models.QuerySet[Report]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         status_choice: str | None = self.value()
@@ -276,9 +277,9 @@ class LikesListFilter(admin.ListFilter):
         number of likes they have.
     """
 
-    def __new__(cls, request: HttpRequest, params: Container, model: Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
+    def __new__(cls, request: HttpRequest, params: Container, model: models.Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
         return NumericRangeFilter(
-            PositiveIntegerField(verbose_name="Number of Likes"),
+            models.PositiveIntegerField(verbose_name="Number of Likes"),
             request,
             params,
             model,
@@ -295,9 +296,9 @@ class DislikesListFilter(admin.ListFilter):
         number of dislikes they have.
     """
 
-    def __new__(cls, request: HttpRequest, params: Container, model: Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
+    def __new__(cls, request: HttpRequest, params: Container, model: models.Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
         return NumericRangeFilter(
-            PositiveIntegerField(verbose_name="Number of Dislikes"),
+            models.PositiveIntegerField(verbose_name="Number of Dislikes"),
             request,
             params,
             model,
@@ -324,10 +325,10 @@ class HasReportAboutObjectListFilter(admin.SimpleListFilter):
 
         return ("1", "Has Been Reported"), ("0", "Has Not Been Reported")
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[User | Pulse | Reply]) -> QuerySet[User | Pulse | Reply]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[User | Pulse | Reply]) -> models.QuerySet[User | Pulse | Reply]:
         """ Returns the filtered queryset according to the given url lookup. """
 
-        queryset = queryset.annotate(_reports=Count("about_object_report_set", distinct=True))
+        queryset = queryset.annotate(_reports=models.Count("about_object_report_set", distinct=True))
         if self.value() == "1":
             return queryset.filter(_reports__gt=0)
         if self.value() == "0":
@@ -352,7 +353,7 @@ class UserContentVisibleListFilter(admin.SimpleListFilter):
 
         return ("1", "Visible"), ("0", "Not Visible")
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Pulse | Reply]) -> QuerySet[Pulse | Reply]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Pulse | Reply]) -> models.QuerySet[Pulse | Reply]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         if self.value() == "1":
@@ -379,7 +380,7 @@ class RepliedObjectTypeListFilter(admin.SimpleListFilter):
         # noinspection PyProtectedMember
         return [(content_type.model, content_type.name) for content_type in ContentType.objects.filter(**Reply._meta.get_field("_content_type")._limit_choices_to)]
 
-    def queryset(self, request: HttpRequest, queryset: QuerySet[Reply]) -> QuerySet[Reply]:
+    def queryset(self, request: HttpRequest, queryset: models.QuerySet[Reply]) -> models.QuerySet[Reply]:
         """ Returns the filtered queryset according to the given url lookup. """
 
         content_type_name: str | None = self.value()
@@ -401,9 +402,9 @@ class DirectRepliesListFilter(admin.ListFilter):
         type of content that this is a reply for.
     """
 
-    def __new__(cls, request: HttpRequest, params: Container, model: Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
+    def __new__(cls, request: HttpRequest, params: Container, model: models.Model, model_admin: admin.ModelAdmin) -> admin.ListFilter:
         return NumericRangeFilter(
-            PositiveIntegerField(verbose_name="Number of Direct Replies"),
+            models.PositiveIntegerField(verbose_name="Number of Direct Replies"),
             request,
             params,
             model,

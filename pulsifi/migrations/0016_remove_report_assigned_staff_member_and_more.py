@@ -4,7 +4,7 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
-import pulsifi.models_utils
+import pulsifi.models.utils
 
 
 class Migration(migrations.Migration):
@@ -21,6 +21,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='report',
             name='assigned_moderator',
-            field=models.ForeignKey(default=pulsifi.models_utils.get_random_moderator_id, limit_choices_to={'groups__name': 'Moderators', 'is_active': True}, on_delete=django.db.models.deletion.CASCADE, related_name='moderator_assigned_report_set', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Moderator'),
+            field=models.ForeignKey(default=pulsifi.models.utils.get_random_moderator_id, limit_choices_to={'groups__name': 'Moderators', 'is_active': True}, on_delete=django.db.models.deletion.CASCADE, related_name='moderator_assigned_report_set', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Moderator'),
         ),
     ]

@@ -6,7 +6,7 @@ import django.utils.timezone
 from django.conf import settings
 from django.db import migrations, models
 
-import pulsifi.models_utils
+import pulsifi.models.utils
 
 
 class Migration(migrations.Migration):
@@ -69,7 +69,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('PR', 'In Progress'), ('RE', 'Rejected'), ('CM', 'Completed')], default='PR', max_length=2, verbose_name='Status')),
                 ('_date_time_created', models.DateTimeField(auto_now=True, verbose_name='Creation Date & Time')),
                 ('_content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
-                ('assigned_staff', models.ForeignKey(default=pulsifi.models_utils.get_random_moderator_id, limit_choices_to={'is_staff': True}, on_delete=django.db.models.deletion.CASCADE, related_name='assigned_reports', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Staff Member')),
+                ('assigned_staff', models.ForeignKey(default=pulsifi.models.utils.get_random_moderator_id, limit_choices_to={'is_staff': True}, on_delete=django.db.models.deletion.CASCADE, related_name='assigned_reports', to=settings.AUTH_USER_MODEL, verbose_name='Assigned Staff Member')),
                 ('reporter', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reports', to=settings.AUTH_USER_MODEL, verbose_name='Reporter')),
             ],
             options={

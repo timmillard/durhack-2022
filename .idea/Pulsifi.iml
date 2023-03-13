@@ -15,8 +15,6 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/venv" />
-      <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/staticfiles" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.11 (Pulsifi)" jdkType="Python SDK" />
