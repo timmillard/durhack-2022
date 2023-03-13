@@ -24,7 +24,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="TARGET" value="" />
-    <option name="SETTINGS_FILE" value="$PROJECT_DIR$/core/dev_settings.py" />
+    <option name="SETTINGS_FILE" value="$PROJECT_DIR$/core/settings.py" />
     <option name="CUSTOM_SETTINGS" value="true" />
     <option name="USE_OPTIONS" value="true" />
     <option name="OPTIONS" value="" />
