@@ -25,6 +25,9 @@ class Base_TestCase(TestCase):
         for staff_group_name in get_user_model().STAFF_GROUP_NAMES:
             Group.objects.create(name=staff_group_name)
 
+        CreateTestUserHelper.restart_user_details_generator()
+        CreateTestUserGeneratedContentHelper.restart_message_generator()
+
 
 class CreateTestUserHelper:
     """
@@ -56,7 +59,11 @@ class CreateTestUserHelper:
         {"username": "grayson", "password": "Iloveyou", "email": "gus2017@hotmail.com", "bio": "Just taught my kids about taxes by eating 38% of their ice cream"},
         {"username": "Professor_T", "password": "lung-calf-trams", "email": "trofessor-t@trofessor-t.com", "bio": "Haven't gotten ONE response to my hospital job applications"}
     ]
-    _test_users_index = -1
+    user_details_generator = (user_details for user_details in TEST_USERS)
+
+    @classmethod
+    def restart_user_details_generator(cls) -> None:
+        cls.user_details_generator = (user_details for user_details in cls.TEST_USERS)
 
     @classmethod
     def create_test_user(cls, save=True, **kwargs) -> User:
@@ -68,25 +75,26 @@ class CreateTestUserHelper:
         """
 
         if kwargs:
-            if "username" not in kwargs or "password" not in kwargs or "email" not in kwargs or "bio" not in kwargs:
-                cls._test_users_index = (cls._test_users_index + 1) % len(cls.TEST_USERS)
+            if any(field_name not in kwargs for field_name in ("username", "password", "email", "bio")):
+                user_details = next(cls.user_details_generator)
 
             if "username" in kwargs:
                 username: str = kwargs.pop("username")
             else:
-                username: str = cls.TEST_USERS[cls._test_users_index]["username"]
+                # noinspection PyUnboundLocalVariable
+                username: str = user_details["username"]
             if "password" in kwargs:
                 password: str = kwargs.pop("password")
             else:
-                password: str = cls.TEST_USERS[cls._test_users_index]["password"]
+                password: str = user_details["password"]
             if "email" in kwargs:
                 email: str = kwargs.pop("email")
             else:
-                email: str = cls.TEST_USERS[cls._test_users_index]["email"]
+                email: str = user_details["email"]
             if "bio" in kwargs:
                 bio: str = kwargs.pop("bio")
             else:
-                bio: str = cls.TEST_USERS[cls._test_users_index]["bio"]
+                bio: str = user_details["bio"]
 
             if "visible" in kwargs or "verified" in kwargs or "is_superuser" in kwargs or "is_staff" in kwargs or "is_active" in kwargs:
                 if "visible" in kwargs:
@@ -147,20 +155,20 @@ class CreateTestUserHelper:
             )
 
         else:
-            cls._test_users_index = (cls._test_users_index + 1) % len(cls.TEST_USERS)
+            user_details = next(cls.user_details_generator)
 
             if save:
                 return get_user_model().objects.create_user(
-                    username=cls.TEST_USERS[cls._test_users_index]["username"],
-                    password=cls.TEST_USERS[cls._test_users_index]["password"],
-                    email=cls.TEST_USERS[cls._test_users_index]["email"],
-                    bio=cls.TEST_USERS[cls._test_users_index]["bio"]
+                    username=user_details["username"],
+                    password=user_details["password"],
+                    email=user_details["email"],
+                    bio=user_details["bio"]
                 )
             return get_user_model()(
-                username=cls.TEST_USERS[cls._test_users_index]["username"],
-                password=cls.TEST_USERS[cls._test_users_index]["password"],
-                email=cls.TEST_USERS[cls._test_users_index]["email"],
-                bio=cls.TEST_USERS[cls._test_users_index]["bio"]
+                username=user_details["username"],
+                password=user_details["password"],
+                email=user_details["email"],
+                bio=user_details["bio"]
             )
 
     @classmethod
@@ -170,14 +178,14 @@ class CreateTestUserHelper:
             name.
         """
 
-        if field_name == "bio":
-            return cls.create_test_user(save=False).bio
-        elif field_name == "username":
-            return cls.create_test_user(save=False).username
-        elif field_name == "password":
-            return cls.create_test_user(save=False).password
+        if field_name == "username":
+            return next(cls.user_details_generator)["username"]
         elif field_name == "email":
-            return cls.create_test_user(save=False).email
+            return next(cls.user_details_generator)["email"]
+        elif field_name == "password":
+            return next(cls.user_details_generator)["password"]
+        elif field_name == "bio":
+            return next(cls.user_details_generator)["bio"]
         else:
             raise ValueError(f"Given field_name ({field_name}) is not one that can have test values created for it.")
 
@@ -211,7 +219,11 @@ class CreateTestUserGeneratedContentHelper:
         "My grandfather was a lawyer",
         "I work with really cool people"
     ]
-    _test_message_index = -1
+    message_generator = (user_details for user_details in TEST_MESSAGES)
+
+    @classmethod
+    def restart_message_generator(cls) -> None:
+        cls.message_generator = (user_details for user_details in cls.TEST_MESSAGES)
 
     @classmethod
     def create_test_user_generated_content(cls, model_name: str, save=True, **kwargs) -> Pulse | Reply:
@@ -242,8 +254,7 @@ class CreateTestUserGeneratedContentHelper:
 
         if kwargs:
             if "message" not in kwargs:
-                cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-                message: str = cls.TEST_MESSAGES[cls._test_message_index]
+                message: str = next(cls.message_generator)
             else:
                 message: str = kwargs.pop("message")
 
@@ -299,16 +310,14 @@ class CreateTestUserGeneratedContentHelper:
             )
 
         else:
-            cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-
             if save:
                 return Pulse.objects.create(
-                    message=cls.TEST_MESSAGES[cls._test_message_index],
+                    message=next(cls.message_generator),
                     creator=CreateTestUserHelper.create_test_user()
                 )
 
             return Pulse(
-                message=cls.TEST_MESSAGES[cls._test_message_index],
+                message=next(cls.message_generator),
                 creator=CreateTestUserHelper.create_test_user()
             )
 
@@ -323,8 +332,7 @@ class CreateTestUserGeneratedContentHelper:
 
         if kwargs:
             if "message" not in kwargs:
-                cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-                message: str = cls.TEST_MESSAGES[cls._test_message_index]
+                message: str = next(cls.message_generator)
             else:
                 message: str = kwargs.pop("message")
 
@@ -450,17 +458,15 @@ class CreateTestUserGeneratedContentHelper:
             )
 
         else:
-            cls._test_message_index = (cls._test_message_index + 1) % len(cls.TEST_MESSAGES)
-
             if save:
                 return Reply.objects.create(
-                    message=cls.TEST_MESSAGES[cls._test_message_index],
+                    message=next(cls.message_generator),
                     creator=CreateTestUserHelper.create_test_user(),
                     replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
                 )
 
             return Reply(
-                message=cls.TEST_MESSAGES[cls._test_message_index],
+                message=next(cls.message_generator),
                 creator=CreateTestUserHelper.create_test_user(),
                 replied_content=CreateTestUserGeneratedContentHelper.create_test_user_generated_content(model_name="pulse")
             )
@@ -471,7 +477,7 @@ class CreateTestUserGeneratedContentHelper:
             Helper function to return a new random value for the message field.
         """
 
-        return cls.create_test_user_generated_content(model_name="pulse", save=False).message
+        return next(cls.message_generator)
 
 
 class GetFieldsHelper:
