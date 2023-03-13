@@ -7,6 +7,7 @@ from typing import Collection
 
 import tldextract
 from confusable_homoglyphs import confusables
+from django.conf import settings
 from django.contrib import auth
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator, RegexValidator
@@ -39,7 +40,6 @@ class ReservedNameValidator:
         "html",
         "http",
         "https",
-        "https",
         "imap",
         "ip",
         "iscsi",
@@ -50,12 +50,15 @@ class ReservedNameValidator:
         "pop",
         "pop3",
         "smtp",
+        "ssl"
         "tcp",
+        "tls"
         "udp",
         "usenet",
         "uucp",
         "webmail",
-        "www"
+        "www",
+        "www3"
     }
     """ Common protocol hostnames. """
 
@@ -154,9 +157,7 @@ class ReservedNameValidator:
         "pricing",
         "privacy",
         "profile",
-        "puls",
         "register",
-        "reply",
         "report",
         "secure",
         "settings",
@@ -164,7 +165,6 @@ class ReservedNameValidator:
         "shopping",
         "signin",
         "signup",
-        "ssl",
         "status",
         "store",
         "subscribe",
@@ -183,7 +183,7 @@ class ReservedNameValidator:
 
     def __init__(self, reserved_names: Collection[str] = None) -> None:
         if reserved_names is None:
-            reserved_names: set[str] = self.DEFAULT_SPECIAL_HOSTNAMES | self.DEFAULT_PROTOCOL_HOSTNAMES | self.DEFAULT_CA_ADDRESSES | self.DEFAULT_RFC_2142 | self.DEFAULT_NOREPLY_ADDRESSES | self.DEFAULT_SENSITIVE_FILENAMES | self.DEFAULT_OTHER_SENSITIVE_NAMES
+            reserved_names: set[str] = self.DEFAULT_SPECIAL_HOSTNAMES | self.DEFAULT_PROTOCOL_HOSTNAMES | self.DEFAULT_CA_ADDRESSES | self.DEFAULT_RFC_2142 | self.DEFAULT_NOREPLY_ADDRESSES | self.DEFAULT_SENSITIVE_FILENAMES | self.DEFAULT_OTHER_SENSITIVE_NAMES | settings.CUSTOM_RESERVED_USERNAMES
         else:
             reserved_names = set(reserved_names)
         self.reserved_names = reserved_names
